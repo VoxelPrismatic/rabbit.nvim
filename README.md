@@ -104,8 +104,8 @@ rabbit.RelPath(src, target)     -- Return the relative path object for highlight
 
 
 ### Preview
-<video src="/video.mp4"></video>
-*i'll re-record the video soon. OBS crashes on recording stop, and the other recorder mucks up the video so it won't embed anywhere.
+
+https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/da149bd5-4f6d-4c83-b6cb-67f1be762e2a
 
 ### DISCLAIMER
 This is my first project in Lua, and my first plugin for Neovim.
