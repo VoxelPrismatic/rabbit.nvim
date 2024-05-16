@@ -45,3 +45,6 @@ If you try to modify the Rabbit buffer, it'll close.
 
 ### Configuration
 None. Deal with it.
+
+### Preview
+<video src="/video.mp4"></video>
