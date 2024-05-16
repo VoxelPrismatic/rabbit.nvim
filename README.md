@@ -48,3 +48,9 @@ None. Deal with it.
 
 ### Preview
 <video src="/video.mp4"></video>
+*i'll re-record the video soon. OBS crashes on recording stop, and the other recorder mucks up the video so it won't embed anywhere.
+
+### DISCLAIMER
+This is my first project in Lua, and my first plugin for Neovim.
+Instead of shaming me for bad choices, let me know how I can
+improve instead. I greatly appreciate it.
