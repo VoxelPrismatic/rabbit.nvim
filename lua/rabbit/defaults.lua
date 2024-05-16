@@ -50,6 +50,7 @@ local options = {
         index = "Comment",
         dir = "NonText",
         file = "",
+        noname = "Error",
     },
     box = box.rounded,
     window = {

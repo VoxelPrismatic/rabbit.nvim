@@ -160,14 +160,13 @@ function rabbit.Window()
     end
 
     local buf = vim.api.nvim_create_buf(false, true) ---@type bufnr
-    local ui = vim.api.nvim_list_uis()[1]
 
     local opts = {
         relative = "editor",
         width = rabbit.opts.window.width,
         height = rabbit.opts.window.height,
-        col = ui.width - rabbit.opts.window.width - 1,
-        row = ui.height - rabbit.opts.window.height - 1,
+        col = 10000,
+        row = 10000,
         style = "minimal",
     }
 
@@ -211,11 +210,15 @@ function rabbit.Window()
     }})
 
     local window_bufs = rabbit.history[rabbit.winid]
-    local buf_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(window_bufs[1]), ":p") ---@type filepath
+    local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, window_bufs[1])
+    if not has_name then
+        buf_path = ""
+    end
 
     for i = 1, rabbit.opts.window.height - 4 do
         ---@type ScreenSpec[]
         local parts = {{ color = rabbit.opts.color.box, text = rabbit.opts.box.vertical .. " " }}
+
         if i < #window_bufs then
             if i <= 10 then
                 vim.api.nvim_buf_set_keymap(
@@ -223,14 +226,34 @@ function rabbit.Window()
                     { noremap = true, silent = true }
                 )
             end
-            local target = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(window_bufs[i + 1]), ":p") ---@type filepath
-            local rel = rabbit.RelPath(buf_path, target)
+            local valid = vim.api.nvim_buf_is_valid(window_bufs[i + 1])
+            while not valid do
+                table.remove(window_bufs, i + 1)
+                if #window_bufs == 1 then
+                    vim.print("KILL")
+                    break
+                end
+                valid = vim.api.nvim_buf_is_valid(window_bufs[i + 1])
+            end
 
-            table.insert(parts, {
-                { text = (i < 10 and " " or "") .. i .. ". ", color = rabbit.opts.color.index },
-                { text = rel.dir, color = rabbit.opts.color.dir },
-                { text = rel.name, color = rabbit.opts.color.file, }
-            })
+            if not valid then
+                break
+            end
+
+            local target = vim.api.nvim_buf_get_name(window_bufs[i + 1])
+            if target ~= "" then
+                local rel = rabbit.RelPath(buf_path, vim.fn.fnamemodify(target, ":p"))
+                table.insert(parts, {
+                    { text = (i < 10 and " " or "") .. i .. ". ", color = rabbit.opts.color.index },
+                    { text = rel.dir, color = rabbit.opts.color.dir },
+                    { text = rel.name, color = rabbit.opts.color.file, }
+                })
+            else
+                table.insert(parts, {
+                    { text = (i < 10 and " " or "") .. i .. ". ", color = rabbit.opts.color.index },
+                    { text = "#nil " .. window_bufs[i + 1], color = rabbit.opts.color.noname }
+                })
+            end
         end
 
         table.insert(parts, {
@@ -287,11 +310,11 @@ end
 vim.api.nvim_create_autocmd("BufEnter", {
     pattern = {"*"},
     callback = function(evt)
-        if evt.file:sub(1, 1) ~= "/" then
+        local winid = vim.fn.win_getid()
+
+        if #(evt.file) > 1 and evt.file:sub(1, 1) ~= "/" then
             return
         end
-
-        local winid = vim.fn.win_getid()
 
         if rabbit.history[winid] == nil then
             rabbit.history[winid] = {}
@@ -312,9 +335,15 @@ vim.api.nvim_create_autocmd("BufEnter", {
 vim.api.nvim_create_autocmd("BufDelete", {
     pattern = {"*"},
     callback = function(evt)
-        for i = 1, #rabbit.history do
-            if rabbit.history[i] == evt.buf then
-                table.remove(rabbit.history, i)
+        local winid = vim.fn.win_getid()
+
+        if rabbit.history[winid] == nil then
+            rabbit.history[winid] = {}
+            return
+        end
+        for i = 1, #(rabbit.history[winid]) do
+            if rabbit.history[winid][i] == evt.buf then
+                table.remove(rabbit.history[winid], i)
                 return
             end
         end

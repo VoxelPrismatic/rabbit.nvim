@@ -3,11 +3,12 @@
 --.
 
 ---@class RabbitColor
----@field title VimHighlight Vim highlight group name
----@field box VimHighlight Vim highlight group name
----@field index VimHighlight Vim highlight group name
----@field dir VimHighlight Vim highlight group name
----@field file VimHighlight Vim highlight group name
+---@field title VimHighlight Vim highlight group name.
+---@field box VimHighlight Vim highlight group name.
+---@field index VimHighlight Vim highlight group name.
+---@field dir VimHighlight Vim highlight group name.
+---@field file VimHighlight Vim highlight group name.
+---@field noname VimHighlight Vim highlight group name.
 --.
 
 
