@@ -25,7 +25,7 @@ Lazy:
 return {
     "voxelprismatic/rabbit.nvim",
     config = function()
-        require("rabbit").setup("<leader>r")  -- Any keybind you like.
+        require("rabbit").setup("<leader>r")  -- Any keybind you like
     end,
 }
 ```
@@ -44,7 +44,64 @@ If you click away from the Rabbit window, it'll close.
 If you try to modify the Rabbit buffer, it'll close.
 
 ### Configuration
-None. Deal with it.
+```lua
+-- Use all the below defaults, but set a custom keybind
+require("rabbit").setup("any keybind")
+
+-- Defaults
+require("rabbit").setup({
+    box = {
+        top_left = "╭",         -- Top left corner of box
+        top_right = "╮",        -- Top right corner of box
+        bottom_left = "╰",      -- Bottom left corner of box
+        bottom_right = "╯",     -- Bottom right corner of box
+        vertical = "│",         -- Vertical wall
+        horizontal = "─",       -- Horizontal ceiling
+        emphasis = "═",         -- Emphasis around title, like `──══ Rabbit ══──`
+    },
+
+    box = "rounded",            -- One of "rounded", "square", "thick", "double"
+
+    window = {
+        title = "Rabbit",       -- Window title
+        emphasis_width = 8,     -- How many emphasis characters to put around the title
+        width = 64,             -- How wide the Rabbit window should be
+        height = 24,            -- How tall the Rabbit window should be
+    },
+
+    keys = {
+        quit = {                -- Close Rabbit; don't jump
+            "<Esc>",
+            "<leader>",
+            "q",
+        },
+        confirm = {             -- Jump to selected buffer
+            "<CR>"
+        },
+        open = {                -- Open Rabbit
+            "<leader>r",
+        },
+    },
+
+    paths = {
+        min_visible = 3,        -- How many folders to display before cutting off
+        rollover = 12,          -- How many characters to display in folder name before cutting off
+        overflow = ":::",       -- String to display when folders overflow
+    },
+})
+```
+
+
+### API
+```lua
+local rabbit = require("rabbit")
+
+rabbit.Window()                 -- Toggle Rabbit window
+rabbit.Close()                  -- Force close window; will NOT throw error
+rabbit.Select(n)                -- Select an entry
+rabbit.RelPath(src, target)     -- Return the relative path object for highlighting
+```
+
 
 ### Preview
 <video src="/video.mp4"></video>
