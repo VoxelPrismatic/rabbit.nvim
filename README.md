@@ -67,6 +67,26 @@ require("rabbit").setup({
         emphasis_width = 8,     -- How many emphasis characters to put around the title
         width = 64,             -- How wide the Rabbit window should be
         height = 24,            -- How tall the Rabbit window should be
+
+        -- When floating, Rabbit will always use the bounds of the current window.
+        -- That means, in split screen, if you open Rabbit in the left window,
+        -- it will (with default options) stick to the bottom right corner.
+        float = {
+            "bottom", "right",  -- Placement of the Rabbit window, "bottom", "top", "left", "right"
+        },
+        float = {
+            top = 10000,        -- Top offset in lines
+            left = 10000,       -- Left offset in columns
+        },
+        float = true,           -- Plain `true` means use bottom right corner
+
+        -- When using split screen, it will try to use the width and height provided earlier.
+        -- Eg, if splitting left or right, it will use the width provided, but current window height
+        -- Eg, if splitting above or below, it will use the height provided, but the current window width
+        -- NOTE: `float` must be explicitly set to false in order to split
+        -- NOTE: If both `float` and `split` are unset, the Rabbit window will be full screen
+        split = "right",        -- Which side to split the Rabbit window on. "left", "right", "above", "below"
+        split = true,           -- Plain `true` means use the right side
     },
 
     keys = {
@@ -87,6 +107,15 @@ require("rabbit").setup({
         min_visible = 3,        -- How many folders to display before cutting off
         rollover = 12,          -- How many characters to display in folder name before cutting off
         overflow = ":::",       -- String to display when folders overflow
+    },
+
+    colors = {                  -- These should all be highlight group names
+        title = "Statement",    -- I don't feel like making a color API for this, just :hi and deal with it
+        box = "Function",
+        index = "Comment",
+        dir = "NonText",
+        file = "",
+        noname = "Error",
     },
 })
 ```

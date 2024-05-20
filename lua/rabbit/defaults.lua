@@ -58,6 +58,11 @@ local options = {
         emphasis_width = 8,
         width = 64,
         height = 24,
+        float = {
+            "bottom",
+            "right",
+        },
+        split = "right",
     },
     keys = {
         quit = { "<Esc>", "q", "<leader>" },

@@ -38,7 +38,8 @@ function screen.helper(specs, width)
         end
 
         if spec.expand then
-            spectext = (" "):rep(width - vim.fn.strwidth(fulltext .. spectext)) .. spectext
+            local char = type(spec.expand) == "string" and spec.expand or " "
+            spectext = ("" .. char):rep(width - vim.fn.strwidth(fulltext .. spectext)) .. spectext
         end
 
         if spec.color ~= nil and #(spec.color) > 1 then
@@ -66,6 +67,10 @@ end
 ---@param line number
 ---@param specs ScreenSpec[]
 function screen.render(win, buf, line, specs)
+    if line == -1 then
+        line = vim.api.nvim_buf_line_count(buf)
+    end
+
     local finalspec = screen.helper(specs, vim.api.nvim_win_get_width(win))
     vim.api.nvim_buf_set_lines(buf, line, line + 1, false, { finalspec.fulltext })
 

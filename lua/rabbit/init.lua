@@ -4,15 +4,24 @@ local defaults = require("rabbit.defaults")
 ---@class rabbit
 ---@field opts RabbitOptions
 ---@field history RabbitHistory
----@field winid winnr winnr
----@field rabid winnr winnr
+---@field rab RabbitWS
+---@field usr RabbitWS
 local rabbit = {
-    rabid = nil,
-    winid = 0,
+    rab = {
+        win = nil,
+        buf = nil,
+        ns = vim.api.nvim_create_namespace("rabbit"),
+    },
+
+    usr = {
+        win = nil,
+        buf = nil,
+        ns = nil,
+    },
+
     opts = defaults.options,
     history = {}
 }
-
 
 -- Expand a table, like js { ...obj, b = 1, c = 2 }
 ---@param template table
@@ -35,12 +44,14 @@ end
 -- Display a message in the buffer
 ---@param buf bufnr bufnr
 ---@param text string
-function rabbit.ShowMessage(buf, text)
+---@param width number
+function rabbit.ShowMessage(buf, text, width)
     local line = 2
     local thisline = ""
+    local fullscreen = rabbit.rab.win == rabbit.usr.win and { text = "", color = "" } or false
     for word in text:gmatch("[^ ]+") do
-        if #thisline + #word > rabbit.opts.window.width - 4 then
-            screen.render(rabbit.rabid, buf, line, {
+        if (#thisline + #word > width - 4) and not fullscreen then
+            screen.render(rabbit.rab.win, buf, line, {
                 { color = rabbit.opts.color.box, text = rabbit.opts.box.vertical .. " " },
                 { color = rabbit.opts.color.file, text = thisline },
                 { color = rabbit.opts.color.box, text = rabbit.opts.box.vertical, expand = true },
@@ -52,10 +63,10 @@ function rabbit.ShowMessage(buf, text)
     end
 
     if #thisline > 1 then
-        screen.render(rabbit.rabid, buf, line, {
-            { color = rabbit.opts.color.box, text = rabbit.opts.box.vertical .. " " },
+        screen.render(rabbit.rab.win, buf, line, {
+            fullscreen or { color = rabbit.opts.color.box, text = rabbit.opts.box.vertical .. " " },
             { color = rabbit.opts.color.file, text = thisline },
-            { color = rabbit.opts.color.box, text = rabbit.opts.box.vertical, expand = true },
+            fullscreen or { color = rabbit.opts.color.box, text = rabbit.opts.box.vertical, expand = true },
         })
     end
 end
@@ -113,9 +124,14 @@ end
 
 
 function rabbit.Close()
-    if rabbit.rabid ~= nil then
-        vim.api.nvim_win_close(rabbit.rabid, true)
-        rabbit.rabid = nil
+    if rabbit.rab.win ~= nil then
+        if rabbit.rab.win == rabbit.usr.win then
+            vim.api.nvim_win_set_buf(rabbit.usr.win, rabbit.usr.buf)
+        else
+            vim.api.nvim_win_close(rabbit.rab.win, true)
+            vim.api.nvim_tabpage_set_win(0, rabbit.usr.win) -- For splits
+        end
+        rabbit.rab.win = nil
     end
 end
 
@@ -126,103 +142,198 @@ function rabbit.Select(lineno)
     else
         lineno = lineno + 1
     end
-    if rabbit.rabid ~= nil then
-        pcall(vim.api.nvim_win_close, rabbit.rabid, true)
-        rabbit.rabid = nil
+    if rabbit.rab.win ~= nil then
+        if rabbit.rab.win == rabbit.usr.win then
+            vim.api.nvim_win_set_buf(rabbit.usr.win, rabbit.usr.buf)
+            vim.api.nvim_win_set_hl_ns(rabbit.usr.win, rabbit.usr.ns)
+        else
+            pcall(vim.api.nvim_win_close, rabbit.rab.win, true)
+        end
+        rabbit.rab.win = nil
     end
 
-    if rabbit.winid == nil then
-        rabbit.winid = vim.fn.win_getid()
+    if rabbit.usr.win == nil then
+        rabbit.usr.win = vim.fn.win_getid()
     end
 
-    if rabbit.history[rabbit.winid] == nil then
-        rabbit.history[rabbit.winid] = {}
+    if rabbit.history[rabbit.usr.win] == nil then
+        rabbit.history[rabbit.usr.win] = {}
     end
 
-    if lineno >= 1 and lineno <= #(rabbit.history[rabbit.winid]) then
-        vim.cmd("b " .. rabbit.history[rabbit.winid][lineno])
+    if lineno >= 1 and lineno <= #(rabbit.history[rabbit.usr.win]) then
+        vim.api.nvim_win_set_buf(rabbit.usr.win, rabbit.history[rabbit.usr.win][lineno])
     end
 end
 
 
+function rabbit.MakeBuf()
+    local buf = vim.api.nvim_create_buf(false, true) ---@type bufnr
+
+    rabbit.rab.buf = buf
+
+    rabbit.usr.buf = vim.api.nvim_get_current_buf()
+    rabbit.usr.win = vim.api.nvim_get_current_win()
+    rabbit.usr.ns = 0
+
+    local win_conf = vim.api.nvim_win_get_config(rabbit.usr.win)
+
+    local opts = {
+        width = math.min(rabbit.opts.window.width, win_conf.width),
+        height = math.min(rabbit.opts.window.height, win_conf.height),
+        style = "minimal",
+    }
+
+    local floating = rabbit.opts.window.float
+    local splitting = rabbit.opts.window.split
+    if floating == true then
+        opts.relative = "win"
+        opts.row = win_conf.height - opts.height
+        opts.col = win_conf.width - opts.width
+    elseif floating then
+        opts.relative = "win"
+        opts.row = floating.top or (floating[1] == "top" and 0 or (win_conf.height - opts.height))
+        opts.col = floating.left or (floating[2] == "left" and 0 or (win_conf.width - opts.width))
+    elseif splitting == true then
+        opts.split = "right"
+        opts.height = win_conf.height
+    elseif splitting == "left" or splitting == "right" then
+        opts.split = splitting
+        opts.height = win_conf.height
+    elseif splitting == "above" or splitting == "below" then
+        opts.split = splitting
+        opts.width = win_conf.width
+    else
+        opts.width = win_conf.width
+        opts.height = 4
+    end
+
+    if floating or splitting then
+        rabbit.rab.win = vim.api.nvim_open_win(buf, true, opts)
+    else
+        rabbit.rab.win = rabbit.usr.win
+        rabbit.bufid = vim.api.nvim_buf_get_number(0)
+        vim.api.nvim_win_set_buf(rabbit.usr.win, buf)
+    end
+
+    vim.api.nvim_win_set_hl_ns(rabbit.rab.win, rabbit.rab.ns)
+
+    for _, key in ipairs(rabbit.opts.keys.quit) do
+        vim.api.nvim_buf_set_keymap(
+            buf, "n", key, "<cmd>lua require('rabbit').Close()<CR>",
+            { noremap = true, silent = true }
+        )
+    end
+
+    vim.api.nvim_buf_set_keymap(
+        buf, "n", "<CR>", "<cmd>lua require('rabbit').Select(vim.fn.line('.') - 2)<CR>",
+        { noremap = true, silent = true }
+    )
+
+    vim.api.nvim_create_autocmd("WinLeave", { buffer = buf, callback = rabbit.Close })
+    vim.api.nvim_create_autocmd("BufLeave", { buffer = buf, callback = rabbit.Close })
+    vim.api.nvim_create_autocmd("WinClosed", { buffer = buf, callback = rabbit.Close })
+    vim.api.nvim_create_autocmd("InsertEnter", { buffer = buf, callback = rabbit.Close })
+
+    vim.api.nvim_create_autocmd("CursorMoved", { buffer = buf, callback = function()
+        vim.api.nvim_buf_clear_namespace(rabbit.rab.buf, rabbit.rab.ns, 0, -1)
+        local len = #rabbit.history[rabbit.usr.win] - 1
+        local line = vim.fn.line(".") - 1
+        if line - 1 > 0 and line - 1 <= len then
+            local fullscreen = rabbit.rab.win == rabbit.usr.win
+            local offset = fullscreen and 0 or #(rabbit.opts.box.vertical)
+            vim.api.nvim_buf_add_highlight(
+                rabbit.rab.buf, rabbit.rab.ns, "CursorLine",
+                line, offset, #(vim.api.nvim_get_current_line()) - offset
+            )
+        end
+    end})
+
+    return {
+        nr = buf,
+        w = opts.width,
+        h = opts.height,
+    }
+end
+
+
 function rabbit.Window()
-    if rabbit.rabid ~= nil then
-        local status, _ = pcall(vim.api.nvim_win_close, rabbit.rabid, true)
-        rabbit.rabid = nil
+    if rabbit.rab.win ~= nil then
+        local status, _ = pcall(rabbit.Close)
+        rabbit.rab.win = nil
 
         -- Continue if the window managed to close without us noticing
         if status == true then return end
     end
 
-    rabbit.winid = vim.api.nvim_get_current_win()
-    if rabbit.history[rabbit.winid] == nil then
-        rabbit.history[rabbit.winid] = {}
+    local buf = rabbit.MakeBuf()
+
+    if rabbit.history[rabbit.usr.win] == nil then
+        rabbit.history[rabbit.usr.win] = {}
     end
 
-    local buf = vim.api.nvim_create_buf(false, true) ---@type bufnr
 
-    local opts = {
-        relative = "editor",
-        width = rabbit.opts.window.width,
-        height = rabbit.opts.window.height,
-        col = 10000,
-        row = 10000,
-        style = "minimal",
-    }
-
-    rabbit.rabid = vim.api.nvim_open_win(buf, true, opts)
-
-    local center = (rabbit.opts.window.width - 2 - #(rabbit.opts.window.title)) / 2 - 1
+    local fullscreen = rabbit.rab.win == rabbit.usr.win and { text = "", color = "" } or false
+    local center = (buf.w - 2 - #(rabbit.opts.window.title)) / 2 - 1
     local emph_width = math.min(center - 4, rabbit.opts.window.emphasis_width)
     center = center - emph_width
 
 
-    screen.render(rabbit.rabid, buf, 0, {
-        {
+    if fullscreen then
+        screen.render(rabbit.rab.win, buf.nr, 0, {
+            { text = rabbit.opts.box.emphasis:rep(emph_width), color = rabbit.opts.color.box },
+            { text = " " .. rabbit.opts.window.title .. " ", color = rabbit.opts.color.title },
+            { text = rabbit.opts.box.emphasis:rep(emph_width), color = rabbit.opts.color.box },
+        })
+        screen.render(rabbit.rab.win, buf.nr, 1, { fullscreen })
+    else
+        screen.render(rabbit.rab.win, buf.nr, 0, {
+            {
+                color = rabbit.opts.color.box,
+                text = {
+                    rabbit.opts.box.top_left,
+                    rabbit.opts.box.horizontal:rep(center),
+                    rabbit.opts.box.emphasis:rep(emph_width)
+                },
+            },
+            {
+                color = rabbit.opts.color.title,
+                text = " " .. rabbit.opts.window.title .. " ",
+            },
+            {
+                color = rabbit.opts.color.box,
+                text = rabbit.opts.box.emphasis:rep(emph_width),
+            },
+            {
+                color = rabbit.opts.color.box,
+                text = rabbit.opts.box.top_right,
+                expand = rabbit.opts.box.horizontal,
+            },
+        })
+
+        screen.render(rabbit.rab.win, buf.nr, 1, {{
             color = rabbit.opts.color.box,
             text = {
-                rabbit.opts.box.top_left,
-                rabbit.opts.box.horizontal:rep(center),
-                rabbit.opts.box.emphasis:rep(emph_width)
-            },
-        },
-        {
-            color = rabbit.opts.color.title,
-            text = " " .. rabbit.opts.window.title .. " ",
-        },
-        {
-            color = rabbit.opts.color.box,
-            text = {
-                rabbit.opts.box.emphasis:rep(emph_width),
-                rabbit.opts.box.horizontal:rep(center),
-                rabbit.opts.box.top_right,
-            },
-        },
-    })
+                rabbit.opts.box.vertical,
+                (" "):rep(buf.w - 2),
+                rabbit.opts.box.vertical,
+            }
+        }})
+    end
 
-    screen.render(rabbit.rabid, buf, 1, {{
-        color = rabbit.opts.color.box,
-        text = {
-            rabbit.opts.box.vertical,
-            (" "):rep(rabbit.opts.window.width - 2),
-            rabbit.opts.box.vertical,
-        }
-    }})
-
-    local window_bufs = rabbit.history[rabbit.winid]
+    local window_bufs = rabbit.history[rabbit.usr.win]
     local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, window_bufs[1])
     if not has_name then
         buf_path = ""
     end
 
-    for i = 1, rabbit.opts.window.height - 4 do
+    for i = 1, math.max(buf.h - 4, #window_bufs + 1) do
         ---@type ScreenSpec[]
-        local parts = {{ color = rabbit.opts.color.box, text = rabbit.opts.box.vertical .. " " }}
+        local parts = fullscreen and {} or {{ color = rabbit.opts.color.box, text = rabbit.opts.box.vertical .. " " }}
 
         if i < #window_bufs then
             if i <= 10 then
                 vim.api.nvim_buf_set_keymap(
-                    buf, "n", ("" .. i):sub(-1), "<cmd>lua require('rabbit').Select(" .. i .. ")<CR>",
+                    buf.nr, "n", ("" .. i):sub(-1), "<cmd>lua require('rabbit').Select(" .. i .. ")<CR>",
                     { noremap = true, silent = true }
                 )
             end
@@ -244,7 +355,7 @@ function rabbit.Window()
             if target ~= "" then
                 local rel = rabbit.RelPath(buf_path, vim.fn.fnamemodify(target, ":p"))
                 table.insert(parts, {
-                    { text = (i < 10 and " " or "") .. i .. ". ", color = rabbit.opts.color.index },
+                    { text = (fullscreen and " " or "") .. (i < 10 and " " or "") .. i .. ". ", color = rabbit.opts.color.index },
                     { text = rel.dir, color = rabbit.opts.color.dir },
                     { text = rel.name, color = rabbit.opts.color.file, }
                 })
@@ -256,60 +367,50 @@ function rabbit.Window()
             end
         end
 
-        table.insert(parts, {
+        table.insert(parts, fullscreen or {
             color = rabbit.opts.color.box,
             text = rabbit.opts.box.vertical,
             expand = true,
         })
 
-        screen.render(rabbit.rabid, buf, i + 1, parts)
+        screen.render(rabbit.rab.win, buf.nr, i + 1, parts)
     end
 
     if #window_bufs <= 1 then
-        rabbit.ShowMessage(buf, "There's nowhere else to jump to! Get started by opening another buffer")
+        rabbit.ShowMessage(buf.nr, "There's nowhere else to jump to! Get started by opening another buffer", buf.w)
+    else
+        vim.api.nvim_win_set_cursor(rabbit.rab.win, { 3, fullscreen and 0 or #(rabbit.opts.box.vertical) })
     end
 
-    screen.render(rabbit.rabid, buf, rabbit.opts.window.height - 2, {{
-        color = rabbit.opts.color.box,
-        text = {
-            rabbit.opts.box.vertical,
-            (" "):rep(rabbit.opts.window.width - 2),
-            rabbit.opts.box.vertical,
-        }
-    }})
+    if not fullscreen then
+        screen.render(rabbit.rab.win, buf.nr, -1, {{
+            color = rabbit.opts.color.box,
+            text = {
+                rabbit.opts.box.vertical,
+                (" "):rep(buf.w - 2),
+                rabbit.opts.box.vertical,
+            }
+        }})
 
-    screen.render(rabbit.rabid, buf, rabbit.opts.window.height - 1, {{
-        color = rabbit.opts.color.box,
-        text = {
-            rabbit.opts.box.bottom_left,
-            rabbit.opts.box.horizontal:rep(rabbit.opts.window.width - 2),
-            rabbit.opts.box.bottom_right,
-        },
-    }})
-
-    local close_keys = { "<Esc>", "<leader>", "q" }
-    for _, key in ipairs(close_keys) do
-        vim.api.nvim_buf_set_keymap(
-            buf, "n", key, "<cmd>lua require('rabbit').Close()<CR>",
-            { noremap = true, silent = true }
-        )
+        screen.render(rabbit.rab.win, buf.nr, -1, {{
+            color = rabbit.opts.color.box,
+            text = {
+                rabbit.opts.box.bottom_left,
+                rabbit.opts.box.horizontal:rep(buf.w - 2),
+                rabbit.opts.box.bottom_right,
+            },
+        }})
     end
-
-    vim.api.nvim_buf_set_keymap(
-        buf, "n", "<CR>", "<cmd>lua require('rabbit').Select(vim.fn.line('.') - 2)<CR>",
-        { noremap = true, silent = true, }
-    )
-
-    vim.api.nvim_create_autocmd("WinLeave", { buffer = buf, callback = rabbit.Close })
-    vim.api.nvim_create_autocmd("BufLeave", { buffer = buf, callback = rabbit.Close })
-    vim.api.nvim_create_autocmd("WinClosed", { buffer = buf, callback = rabbit.Close })
-    vim.api.nvim_create_autocmd("InsertEnter", { buffer = buf, callback = rabbit.Close })
 end
 
 
 vim.api.nvim_create_autocmd("BufEnter", {
     pattern = {"*"},
     callback = function(evt)
+        if evt.buf == rabbit.rab.buf then
+            return
+        end
+
         local winid = vim.fn.win_getid()
 
         if #(evt.file) > 1 and evt.file:sub(1, 1) ~= "/" then
@@ -335,6 +436,9 @@ vim.api.nvim_create_autocmd("BufEnter", {
 vim.api.nvim_create_autocmd("BufDelete", {
     pattern = {"*"},
     callback = function(evt)
+        if evt.buf == rabbit.rab.buf then
+            return
+        end
         local winid = vim.fn.win_getid()
 
         if rabbit.history[winid] == nil then
@@ -367,6 +471,7 @@ function rabbit.setup(opts)
         opts = { keys = { open = { opts } } }
     end
 
+    -- Spread out the options
     for key, _ in pairs(rabbit.opts) do
         if key ~= "box" and opts[key] ~= nil then
             rabbit.opts[key] = spread(rabbit.opts[key])(opts[key])
@@ -378,6 +483,12 @@ function rabbit.setup(opts)
             rabbit.opts.box = defaults.box[opts.box] or defaults.box.square
         else
             rabbit.opts.box = spread(defaults.box.square)(opts.box)
+        end
+    end
+
+    for key, val in pairs(rabbit.opts.keys) do
+        if type(val) == "string" then
+            rabbit.opts.keys[key] = { val }
         end
     end
 

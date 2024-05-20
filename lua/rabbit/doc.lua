@@ -24,6 +24,8 @@
 ---@field emphasis_width number
 ---@field width number
 ---@field height number
+---@field float RabbitCornerPin | RabbitCornerOffset | false | true
+---@field split "left" | "right" | "above" | "below" | false | true
 --.
 
 
@@ -55,7 +57,7 @@
 
 
 ---@class ScreenSpec
----@field expand? boolean - Place this at the right edge (should only be in last call)
+---@field expand? boolean | string - Place this at the right edge (should only be in last call)
 ---@field color VimHighlight Vim highlight group name
 ---@field text string | table
 ---@field [1] ScreenSpec
@@ -64,10 +66,29 @@
 
 ---@alias winnr integer | nil
 ---@alias bufnr integer | nil
+---@alias hlns integer | nil
 ---@alias filepath string
 --.
 
 
+---@class RabbitWS
+---@field win winnr
+---@field buf bufnr
+---@field ns hlns
+--.
+
 ---@class RabbitHistory
 ---@field [winnr] bufnr[]
+--.
+
+
+---@class RabbitCornerPin
+---@field [1] "bottom" | "top"
+---@field [2] "left" | "right"
+--.
+
+
+---@class RabbitCornerOffset
+---@field top integer
+---@field left integer
 --.
