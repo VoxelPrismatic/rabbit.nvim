@@ -4,11 +4,17 @@
 
 ---@class RabbitColor
 ---@field title VimHighlight Vim highlight group name.
----@field box VimHighlight Vim highlight group name.
+---@field box RabbitBoxColor
 ---@field index VimHighlight Vim highlight group name.
 ---@field dir VimHighlight Vim highlight group name.
 ---@field file VimHighlight Vim highlight group name.
 ---@field noname VimHighlight Vim highlight group name.
+---@field shell VimHighlight Vim highlight group name.
+--.
+
+
+---@class RabbitBoxColor
+---@field [ValidMode] VimHighlight Vim highlight group name.
 --.
 
 
@@ -16,8 +22,13 @@
 ---@field quit string[]
 ---@field confirm string[]
 ---@field open string[]
+---@field to RabbitModeKeys
 --.
 
+
+---@class RabbitModeKeys
+---@field [ValidMode] string
+--.
 
 ---@class RabbitWindow
 ---@field title string
@@ -82,6 +93,12 @@
 --.
 
 
+---@class RabbitReopen
+---@field [winnr] filepath[]
+--.
+
+
+
 ---@class RabbitCornerPin
 ---@field [1] "bottom" | "top"
 ---@field [2] "left" | "right"
@@ -91,4 +108,20 @@
 ---@class RabbitCornerOffset
 ---@field top integer
 ---@field left integer
+--.
+
+
+---@class RabbitContext
+---@field border_color VimHighlight Vim highlight group name
+---@field listing RabbitHistory | RabbitReopen
+---@field mode ValidMode
+--.
+
+
+---@alias ValidMode "history" | "reopen"
+
+
+---@class RabbitListing
+---@field history RabbitHistory
+---@field reopen RabbitReopen
 --.

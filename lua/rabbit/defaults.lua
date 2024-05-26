@@ -46,11 +46,15 @@ local box = {
 local options = {
     color = {
         title = "Statement",
-        box = "Function",
+        box = {
+            history = "Function",
+            reopen = "Macro",
+        },
         index = "Comment",
         dir = "NonText",
         file = "",
         noname = "Error",
+        shell = "MoreMsg",
     },
     box = box.rounded,
     window = {
@@ -68,6 +72,10 @@ local options = {
         quit = { "<Esc>", "q", "<leader>" },
         confirm = { "<CR>" },
         open = { "<leader>r" },
+        to = {
+            history = "r",
+            reopen = "r",
+        },
     },
     paths = {
         min_visible = 3,
