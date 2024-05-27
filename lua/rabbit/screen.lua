@@ -1,15 +1,11 @@
 --- Screen handler for Rabbit
--- @module screen
--- @alias screen
-
+---@class screen
 local screen = {
     ctx = {
-        title = {},
-        middle = {},
-        footer = {},
-        box = {},
-        colors = {},
-        border_color = "Function",
+        title = {}, ---@type ScreenSpec[]
+        middle = {}, ---@type ScreenSpec[]
+        footer = {}, ---@type ScreenSpec[]
+        box = {}, ---@type RabbitBox | {}
         height = 0,
         width = 0,
         bufnr = nil,
@@ -18,7 +14,7 @@ local screen = {
     }
 }
 
---- Undo possible recursion in screen spec
+-- Undo possible recursion in screen spec
 ---@param specs ScreenSpec[]
 ---@param width number
 function screen.helper(specs, width)
@@ -46,9 +42,7 @@ function screen.helper(specs, width)
                 spectext = spectext .. part
             end
         else
-            -- This is handled, as you can see
-            ---@diagnostic disable-next-line: cast-local-type
-            spectext = spec.text
+            spectext = spec.text .. ""
         end
 
         if spec.expand then
@@ -75,9 +69,9 @@ function screen.helper(specs, width)
     }
 end
 
---- Renders to the screen
----@param win winnr
----@param buf bufnr
+-- Renders to the screen
+---@param win integer
+---@param buf integer
 ---@param line number
 ---@param specs ScreenSpec[]
 function screen.render(win, buf, line, specs)
@@ -94,9 +88,34 @@ function screen.render(win, buf, line, specs)
 end
 
 
---- Adds a new border to the screen
----@param win winnr
----@param buf bufnr
+---@param c string | NvimHlKwargs
+---@return vim.api.keyset.highlight
+local function maybe_hl(c)
+    if type(c) == "string" then
+        return { fg = c } ---@type vim.api.keyset.highlight
+    end
+    ---@type vim.api.keyset.highlight
+    return c
+end
+
+
+-- Sets the highlight group names
+---@param colors RabbitOptsColor
+---@param border_color NvimHlKwargs | string
+function screen.set_hl(colors, border_color)
+    vim.api.nvim_set_hl(0, "RabbitBorder", maybe_hl(border_color))
+    vim.api.nvim_set_hl(0, "RabbitDir", maybe_hl(colors.dir))
+    vim.api.nvim_set_hl(0, "RabbitFile", maybe_hl(colors.file))
+    vim.api.nvim_set_hl(0, "RabbitIndex", maybe_hl(colors.index))
+    vim.api.nvim_set_hl(0, "RabbitTitle", maybe_hl(colors.title))
+    vim.api.nvim_set_hl(0, "RabbitTerm", maybe_hl(colors.term))
+    vim.api.nvim_set_hl(0, "RabbitNil", maybe_hl(colors.noname))
+end
+
+
+-- Adds a new border to the screen
+---@param win integer
+---@param buf integer
 ---@param kwargs ScreenSetBorderKwargs
 ---@return false | ScreenSpec
 function screen.set_border(win, buf, kwargs)
@@ -104,19 +123,20 @@ function screen.set_border(win, buf, kwargs)
     local c = (kwargs.width - 2 - #(kwargs.title)) / 2 - 1
     local emph = math.min(c - 4, kwargs.emph_width)
 
+    screen.set_hl(kwargs.colors, kwargs.border_color)
+
     screen.ctx.height = kwargs.height
     screen.ctx.width = kwargs.width
     screen.ctx.bufnr = buf
     screen.ctx.winnr = win
     screen.ctx.box = kwargs.box
-    screen.ctx.colors = kwargs.colors
     screen.fullscreen = fs
 
     if fs then
         screen.ctx.title = {
-            { text = kwargs.box.emphasis(emph), color = kwargs.border_color },
-            { text = " " .. kwargs.title .. " ", color = kwargs.colors.title },
-            { text = kwargs.box.emphasis(emph), color = kwargs.border_color },
+            { text = kwargs.box.emphasis(emph), color = "RabbitBorder" },
+            { text = " " .. kwargs.title .. " ", color = "RabbitTitle" },
+            { text = kwargs.box.emphasis(emph), color = "RabbitBorder" },
         }
         screen.ctx.middle = { fs }
         screen.ctx.footer = { fs }
@@ -124,33 +144,32 @@ function screen.set_border(win, buf, kwargs)
         screen.draw_top()
 
         return fs
-
     end
 
 
     screen.ctx.title = {
         {
-            color = kwargs.border_color,
+            color = "RabbitBorder",
             text = {
                 kwargs.box.top_left,
                 kwargs.box.horizontal:rep(c - emph),
                 kwargs.box.emphasis:rep(emph),
             },
         }, {
-            color = kwargs.colors.title,
+            color = "RabbitTitle",
             text = " " .. kwargs.title .. " ",
         }, {
-            color = kwargs.border_color,
+            color = "RabbitBorder",
             text = kwargs.box.emphasis:rep(emph),
         }, {
-            color = kwargs.border_color,
+            color = "RabbitBorder",
             text = kwargs.box.top_right,
             expand = kwargs.box.horizontal,
         },
     }
 
     screen.ctx.middle = {{
-        color = kwargs.border_color,
+        color = "RabbitBorder",
         text = {
             kwargs.box.vertical,
             (" "):rep(kwargs.width - 2),
@@ -160,10 +179,10 @@ function screen.set_border(win, buf, kwargs)
 
     screen.ctx.footer = {
         {
-            color = kwargs.border_color,
+            color = "RabbitBorder",
             text = kwargs.box.bottom_left,
         }, {
-            color = kwargs.border_color,
+            color = "RabbitBorder",
             text = {
                 " " .. kwargs.mode .. " ",
                 kwargs.box.horizontal:rep(3),
@@ -178,7 +197,7 @@ function screen.set_border(win, buf, kwargs)
     return fs
 end
 
-
+-- Draw the header and first empty line
 function screen.draw_top()
     if #screen.ctx.title == 0 then
         return false
@@ -190,9 +209,11 @@ function screen.draw_top()
     screen.render(screen.ctx.winnr, screen.ctx.bufnr, 1, screen.ctx.middle)
 end
 
+-- Fill the rest of the screen with empty lines
 function screen.draw_bottom()
     local h = #vim.api.nvim_buf_get_lines(screen.ctx.bufnr, 0, -1, false)
 
+    ---@diagnostic disable-next-line: unused-local
     for i = 1, math.max(1, screen.ctx.height - h - 1) do
         screen.render(screen.ctx.winnr, screen.ctx.bufnr, -1, screen.ctx.middle)
     end
@@ -200,22 +221,31 @@ function screen.draw_bottom()
     screen.render(screen.ctx.winnr, screen.ctx.bufnr, -1, screen.ctx.footer)
 end
 
+
+-- Add a buffer entry to the screen.
+-- __NOTE:__ Only place the file/term/dir specs. This
+-- function handles the border and index for you.
+---@param spec ScreenSpec[]
 function screen.add_entry(spec)
     local i = #vim.api.nvim_buf_get_lines(screen.ctx.bufnr, 0, -1, false) - 1
 
     if i < 10 then
-        vim.api.nvim_buf_set_keymap(
-            screen.ctx.bufnr, "n", ("" .. i):sub(-1), "<cmd>lua require('rabbit').Select(" .. i .. ")<CR>",
-            { noremap = true, silent = true }
-        )
+        vim.api.nvim_buf_set_keymap(screen.ctx.bufnr, "n", "" .. i, "", {
+            noremap = true,
+            silent = true,
+            callback = function()
+                require("rabbit").func.select(i)
+            end
+        })
     end
 
+    ---@type ScreenSpec[]
     local to_render = screen.ctx.fullscreen and {} or {
         {
-            color = screen.ctx.border_color,
+            color = "RabbitBorder",
             text = screen.ctx.box.vertical .. " "
         }, {
-            color = screen.ctx.colors.index,
+            color = "RabbitIndex",
             text = (screen.ctx.fullscreen and " " or "") .. (i < 10 and " " or "") .. i .. ". "
         },
     }
@@ -225,7 +255,7 @@ function screen.add_entry(spec)
     end
 
     table.insert(to_render, screen.ctx.fullscreen or {
-        color = screen.ctx.border_color,
+        color = "RabbitBorder",
         text = screen.ctx.box.vertical,
         expand = true
     })
@@ -234,6 +264,9 @@ function screen.add_entry(spec)
 end
 
 
+-- Clear the screen and display a message instead.
+-- This also handles wrapping.
+---@param msg string
 function screen.display_message(msg)
     screen.draw_top()
     local fullscreen = screen.ctx.fullscreen and { text = "", color = "" } or false
@@ -248,25 +281,14 @@ function screen.display_message(msg)
 
     for _, line in ipairs(lines) do
         screen.render(screen.ctx.winnr, screen.ctx.bufnr, -1, {
-            fullscreen or { color = screen.ctx.border_color, text = screen.ctx.box.vertical .. " " },
-            { color = screen.ctx.colors.file, text = line },
-            fullscreen or { color = screen.ctx.border_color, text = screen.ctx.box.vertical, expand = true },
+            fullscreen or { color = "RabbitBorder", text = screen.ctx.box.vertical .. " " },
+            { color = "RabbitFile", text = line },
+            fullscreen or { color = "RabbitBorder", text = screen.ctx.box.vertical, expand = true },
         })
     end
 
     screen.draw_bottom()
 end
 
----@class ScreenSetBorderKwargs
----@field colors RabbitColor
----@field border_color VimHighlight
----@field width integer
----@field height integer
----@field emph_width integer
----@field box RabbitBox
----@field fullscreen boolean
----@field title string
----@field mode string
---.
 
 return screen

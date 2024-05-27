@@ -1,6 +1,7 @@
 # Rabbit.nvim
 <img src="/rabbit.png" width="512" alt="logo"/>
 Quickly jump between buffers
+> It's like Teej's Telescope, but awful, yet so easy to extend
 
 - [Rabbit.nvim](#rabbitnvim)
   - [Why](#why)
@@ -66,85 +67,120 @@ require("rabbit").setup("any keybind")
 
 -- Defaults
 require("rabbit").setup({
-    box = {
-        top_left = "╭",         -- Top left corner of box
-        top_right = "╮",        -- Top right corner of box
-        bottom_left = "╰",      -- Bottom left corner of box
-        bottom_right = "╯",     -- Bottom right corner of box
-        vertical = "│",         -- Vertical wall
-        horizontal = "─",       -- Horizontal ceiling
-        emphasis = "═",         -- Emphasis around title, like `──══ Rabbit ══──`
+    colors = {
+        title = {               -- Title text
+            fg = "#000000",     -- Grabs from Normal
+            bold = true,
+        },
+        index = {               -- Index numbers
+            fg = "#000000",     -- Grabs from Comment
+            italic = true,
+        },
+        dir = {                 -- Folders
+            fg = "#000000",     -- Grabs from NonText
+        },
+        file = {                -- File name
+            fg = "#000000",     -- Grabs from Normal
+        },
+        term = {                -- Addons, eg :term or :Oil
+            fg = "#000000",     -- Grabs from Constant
+            italic = true,
+        },
+        noname = {              -- No buffer name set
+            fg = "#000000",     -- Grabs from Function
+            italic = true,
+        },
     },
 
-    box = "rounded",            -- One of "rounded", "square", "thick", "double"
-
     window = {
-        title = "Rabbit",       -- Window title
-        emphasis_width = 8,     -- How many emphasis characters to put around the title
-        width = 64,             -- How wide the Rabbit window should be
-        height = 24,            -- How tall the Rabbit window should be
-
-        -- When floating, Rabbit will always use the bounds of the current window.
-        -- That means, in split screen, if you open Rabbit in the left window,
-        -- it will (with default options) stick to the bottom right corner.
-        float = {
-            "bottom", "right",  -- Placement of the Rabbit window, "bottom", "top", "left", "right"
+        box = {
+            top_left = "╭",     -- Top left corner of box
+            top_right = "╮",    -- Top right corner of box
+            bottom_left = "╰",  -- Bottom left corner of box
+            bottom_right = "╯", -- Bottom right corner of box
+            vertical = "│",     -- Vertical wall
+            horizontal = "─",   -- Horizontal ceiling
+            emphasis = "═",     -- Emphasis around title, like `──══ Rabbit ══──`
         },
+
+        box_style = "round",    -- One of "round", "square", "thick", "double"
+
+
+        emphasis_width = 8,     -- Eg: `──────══ Rabbit ══──────` or `──══════ Rabbit ══════──`
+
+
+        float = true,           -- Plain `true` means use bottom right corner
+
         float = {
             top = 10000,        -- Top offset in lines
             left = 10000,       -- Left offset in columns
         },
-        float = true,           -- Plain `true` means use bottom right corner
+
+        float = {
+            "bottom",           -- "top" or "bottom;" MUST BE FIRST
+            "right",            -- "left" or "right;" MUST BE LAST
+        },
+
 
         -- When using split screen, it will try to use the width and height provided earlier.
         -- Eg, if splitting left or right, it will use the width provided, but current window height
         -- Eg, if splitting above or below, it will use the height provided, but the current window width
         -- NOTE: `float` must be explicitly set to false in order to split
         -- NOTE: If both `float` and `split` are unset, the Rabbit window will be full screen
-        split = "right",        -- Which side to split the Rabbit window on. "left", "right", "above", "below"
         split = true,           -- Plain `true` means use the right side
+
+        split = "right",        -- One of "left", "right", "above", "below"
+
+        overflow = ":::",       -- String to display when folders overflow
+
+        path_len = 12,          -- How many characters to display in folder name before cutting off
     },
 
-    keys = {
-        quit = {                -- Close Rabbit; don't jump
+    default_keys = {
+        close = {               -- Default bindings to close Rabbit
             "<Esc>",
-            "<leader>",
             "q",
+            "<leader>",
         },
-        confirm = {             -- Jump to selected buffer
-            "<CR>"
+
+        select = {              -- Default bindings to select a buffer
+            "<CR>",
         },
-        open = {                -- Open Rabbit
+
+        open = {                -- Default bindings to open Rabbit
             "<leader>r",
         },
-        to = {
-            history = "r",      -- Change to 'History' panel
-            reopen = "r",       -- Change to 'Reopen' panel
+
+        file_add = {            -- Default bindings to add current buffer to persistent history
+            "a",                -- This would act like Prime's Harpoon, but it isn't implemented yet
+        },
+
+        file_del = {            -- Default bindings to remove current buffer from persistent history
+            "d",                -- This would act like Prime's Harpoon, but it isn't implemented yet
         },
     },
 
-    paths = {
-        min_visible = 3,        -- How many folders to display before cutting off
-        rollover = 12,          -- How many characters to display in folder name before cutting off
-        overflow = ":::",       -- String to display when folders overflow
+    plugin_opts = {             -- Plugin specific options you'd like to set
+        history = {
+            color = "#d7827e",  -- Border color
+            switch = "r",       -- Keybind to switch to the history window from within Rabbit
+            keys = {},          -- See the API for more details
+        },
+        reopen = {
+            color = "#907aa9",  -- Border color
+            switch = "o",       -- Keybind to switch to the reopen window from within Rabbit
+            keys = {},          -- See the API for more details
+        },
     },
 
-    colors = {                  -- These should all be highlight group names
-        title = "Statement",    -- I don't feel like making a color API for this, just :hi and deal with it
-        box = {
-            history = "Function",
-            reopen = "Macro",
-        },
-        index = "Comment",
-        dir = "NonText",
-        file = "",
-        noname = "Error",
-        shell = "MoreMsg",
+    enable = {                  -- Builtin plugins to enable immediately
+        "history",              -- The first plugin loaded will be the default in the event an invalid plugin is requested
+        "reopen",
     },
 })
 ```
 
-### Preview
+### (old) Preview
 
 https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/da149bd5-4f6d-4c83-b6cb-67f1be762e2a
 
@@ -161,9 +197,10 @@ local rabbit = require("rabbit")
 ```lua
 rabbit.Window(mode)             -- Close rabbit window, or open with mode
 rabbit.Switch(mode)             -- Open with mode
-rabbit.Close()                  -- Close rabbit window
-rabbit.Select(n)                -- Select an entry
-rabbit.Setup(opts)              -- Setup options
+rabbit.func.close()             -- Default func to close rabbit window
+rabbit.func.select(n)           -- Default func to select an entry
+rabbit.setup(opts)              -- Setup options
+rabbit.attach(plugin)           -- Attach a custom plugin
 ```
 
 ### Internals
@@ -172,112 +209,69 @@ rabbit.MakeBuf(mode)            -- Create the buffer and window
 rabbit.ShowMessage(msg)         -- Clear and show a message
 rabbit.RelPath(src, target)     -- Return the relative path object for highlighting
 rabbit.ensure_listing(winid)    -- Ensure that the window has a table for all listings
-rabbit.ensure_autocmd(evt)      -- Return winid if it's a valid event. Also calls rabbit.ensure_listing
 ```
 
 ### Create your own Rabbit listing
-Calling `require("rabbit")` returns the following structure:
+All luadoc information is included in [doc.lua](/lua/rabbit/doc.lua)
+
+Here's what your `plugin.lua` should look like:
 ```lua
-{
-    rab = {
-        win = 0,                -- Winnr for the Rabbit window
-        buf = 0,                -- Bufnr for the Rabbit buffer
-        ns = 0,                 -- Highlight namespace (used for CursorLine)
-    },
+local set = require("rabbit.plugins.util")
 
-    usr = {
-        win = 0,                -- Winnr for your window
-        buf = 0,                -- Bufnr for your buffer
-        ns = 0,                 -- Highlight namespace (unused)
+---@type RabbitPlugin
+local M = {
+    color = "#d7827e",  -- Border color
+    name = "history",   -- UNIQUE name of the plugin
+    func = {},          -- Any extra functions you need
+    switch = "r",       -- Keybind to switch to this plugin from within Rabbit
+    listing = {},       -- Empty table for now
+    empty_msg = "There's nowhere to jump to! Get started by opening another buffer",
+    skip_same = true,   -- Whether or not to skip the first entry if it's the same as the current buffer
+    keys = {
+        -- This table should be in func_name:string[] format.
+        -- If you have an entry in `M.func` called 'clear', and
+        -- the default keybind should be `c`, then the following
+        -- should be in the table:
+        clear = { 'c' },
     },
-
-    ctx = {
-        border_color = "",      -- Border color for this session
-        listing = {},           -- Listing for this session
-        mode = "",              -- Mode for this session
-    },
-
-    opts = {},                  -- Options, as detailed above
-
-    listing = {
-        history = {},           -- History listing
-        reopen = {},            -- Reopen listing
-    },
-
-    messages = {
-        history = "",           -- Message displayed when empty
-        reopen = "",            -- Message displayed when empty
-    },
-
-    autocmd = {
-        BufEnter = function(evt) end,
-        BufDelete = function(evt) end,
-    },
+    evt = {},           -- Event handlers. Key names should be the Autocmd name
+    init = function(_) end,  -- Init function, if you need it
 }
+
+---@param evt NvimEvent
+---@param winid integer
+function M.evt.BufEnter(evt, winid)
+    -- Add the current buffer to the top of the listing
+    set.add(M.listing[winid], evt.buf)
+end
+
+
+---@param evt NvimEvent
+---@param winid integer
+function M.evt.BufDelete(evt, winid)
+    -- Remove the current buffer altogether
+    set.sub(M.listing[winid], evt.buf)
+end
+
+return M
 ```
-
-When adding your own plugin, you should add the following details *before* running `rabbit.setup(...)`,
-as setup binds the autocmds globally, which can lead to conflicts if called multiple times.
-
-1. Initialize `rabbit.listing.plugin_name = {}`
-   - This is how Rabbit knows your plugin exists and can be opened.
-2. Create your message strings in `rabbit.messages.plugin_name`
-   - There is a default message just in case.
-3. Set up your autocmds. The function name is the autocmd event, eg BufEnter or BufDelete
-```lua
--- Default autocmds, so you make your own.
-function table.set_subtract(t1, e)
-    for i, v in ipairs(t1) do
-        if v == e then
-            table.remove(t1, i)
-            return true
-        end
-    end
-    return false
-end
-
-function table.set_insert(t1, e)
-    table.set_subtract(t1, e)
-    table.insert(t1, 1, e)
-end
-
-
-function rabbit.autocmd.BufEnter(evt)
-    -- Grab current winid, and return if it's rabbit
-    local winid = rabbit.ensure_autocmd(evt)
-    if winid == nil then
-        return
-    end
-
-    -- Put current buffer ID at top of history
-    table.set_insert(rabbit.listing.history[winid], evt.buf)
-
-    -- Remove if reopened
-    table.set_subtract(rabbit.listing.reopen[winid], evt.file)
-end
-
-
-function rabbit.autocmd.BufDelete(evt)
-    -- Grab current winid, and return if it's rabbit
-    local winid = rabbit.ensure_autocmd(evt)
-    if winid == nil then
-        return
-    end
-
-    -- Remove current buffer ID from history
-    local exists = table.set_subtract(rabbit.listing.history[winid], evt.buf)
-
-    -- Only add to reopen if it's not blank and not a plugin (oil, shell, etc)
-    if exists and #evt.file > 0 and evt.file:sub(1, 1) ~= "/" then
-        table.set_insert(rabbit.listing.reopen[winid], evt.file)
-    end
-end
-```
-
-**NOTE:** You can use buffer IDs or file names in your listing table. The first listing will only
-be removed if the filename or buffer ID matches. Do NOT store buffer IDs on BufDelete, as the
-buffer ID no longer exist and an error will be thrown.
-
-Buffers without a filename will be shown as `#nil ID`, where ID is the buffer ID.
-
-Shell buffers, like Term will be shown like `#bash ID` or `#zsh ID`
+Important notes:
+1. If `M.listing[0]` is not `nil`, then Rabbit treats this as a 'global' plugin instead of local per window.
+   Even if you store information in `M.listing[winid]`, Rabbit will only present `M.listing[0]` to the end user.
+2. Plugin names MUST be unique. If you have two plugins with the same name, the most recent call will override it.
+3. You **MUST** run `rabbit.setup()` before calling `rabbit.attach(plugin)`.
+4. The user's keybinds have priority, but your funcs have priority over Rabbit's defaults. Please try to use the same
+   names so the user's keybinds work as expected.
+5. You may have noticed the little `require("rabbit.plugins.util")` at the top. That's there to provide extremely basic
+   set-like functionality, streamlining the plugin creation process.
+6. Your listing can hold both Buffer IDs and file paths. It's best practice to use the same type throughout the table.
+   - Invalid Buffer IDs are automatically ignored
+   - BufUnload and BufDelete events will refresh the rabbit window automatically
+7. When a new window is opened or closed, `M.listing[winid]` is automatically initialized for you, and winid is provided
+   to your `evt` functions.
+8. `func` functions have one parameter: the current selection index.
+   - You should use `require("rabbit").ctx.listing` to get the listing displayed to the user
+9. Only `BufEnter` and `BufDelete` events are supported out of the box. Should you want your own autocmd, just set the
+   callback to `require("rabbit").autocmd` This should be set up in your `init` function, which is called whenever the
+   plugin is attached to Rabbit
+10. The default `file_add` and `file_del` functions are not implemented yet. Stay tuned.

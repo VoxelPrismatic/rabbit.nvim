@@ -1,6 +1,6 @@
+---@type DefaultRabbitBox
 local box = {
-    ---@type RabbitBox
-    rounded = {
+    round = {
         top_left = "╭",
         top_right = "╮",
         bottom_left = "╰",
@@ -9,7 +9,6 @@ local box = {
         horizontal = "─",
         emphasis = "═",
     },
-    ---@type RabbitBox
     square = {
         top_left = "┌",
         top_right = "┐",
@@ -19,7 +18,6 @@ local box = {
         horizontal = "─",
         emphasis = "═",
     },
-    ---@type RabbitBox
     thick = {
         top_left = "┏",
         top_right = "┓",
@@ -29,7 +27,6 @@ local box = {
         horizontal = "━",
         emphasis = "═",
     },
-    ---@type RabbitBox
     double = {
         top_left = "╔",
         top_right = "╗",
@@ -42,22 +39,23 @@ local box = {
 }
 
 
+local function grab_color(name)
+    local details = vim.api.nvim_get_hl(0, { name = name })
+    return string.format("#%06x", details.fg)
+end
+
 ---@type RabbitOptions
 local options = {
-    color = {
-        title = "Statement",
-        box = {
-            history = "Function",
-            reopen = "Macro",
-        },
-        index = "Comment",
-        dir = "NonText",
-        file = "",
-        noname = "Error",
-        shell = "MoreMsg",
+    colors = {
+        title = { fg = grab_color("Normal"), bold = true },
+        index = { fg = grab_color("Comment"), italic = true },
+        dir = { fg = grab_color("NonText") },
+        file = { fg = grab_color("Normal") },
+        term = { fg = grab_color("Constant"), italic = true },
+        noname = { fg = grab_color("Function"), italic = true },
     },
-    box = box.rounded,
     window = {
+        box = box.round,
         title = "Rabbit",
         emphasis_width = 8,
         width = 64,
@@ -67,20 +65,20 @@ local options = {
             "right",
         },
         split = "right",
-    },
-    keys = {
-        quit = { "<Esc>", "q", "<leader>" },
-        confirm = { "<CR>" },
-        open = { "<leader>r" },
-        to = {
-            history = "r",
-            reopen = "r",
-        },
-    },
-    paths = {
-        min_visible = 3,
-        rollover = 12,
         overflow = ":::",
+        path_len = 12,
+    },
+    default_keys = {
+        close = { "<Esc>", "q", "<leader>" },
+        select = { "<CR>" },
+        open = { "<leader>r" },
+        file_add = { "a" },
+        file_del = { "x" },
+    },
+    plugin_opts = {},
+    enable = {
+        "history",
+        "reopen",
     },
 }
 
