@@ -1,6 +1,7 @@
 # Rabbit.nvim
 <img src="/rabbit.png" width="512" alt="logo"/>
 Quickly jump between buffers
+
 > It's like Teej's Telescope, but awful, yet so easy to extend
 
 - [Rabbit.nvim](#rabbitnvim)
