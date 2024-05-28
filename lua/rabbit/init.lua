@@ -130,7 +130,7 @@ function rabbit.RelPath(source, target)
         relative = fall .. relative
     end
     local r, count = string.gsub(relative, "%.%./", "")
-    if count > 3 then
+    if count >= 3 then
         relative = fall .. r
     elseif count > 1 then
         relative = ("."):rep(count + 1) .. "/" .. r
@@ -154,6 +154,11 @@ function rabbit.func.close(_)
             vim.api.nvim_tabpage_set_win(0, rabbit.user.win) -- For splits
         end
         rabbit.rabbit.win = nil
+    end
+
+    if rabbit.rabbit.buf ~= nil then
+        vim.api.nvim_buf_delete(rabbit.rabbit.buf, { force = true })
+        rabbit.rabbit.buf = nil
     end
 
     if rabbit.user.win == nil then
@@ -409,6 +414,10 @@ function rabbit.Legend(mode)
         return
     end
 
+    if mode == nil then
+        mode = rabbit.ctx.plugin.name
+    end
+
     screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
         { color = "RabbitTitle", text = " Switch:" },
     })
@@ -544,6 +553,11 @@ vim.api.nvim_create_autocmd("WinClosed", {
     end,
 })
 
+
+vim.api.nvim_create_autocmd("WinResized", {
+    pattern = {"*"},
+    callback = rabbit.Redraw
+})
 
 ---@param opts RabbitOptions | string
 function rabbit.setup(opts)

@@ -1,8 +1,11 @@
-# Rabbit.nvim
-<img src="/rabbit.png" width="512" alt="logo"/>
-Quickly jump between buffers
-
-> It's like Teej's Telescope, but awful, yet so easy to extend
+<div align="center">
+    <img src="/rabbit.png" width="368" alt="logo"/>
+    <h2 id="rabbitnvim">Jump between buffers faster than ever before</h2>
+    <img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FVoxelPrismatic%2Frabbit.nvim%2Freleases%2Flatest&query=%24.tag_name&style=flat&label=Rabbit&labelColor=white&logo=vowpalwabbit&logoColor=black"/>
+    <img src="https://img.shields.io/badge/Neovim-v0.10.0-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"/>
+    <img src="https://img.shields.io/github/downloads/voxelprismatic/rabbit.nvim/total?style=flat&logo=github&logoColor=black&label=Downloads&labelColor=white"/>
+    <hr/>
+</div>
 
 - [Rabbit.nvim](#rabbitnvim)
   - [Why](#why)
@@ -10,11 +13,14 @@ Quickly jump between buffers
   - [Usage](#usage)
   - [Configuration](#configuration)
   - [Preview](#preview)
+- [Plugins](#plugins)
+  - [![history][rabbit.history]](#history)
+  - [![reopen][rabbit.reopen]](#reopen)
+  - [![oxide][rabbit.oxide]](#oxide)
 - [API](#api)
   - [Using Rabbit](#using-rabbit)
   - [Internals](#internals)
   - [Create your own Rabbit listing](#create-your-own-rabbit-listing)
-
 
 ---
 
@@ -25,15 +31,36 @@ details.
 Unlike other tools, this remembers history *per window*, so you can really jump
 quickly.
 
-### Why
-1. [theprimeagen/harpoon](https://github.com/theprimeagen/harpoon) requires explicit
-adding of files, which is too much effort
-2. Telescope:buffers doesn't remember history. You still have to remember what your
-last file was
-3. Same applies with `:ls` and `:b`
+## Why
+### [Harpoon][harpoon2]
+- Harpoon requires explicit adding of files; too much effort
+  - Rabbit:Oxide remembers your most frequently accessed files in your current directory
 
+### [Telescope][tj_tele]
+- Telescope:Buffers doesn't order by last BufEnter
+  - Rabbit:History lists in order of most recent BufEnter
+  - Rabbit:History does NOT list the file you're currently in, meaning a lightning-quick motion,
+    `<leader>r` `<CR>` returns you to whence you came.
 
-### Install
+### `:ls` and `:b`
+- Too much typing and looking and processing
+  - That's what this plugin is designed to solve
+
+### And this too...
+None of these solutions actually support split screen. You must remember all the details
+yourself.
+
+- Did you use [Lspsaga] to open a type, func, or variable declaration?
+  - One quick `‣r↵` later, you're back! Only three key presses!
+- Are you referencing documentation but you don't like split screen?
+  - Three key presses is still better than `:b #`
+  - What happens when you frequently switch between more than two buffers? `:b #` doesn't cut it
+
+[harpoon2]: https://github.com/theprimeagen/harpoon/tree/harpoon2
+[tj_tele]: https://github.com/nvim-telescope/telescope.nvim
+[lspsaga]: https://nvimdev.github.io/lspsaga/
+
+## Install
 Lazy:
 ```lua
 return {
@@ -44,12 +71,8 @@ return {
 }
 ```
 
-### Usage
+## Usage
 Just run your keybind! (or `:Rabbit {{mode}}`)
-
-Currently available modes:
-- `history` - Current window's buffer history
-- `reopen` - Current window's recently closed buffers
 
 With Rabbit open, you can hit a number 1-9 to jump to that buffer. You can
 also move your cursor down to a specific line and hit enter to jump to that buffer.
@@ -57,11 +80,9 @@ also move your cursor down to a specific line and hit enter to jump to that buff
 If you hit `<CR>` immediately after launching Rabbit, it'll open your previous buffer.
 You can hop back and forth between buffers very quickly, almost like a rabbit...
 
-By default, you can switch to the opposite mode mode by pressing `r`
+If you scroll down on the Rabbit window, you'll see all the keybinds available.
 
-
-
-### Configuration
+## Configuration
 ```lua
 -- Use all the below defaults, but set a custom keybind
 require("rabbit").setup("any keybind")
@@ -70,30 +91,32 @@ require("rabbit").setup("any keybind")
 require("rabbit").setup({
     colors = {
         title = {               -- Title text
-            fg = "#000000",     -- Grabs from Normal
+            fg = "#000000",     -- Grabs from :hi Normal
             bold = true,
         },
         index = {               -- Index numbers
-            fg = "#000000",     -- Grabs from Comment
+            fg = "#000000",     -- Grabs from :hi Comment
             italic = true,
         },
         dir = {                 -- Folders
-            fg = "#000000",     -- Grabs from NonText
+            fg = "#000000",     -- Grabs from :hi NonText
         },
         file = {                -- File name
-            fg = "#000000",     -- Grabs from Normal
+            fg = "#000000",     -- Grabs from :hi Normal
         },
         term = {                -- Addons, eg :term or :Oil
-            fg = "#000000",     -- Grabs from Constant
+            fg = "#000000",     -- Grabs from :hi Constant
             italic = true,
         },
         noname = {              -- No buffer name set
-            fg = "#000000",     -- Grabs from Function
+            fg = "#000000",     -- Grabs from :hi Function
             italic = true,
         },
     },
 
     window = {
+        -- If `box_style` is specified, it will overwrite anything set in `box`
+        box_style = "round",    -- One of "round", "square", "thick", "double"
         box = {
             top_left = "╭",     -- Top left corner of box
             top_right = "╮",    -- Top right corner of box
@@ -104,13 +127,13 @@ require("rabbit").setup({
             emphasis = "═",     -- Emphasis around title, like `──══ Rabbit ══──`
         },
 
-        box_style = "round",    -- One of "round", "square", "thick", "double"
-
+        width = 64,             -- Width, in columns
+        height = 24,            -- Height, in rows
 
         -- Where the plugin name should be displayed.
-        -- - "bottom" means in the bottom left corner, but not displayed in full screen
-        -- - "title" means next to rabbit, eg `──══ Rabbit History ══──`
-        -- - "hide" means to not display it at all
+        -- * "bottom" means in the bottom left corner, but not displayed in full screen
+        -- * "title" means next to rabbit, eg `──══ Rabbit History ══──`
+        -- * "hide" means to not display it at all
         plugin_name_position = "bottom",
 
         title = "Rabbit",       -- Title text, eg: `──══ Rabbit ══──` or `──══ NotHarpoon ══──`
@@ -119,12 +142,10 @@ require("rabbit").setup({
 
 
         float = true,           -- Plain `true` means use bottom right corner
-
         float = {
             top = 10000,        -- Top offset in lines
             left = 10000,       -- Left offset in columns
         },
-
         float = {
             "bottom",           -- "top" or "bottom;" MUST BE FIRST
             "right",            -- "left" or "right;" MUST BE LAST
@@ -132,16 +153,14 @@ require("rabbit").setup({
 
 
         -- When using split screen, it will try to use the width and height provided earlier.
-        -- Eg, if splitting left or right, it will use the width provided, but current window height
-        -- Eg, if splitting above or below, it will use the height provided, but the current window width
+        -- Eg, when splitting left or right: height = 100%; width = `width`
+        -- Eg, when splitting above or below: height = `height`; width = 100%
         -- NOTE: `float` must be explicitly set to false in order to split
-        -- NOTE: If both `float` and `split` are unset, the Rabbit window will be full screen
+        -- NOTE: If both `float` and `split` are false, a new buffer will open, "fullscreen"
         split = true,           -- Plain `true` means use the right side
-
         split = "right",        -- One of "left", "right", "above", "below"
 
         overflow = ":::",       -- String to display when folders overflow
-
         path_len = 12,          -- How many characters to display in folder name before cutting off
     },
 
@@ -192,9 +211,26 @@ require("rabbit").setup({
 })
 ```
 
-### (old) Preview
-
+## Preview
+very old preview, but i cant find a keyboard overlay for wayland
 https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/da149bd5-4f6d-4c83-b6cb-67f1be762e2a
+
+---
+
+# Plugins
+![history][rabbit.history] ![reopen][rabbit.reopen] ![oxide][rabbit.oxide]
+### History
+Sorts all the buffers this window has visited, in order of most recent visit
+
+### Reopen
+Sorts all the buffers this window has closed, in order of most recent close
+
+### Oxide
+Like zoxide, but saves how often you open a particular file from your current directory
+
+[rabbit.history]: https://img.shields.io/badge/History-v1-yellow?style=flat&labelColor=white
+[rabbit.reopen]: https://img.shields.io/badge/Reopen-v1-yellow?style=flat&labelColor=white
+[rabbit.oxide]: https://img.shields.io/badge/Oxide-v2-yellow?style=flat&labelColor=white
 
 ---
 
@@ -205,7 +241,7 @@ local rabbit = require("rabbit")
 
 ### Using Rabbit
 
-`mode` is any of the available modes. `history` and `reopen` are included.
+`mode` is any of the available modes.
 ```lua
 rabbit.Window(mode)             -- Close rabbit window, or open with mode
 rabbit.Switch(mode)             -- Open with mode
@@ -213,6 +249,7 @@ rabbit.func.close()             -- Default func to close rabbit window
 rabbit.func.select(n)           -- Default func to select an entry
 rabbit.setup(opts)              -- Setup options
 rabbit.attach(plugin)           -- Attach a custom plugin
+rabbit.Redraw()                 -- Like rabbit.Switch(mode), but recovers cursor position
 ```
 
 ### Internals
@@ -221,6 +258,8 @@ rabbit.MakeBuf(mode)            -- Create the buffer and window
 rabbit.ShowMessage(msg)         -- Clear and show a message
 rabbit.RelPath(src, target)     -- Return the relative path object for highlighting
 rabbit.ensure_listing(winid)    -- Ensure that the window has a table for all listings
+rabbit.Legend()                 -- Appends the keymap legened, and sets keymaps]
+rabbit.autocmd(evt)             -- Calls ensure_listing, and runs all relevant plugin events
 ```
 
 ### Create your own Rabbit listing
@@ -232,11 +271,11 @@ Here's what your `plugin.lua` should look like:
 ```lua
 local set = require("rabbit.plugins.util")
 -- This module provides basic set-like functionality, including:
--- - Find the index of an element
--- - Remove all instances of an element
--- - Insert an element at the top of the table, while deleting all other instances
--- - Save a table to a file
--- - Recover a table from a file
+-- * Find the index of an element
+-- * Remove all instances of an element
+-- * Insert an element at the top of the table, while deleting all other instances
+-- * Save a table to a file
+-- * Recover a table from a file
 
 ---@type RabbitPlugin
 local M = {
@@ -270,7 +309,6 @@ local M = {
 
     skip_same = true,   -- Whether or not to skip the first entry if it's the same as the current buffer
 
-
     keys = {
         -- This table should be in func_name:string[] format. If you have an entry in `M.func` called 'clear', and
         -- the default keybind should be `c`, then the following should be in the table:
@@ -278,7 +316,6 @@ local M = {
 
         -- Keep in mind that if the user also has a keybind set for `clear`, it will take priority over this one.
     },
-
 
     evt = {
         -- Event handlers. Key names should be the Autocmd name, like `BufEnter` or `BufDelete`. Only these two
@@ -300,7 +337,6 @@ local M = {
     -- is called, the file already exists and is set to an empty table. Use `nil` or do not set at all if you
     -- do not plan on using persistent memory.
     memory = nil,
-
 }
 
 ---@param evt NvimEvent
