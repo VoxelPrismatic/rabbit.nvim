@@ -88,6 +88,16 @@ function screen.render(win, buf, line, specs)
 end
 
 
+-- Places a newline before the specs
+---@param win integer
+---@param buf integer
+---@param spec ScreenSpec[]
+function screen.newline(win, buf, spec)
+    screen.render(win, buf, -1, { color = "RabbitBorder", text = " " })
+    screen.render(win, buf, -1, spec)
+end
+
+
 ---@param c string | NvimHlKwargs
 ---@return vim.api.keyset.highlight
 local function maybe_hl(c)
@@ -184,7 +194,7 @@ function screen.set_border(win, buf, kwargs)
         }, {
             color = "RabbitBorder",
             text = {
-                " " .. kwargs.mode .. " ",
+                kwargs.mode,
                 kwargs.box.horizontal:rep(3),
                 kwargs.box.bottom_right,
             },

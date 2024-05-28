@@ -57,6 +57,7 @@ local options = {
     window = {
         box = box.round,
         title = "Rabbit",
+        plugin_name_position = "bottom",
         emphasis_width = 8,
         width = 64,
         height = 24,
@@ -73,12 +74,13 @@ local options = {
         select = { "<CR>" },
         open = { "<leader>r" },
         file_add = { "a" },
-        file_del = { "x" },
+        file_del = { "<Del>" },
     },
     plugin_opts = {},
     enable = {
         "history",
         "reopen",
+        "oxide",
     },
 }
 

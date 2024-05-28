@@ -1,4 +1,3 @@
-
 local set = require("rabbit.plugins.util")
 
 ---@type RabbitPlugin

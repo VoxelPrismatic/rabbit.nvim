@@ -2,13 +2,6 @@ local screen = require("rabbit.screen")
 local defaults = require("rabbit.defaults")
 local set = require("rabbit.plugins.util")
 
-
-local builtins = {
-    harpoon = require("rabbit.plugins.harpoon"),
-    history = require("rabbit.plugins.history"),
-    reopen = require("rabbit.plugins.reopen"),
-}
-
 ---@class RabbitInstance
 local rabbit = {
     rabbit = {
@@ -22,14 +15,46 @@ local rabbit = {
     user = {
         win = nil,
         buf = nil,
-        ns = 0,
+        ns = -1,
     },
 
     opts = defaults.options,
 
     func = {},
 
+    default = "",
     plugins = {},
+
+    compat = {
+        path = "/",
+        warn = false,
+        __name__ = "<nil>",
+        __has__ = {},
+    },
+}
+
+---@type RabbitCompat
+local compat = {
+    windows = {
+        path = "\\",
+        warn = true,
+        __name__ = "Windows",
+        __has__ = { "win32", "win64" },
+    },
+
+    linux = {
+        path = "/",
+        warn = false,
+        __name__ = "Linux",
+        __has__ = { "linux" },
+    },
+
+    macos = {
+        path = "/",
+        warn = false,
+        __name__ = "macOS",
+        __has__ = { "macos" },
+    },
 }
 
 
@@ -40,6 +65,7 @@ local DEFAULT_MSG = "There's nothing to display, and the dev forgot to add a mes
 ---@param text string
 function rabbit.ShowMessage(text)
     screen.display_message(text)
+    rabbit.Legend(rabbit.ctx.plugin.name, true)
 end
 
 
@@ -53,8 +79,8 @@ function rabbit.RelPath(source, target)
     target = vim.fn.fnamemodify(target, ":p")
 
     -- Split by folder
-    local source_parts = vim.split(source, "/")
-    local target_parts = vim.split(target, "/")
+    local source_parts = vim.split(source, rabbit.compat.path)
+    local target_parts = vim.split(target, rabbit.compat.path)
 
     -- Get common path
     local common = 0
@@ -102,23 +128,17 @@ function rabbit.RelPath(source, target)
         end
 
         relative = fall .. relative
-    elseif relative:sub(-#("../")) == "../" then
-        local n = 0
-        while relative:sub(1, #("../")) == "../" do
-            relative = relative:sub(#("../") + 1)
-            n = n + 1
-        end
-
-        if n <= 2 then
-            relative = ("."):rep(n + 1) .. "/"
-        else
-            relative = fall
-        end
+    end
+    local r, count = string.gsub(relative, "%.%./", "")
+    if count > 3 then
+        relative = fall .. r
+    elseif count > 1 then
+        relative = ("."):rep(count + 1) .. "/" .. r
     end
 
 
     return {
-        dir = relative,
+        dir = relative ~= "/" and relative or "",
         name = filename,
     }
 end
@@ -190,12 +210,18 @@ function rabbit.MakeBuf(mode)
 
 -- Prepare context to save time later
     if mode == nil or rabbit.plugins[mode] == nil then
-        local k = vim.tbl_keys(rabbit.plugins)
-        mode = rabbit.plugins[k[1]].name
+        mode = rabbit.default
     end
 
     rabbit.ctx.plugin = rabbit.plugins[mode]
-    rabbit.ctx.listing = vim.tbl_deep_extend("force", rabbit.ctx.plugin.listing[rabbit.user.win], {})
+
+-- In case the plugin has a listing it must prepare
+    if rabbit.ctx.plugin.evt.RabbitEnter ~= nil then
+        rabbit.ctx.plugin.evt.RabbitEnter()
+    end
+
+    local ls = rabbit.ctx.plugin.listing[0] or rabbit.ctx.plugin.listing[rabbit.user.win]
+    rabbit.ctx.listing = vim.tbl_deep_extend("force", ls, {})   -- Copy
 
     if #rabbit.ctx.listing > 0 and rabbit.ctx.plugin.skip_same then
         if rabbit.ctx.listing[1] == rabbit.user.buf then
@@ -248,44 +274,7 @@ function rabbit.MakeBuf(mode)
         vim.api.nvim_win_set_buf(rabbit.user.win, buf)
     end
 
--- Set key maps & auto commands
-    local all_funcs = vim.tbl_keys(rabbit.opts.default_keys)
-    set.sub(all_funcs, "open")
-    for k, _ in pairs(rabbit.ctx.plugin.keys) do
-        set.add(all_funcs, k)
-    end
-
-    for _, fn in ipairs(all_funcs) do
-        local keys = rabbit.opts.default_keys[fn] or rabbit.ctx.plugin.keys[fn] or {}
-        for _, key in ipairs(keys) do
-            vim.api.nvim_buf_set_keymap(buf, "n", key, "", {
-                noremap = true,
-                silent = true,
-                callback = function()
-                    local callback = rabbit.ctx.plugin.func[fn] or rabbit.func[fn]
-                    if callback ~= nil then
-                        callback(vim.fn.line(".") - 2)
-                    else
-                        vim.print("WARNING: Rabbit callback `" .. mode .. ":" .. fn .. "` not found")
-                    end
-                end
-            })
-        end
-    end
-
-    for k, _ in pairs(rabbit.plugins) do
-        local p = rabbit.plugins[k] ---@type RabbitPlugin
-        if p.name ~= mode then
-            vim.api.nvim_buf_set_keymap(buf, "n", p.switch, "", {
-                noremap = true,
-                silent = true,
-                callback = function()
-                    rabbit.Switch(p.name)
-                end
-            })
-        end
-    end
-
+-- Set autocmds
     vim.api.nvim_create_autocmd("WinLeave", { buffer = buf, callback = rabbit.func.close })
     vim.api.nvim_create_autocmd("BufLeave", { buffer = buf, callback = rabbit.func.close })
     vim.api.nvim_create_autocmd("WinClosed", { buffer = buf, callback = rabbit.func.close })
@@ -296,10 +285,11 @@ function rabbit.MakeBuf(mode)
         local len = #rabbit.ctx.listing
         local line = vim.fn.line(".") - 1
         local e = rabbit.ctx.listing[math.max(1, line - 2)]
-        local valid = vim.api.nvim_buf_is_valid(e or 0)
-        if not valid then
-            rabbit.Switch(rabbit.ctx.plugin.name)
-            return
+        if type(e) == "number" then
+            local valid = vim.api.nvim_buf_is_valid(e or 0)
+            if not valid then
+                return rabbit.Redraw()
+            end
         end
         if line - 1 > 0 and line - 1 <= len then
             local fullscreen = rabbit.rabbit.win == rabbit.user.win
@@ -311,6 +301,15 @@ function rabbit.MakeBuf(mode)
         end
     end})
 
+    local b_title = rabbit.opts.window.title
+    local b_mode = ""
+
+    if rabbit.opts.window.plugin_name_position == "bottom" then
+        b_mode = " " .. mode .. " "
+    elseif rabbit.opts.window.plugin_name_position == "title" then
+        b_title = b_title .. " " .. (mode:sub(1, 1):upper()) .. (mode:sub(2):lower())
+    end
+
     ---@type ScreenSetBorderKwargs
     local b_kwargs = {
         colors = rabbit.opts.colors,
@@ -320,8 +319,8 @@ function rabbit.MakeBuf(mode)
         emph_width = rabbit.opts.window.emphasis_width,
         box = rabbit.opts.window.box,
         fullscreen = rabbit.user.win == rabbit.rabbit.win,
-        title = rabbit.opts.window.title,
-        mode = mode,
+        title = b_title,
+        mode = b_mode,
     }
 
     return {
@@ -351,7 +350,7 @@ function rabbit.Window(mode)
 
     local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, rabbit.user.buf)
     if not has_name or buf_path:sub(1, 1) ~= "/" then
-        buf_path = ""
+        buf_path = vim.fn.getcwd() .. "rabbit.txt"
     end
 
     local i = 1
@@ -373,7 +372,6 @@ function rabbit.Window(mode)
         else
             break
         end
-
 
         if target == "" then
             screen.add_entry({
@@ -399,24 +397,96 @@ function rabbit.Window(mode)
     end
 
     screen.draw_bottom()
+    rabbit.Legend(mode, false)
     vim.api.nvim_win_set_cursor(rabbit.rabbit.win, { 3, buf.fs and 0 or #(rabbit.opts.window.box.vertical) })
 end
 
 
+-- Renders a little keymap legend below the visible area
+---@param mode string
+---@param readonly boolean
+function rabbit.Legend(mode, readonly)
+    if rabbit.rabbit.win == nil then
+        return
+    end
+
+    local all_funcs = vim.tbl_keys(rabbit.opts.default_keys)
+    set.sub(all_funcs, "open")
+    for k, _ in pairs(rabbit.ctx.plugin.keys) do
+        set.add(all_funcs, k)
+    end
+
+    if #vim.tbl_keys(all_funcs) > 0 and not readonly then
+        screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
+            { color = "RabbitTitle", text = " Keys:" },
+        })
+        for _, k in ipairs(all_funcs) do
+            local keys = rabbit.opts.default_keys[k] or rabbit.ctx.plugin.keys[k] or {}
+            local cb = rabbit.ctx.plugin.func[k] or rabbit.func[k]
+            if cb == nil then
+                goto continue
+            end
+            screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+                { color = "RabbitPlugin_" .. mode, text = "   " .. k },
+            })
+            for _, key in ipairs(keys) do
+                screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+                    { color = "RabbitFile", text = "   - " .. key },
+                })
+                vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", key, "", {
+                    noremap = true, silent = true,
+                    callback = function()
+                        local callback = rabbit.ctx.plugin.func[k] or rabbit.func[k]
+                        callback(vim.fn.line(".") - 2)
+                    end
+                })
+            end
+            ::continue::
+        end
+    end
+
+    screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
+        { color = "RabbitTitle", text = " Switch:" },
+    })
+
+    for k, _ in pairs(rabbit.plugins) do
+        local v = rabbit.plugins[k] ---@type RabbitPlugin
+        if k ~= mode then
+            vim.api.nvim_set_hl(0, "RabbitPlugin_" .. v.name, { fg = v.color, bold = true })
+            vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", v.switch, "", {
+                noremap = true,
+                silent = true,
+                callback = function()
+                    rabbit.Switch(v.name)
+                end
+            })
+            screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+                { color = "RabbitFile", text = "   " .. v.switch .. " - ", },
+                { color = "RabbitPlugin_" .. k, text = v.name, },
+            })
+        end
+    end
+end
+
+
+-- Redraws the window
+function rabbit.Redraw()
+    if rabbit.rabbit.win == nil then
+        return
+    end
+    local cur = vim.api.nvim_win_get_cursor(rabbit.rabbit.win)
+    rabbit.Switch(rabbit.ctx.plugin.name)
+    vim.api.nvim_win_set_cursor(rabbit.rabbit.win, cur)
+end
+
+
+-- Switches the window
+---@param mode string
 function rabbit.Switch(mode)
     rabbit.func.close()
     rabbit.Window(mode)
 end
 
-
-function rabbit.ensure_autocmd(evt)
-    if evt.buf == rabbit.rabbit.buf then
-        return nil
-    end
-    local winid = vim.fn.win_getid()
-    rabbit.ensure_listing(winid)
-    return winid
-end
 
 ---@param evt NvimEvent
 function rabbit.autocmd(evt)
@@ -434,29 +504,33 @@ function rabbit.autocmd(evt)
     end
 end
 
+
 vim.api.nvim_create_autocmd("BufEnter", {
     pattern = {"*"},
     callback = rabbit.autocmd
 })
+
 
 vim.api.nvim_create_autocmd("BufDelete", {
     pattern = {"*"},
     callback = function(evt)
         rabbit.autocmd(evt)
         if rabbit.rabbit.win ~= nil then
-            rabbit.Switch(rabbit.ctx.plugin.name)
+            rabbit.Redraw()
         end
     end
 })
+
 
 vim.api.nvim_create_autocmd("BufUnload", {
     pattern = {"*"},
     callback = function(_)
         if rabbit.rabbit.win ~= nil then
-            rabbit.Switch(rabbit.ctx.plugin.name)
+            rabbit.Redraw()
         end
     end
 })
+
 
 vim.api.nvim_create_autocmd("WinClosed", {
     pattern = {"*"},
@@ -471,6 +545,7 @@ vim.api.nvim_create_autocmd("WinClosed", {
 
 ---@param opts RabbitOptions | string
 function rabbit.setup(opts)
+    rabbit.user.ns = 0
     rabbit.ensure_listing(vim.fn.win_getid())
     vim.api.nvim_create_user_command("Rabbit", function(o) rabbit.Switch(o.fargs[1]) end, {
         nargs = "?",
@@ -492,9 +567,7 @@ function rabbit.setup(opts)
     end
 
     for _, n in ipairs(rabbit.opts.enable) do
-        if builtins[n] ~= nil then
-            rabbit.attach(builtins[n])
-        end
+        rabbit.attach(n)
     end
 
     for _, key in ipairs(rabbit.opts.default_keys.open) do
@@ -504,16 +577,64 @@ function rabbit.setup(opts)
             silent = true
         })
     end
+
+    for _, v in pairs(compat) do
+        for _, o in ipairs(v.__has__) do
+            if vim.fn.has(o) == 1 then
+                rabbit.compat = v
+                if v.warn then
+                    vim.cmd("echohl WarningMsg")
+                    vim.cmd('echo "WARNING: "')
+                    vim.cmd("echohl None")
+                    vim.cmd('echon "Rabbit is not supported on ' .. v.__name__ .. '."')
+                    vim.print("If you experience any problems, please open a ticket:")
+                    vim.print("https://github.com/VoxelPrismatic/rabbit.nvim/issues")
+                end
+                return
+            end
+        end
+    end
 end
 
----@param plugin RabbitPlugin
+---@param plugin RabbitPlugin | RabbitBuiltin
 function rabbit.attach(plugin)
+    if rabbit.user.ns ~= 0 then
+        error("Call rabbit.setup() before attaching plugins")
+    end
+    if type(plugin) == "string" then
+        local status, p = pcall(require, "rabbit.plugins." .. plugin)
+        if not status then
+            vim.print("WARNING: Rabbit plugin `" .. plugin .. "` not found")
+            return
+        end
+        plugin = p
+    end
     local opts = rabbit.opts.plugin_opts[plugin.name] or {} ---@type RabbitPluginOpts
     plugin.keys = vim.tbl_extend("force", plugin.keys, opts.keys or {})
     plugin.color = opts.color or plugin.color
     plugin.switch = opts.switch or plugin.switch
+    if plugin.opts ~= nil then
+        plugin.opts = vim.tbl_deep_extend("force", plugin.opts, opts.opts or {})
+    end
+    if plugin.memory then
+        local parts = vim.split(debug.getinfo(1).source:sub(2), rabbit.compat.path)
+        table.remove(parts, #parts)
+        table.remove(parts, #parts)
+        table.remove(parts, #parts)
+        local path = table.concat(parts, rabbit.compat.path) ..
+            rabbit.compat.path .. "memory" .. rabbit.compat.path
+        vim.uv.fs_mkdir(path, 493) -- 0x755 = u=rwx; g=r-x; o=r-x
+        local file = path .. plugin.name .. ".rabbit.plugin"
+        if io.open(file, "r") == nil then
+            set.save(file, {})
+        end
+        plugin.memory = vim.fn.fnamemodify(file, ":p")
+    end
+    if #rabbit.default == 0 then
+        rabbit.default = plugin.name
+    end
     rabbit.plugins[plugin.name] = plugin
-    plugin.init()
+    plugin.init(plugin)
 end
 
 return rabbit

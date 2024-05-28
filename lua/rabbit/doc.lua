@@ -47,11 +47,12 @@
 ---@class RabbitPluginOptTbl
 ---@field [string] RabbitPluginOpts
 
----@alias RabbitBuiltin "history" | "harpoon" | "reopen"
+---@alias RabbitBuiltin "history" | "oxide" | "reopen"
 
 
 ---@class RabbitOptsWindow
 ---@field title string Window title
+---@field plugin_name_position "title" | "bottom" | "hide" Plugin name position
 ---@field emphasis_width integer Width of the emphasis title
 ---@field width integer Window width
 ---@field height integer Window height
@@ -90,6 +91,7 @@
 ---@field color NvimHlKwargs | string
 ---@field keys RabbitPluginKeymap Any keys used to bind to function names in `plugin.func`
 ---@field switch string Key to switch to this plugin
+---@field opts table Any plugin specific options
 
 
 ---@class RabbitKeymap
@@ -134,11 +136,14 @@
 ---@field color NvimHlKwargs | string Border color
 ---@field skip_same boolean Whether or not to skip the first entry if it's the same as the current one
 ---@field init function Initializes the plugin
+---@field memory? string If set, Rabbit will make a file, and set `memory` to the file name
+---@field opts? table Plugin specific options
 
 
 ---@class RabbitPluginEvent
----@field BufEnter? RabbitEvtHandler
----@field BufDelete? RabbitEvtHandler
+---@field BufEnter? RabbitEvtHandler Autocmd on BufEnter
+---@field BufDelete? RabbitEvtHandler Autocmd on BufDelete
+---@field RabbitEnter? function Called when the Rabbit window is opened
 ---@field [string] RabbitEvtHandler
 
 ---@alias RabbitEvtHandler function(evt: NvimEvent, winid: integer)
@@ -182,6 +187,8 @@
 ---@field opts RabbitOptions Rabbit options
 ---@field func RabbitPluginFuncs
 ---@field plugins RabbitPluginTable Loaded plugins
+---@field compat RabbitCompatEntry Compatibility table
+---@field default string Default plugin
 
 
 ---@class RabbitContext
@@ -197,3 +204,13 @@
 ---@field buf integer | nil Buffer ID
 ---@field ns integer Highlight Namespace ID
 
+
+---@class RabbitCompat
+---@field [string] RabbitCompatEntry Compatibility entry
+
+
+---@class RabbitCompatEntry
+---@field path string Directory separator. Linux and macOS use `/`
+---@field warn boolean Whether or not to warn about compatibility issues
+---@field __name__ string OS Name
+---@field __has__ string[] List of names under vim.fn.has(...)

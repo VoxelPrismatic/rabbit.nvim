@@ -107,6 +107,14 @@ require("rabbit").setup({
         box_style = "round",    -- One of "round", "square", "thick", "double"
 
 
+        -- Where the plugin name should be displayed.
+        -- - "bottom" means in the bottom left corner, but not displayed in full screen
+        -- - "title" means next to rabbit, eg `──══ Rabbit History ══──`
+        -- - "hide" means to not display it at all
+        plugin_name_position = "bottom",
+
+        title = "Rabbit",       -- Title text, eg: `──══ Rabbit ══──` or `──══ NotHarpoon ══──`
+
         emphasis_width = 8,     -- Eg: `──────══ Rabbit ══──────` or `──══════ Rabbit ══════──`
 
 
@@ -166,17 +174,20 @@ require("rabbit").setup({
             color = "#d7827e",  -- Border color
             switch = "r",       -- Keybind to switch to the history window from within Rabbit
             keys = {},          -- See the API for more details
+            opts = {},          -- See the API for more details
         },
         reopen = {
             color = "#907aa9",  -- Border color
             switch = "o",       -- Keybind to switch to the reopen window from within Rabbit
             keys = {},          -- See the API for more details
+            opts = {},          -- See the API for more details
         },
     },
 
     enable = {                  -- Builtin plugins to enable immediately
-        "history",              -- The first plugin loaded will be the default in the event an invalid plugin is requested
+        "history",              -- The plugin shown when opening Rabbit
         "reopen",
+        "oxide",
     },
 })
 ```
@@ -215,28 +226,81 @@ rabbit.ensure_listing(winid)    -- Ensure that the window has a table for all li
 ### Create your own Rabbit listing
 All luadoc information is included in [doc.lua](/lua/rabbit/doc.lua)
 
+Just remember to call `rabbit.setup()` before calling `rabbit.attach(plugin)`.
+
 Here's what your `plugin.lua` should look like:
 ```lua
 local set = require("rabbit.plugins.util")
+-- This module provides basic set-like functionality, including:
+-- - Find the index of an element
+-- - Remove all instances of an element
+-- - Insert an element at the top of the table, while deleting all other instances
+-- - Save a table to a file
+-- - Recover a table from a file
 
 ---@type RabbitPlugin
 local M = {
     color = "#d7827e",  -- Border color
-    name = "history",   -- UNIQUE name of the plugin
-    func = {},          -- Any extra functions you need
-    switch = "r",       -- Keybind to switch to this plugin from within Rabbit
-    listing = {},       -- Empty table for now
-    empty_msg = "There's nowhere to jump to! Get started by opening another buffer",
-    skip_same = true,   -- Whether or not to skip the first entry if it's the same as the current buffer
-    keys = {
-        -- This table should be in func_name:string[] format.
-        -- If you have an entry in `M.func` called 'clear', and
-        -- the default keybind should be `c`, then the following
-        -- should be in the table:
-        clear = { 'c' },
+
+    name = "history",   -- UNIQUE name of the plugin. This will be overwritten in the case of duplicate names.
+
+    func = {
+        -- Any other functions you may need. In the case of Oxide, it defines `file_del`. All functions here are
+        -- called with one paramter: The highlighted position. Be careful, as this may not be a valid cursor position,
+        -- eg out of bounds.
     },
-    evt = {},           -- Event handlers. Key names should be the Autocmd name
-    init = function(_) end,  -- Init function, if you need it
+
+    switch = "r",       -- Keybind to switch to this plugin from within Rabbit
+
+    listing = {
+        -- This is where all the listings are stored. Normally, Rabbit calls `M.listing[winid]`, but you can
+        -- set `M.listing[0]` for a global listing, no matter the winid. Since the first winid is ALWAYS 1000,
+        -- you can store a many other details for internal purposes. In the case of Oxide, it stores the file
+        -- name, current working directory, and how often you visit this file from that directory.
+        --
+        -- Rabbit automatically creates empty tables for each new window, and deletes them when closing the window.
+        -- No need to manage that in your plugin.
+        --
+        -- Each listing can contain either Buffer IDs or file names. Either will work well. Rabbit also automatically
+        -- refreshes when a buffer is unloaded or deleted. Invalid Buffer IDs are automatically removed, so be sure to
+        -- use `require("rabbit").ctx.listing` to get the listing displayed to the user
+    },
+
+    empty_msg = "There's nowhere to jump to! Get started by opening another buffer",
+
+    skip_same = true,   -- Whether or not to skip the first entry if it's the same as the current buffer
+
+
+    keys = {
+        -- This table should be in func_name:string[] format. If you have an entry in `M.func` called 'clear', and
+        -- the default keybind should be `c`, then the following should be in the table:
+        clear = { 'c' },
+
+        -- Keep in mind that if the user also has a keybind set for `clear`, it will take priority over this one.
+    },
+
+
+    evt = {
+        -- Event handlers. Key names should be the Autocmd name, like `BufEnter` or `BufDelete`. Only these two
+        -- events are automatically registered by Rabbit.
+        --
+        -- There is also a `RabbitEnter` event which is called right before Rabbit is displayed. This is useful when
+        -- you need to set up your global listing. In the case of Oxide, it filters and sorts internal listings before
+        -- producing M.listing[0]. RabbitEnter takes zero parameters.
+    },
+
+    opts = {},          -- Plugin specific options you'd like to set
+
+    -- Initializer, if you need it. The first parameter is the plugin object so Ldoc doesn't scream at you.
+    -- In the case of Oxide, it reads the memory file and sets `M.listing[0]`
+    init = function(_) end,
+
+
+    -- If not nil, this will be replaced with the file used for persistent memory. By the time `M.init`
+    -- is called, the file already exists and is set to an empty table. Use `nil` or do not set at all if you
+    -- do not plan on using persistent memory.
+    memory = nil,
+
 }
 
 ---@param evt NvimEvent
@@ -256,23 +320,3 @@ end
 
 return M
 ```
-Important notes:
-1. If `M.listing[0]` is not `nil`, then Rabbit treats this as a 'global' plugin instead of local per window.
-   Even if you store information in `M.listing[winid]`, Rabbit will only present `M.listing[0]` to the end user.
-2. Plugin names MUST be unique. If you have two plugins with the same name, the most recent call will override it.
-3. You **MUST** run `rabbit.setup()` before calling `rabbit.attach(plugin)`.
-4. The user's keybinds have priority, but your funcs have priority over Rabbit's defaults. Please try to use the same
-   names so the user's keybinds work as expected.
-5. You may have noticed the little `require("rabbit.plugins.util")` at the top. That's there to provide extremely basic
-   set-like functionality, streamlining the plugin creation process.
-6. Your listing can hold both Buffer IDs and file paths. It's best practice to use the same type throughout the table.
-   - Invalid Buffer IDs are automatically ignored
-   - BufUnload and BufDelete events will refresh the rabbit window automatically
-7. When a new window is opened or closed, `M.listing[winid]` is automatically initialized for you, and winid is provided
-   to your `evt` functions.
-8. `func` functions have one parameter: the current selection index.
-   - You should use `require("rabbit").ctx.listing` to get the listing displayed to the user
-9. Only `BufEnter` and `BufDelete` events are supported out of the box. Should you want your own autocmd, just set the
-   callback to `require("rabbit").autocmd` This should be set up in your `init` function, which is called whenever the
-   plugin is attached to Rabbit
-10. The default `file_add` and `file_del` functions are not implemented yet. Stay tuned.
