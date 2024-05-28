@@ -65,7 +65,7 @@ local DEFAULT_MSG = "There's nothing to display, and the dev forgot to add a mes
 ---@param text string
 function rabbit.ShowMessage(text)
     screen.display_message(text)
-    rabbit.Legend(rabbit.ctx.plugin.name, true)
+    rabbit.Legend(rabbit.ctx.plugin.name)
 end
 
 
@@ -397,52 +397,16 @@ function rabbit.Window(mode)
     end
 
     screen.draw_bottom()
-    rabbit.Legend(mode, false)
+    rabbit.Legend(mode)
     vim.api.nvim_win_set_cursor(rabbit.rabbit.win, { 3, buf.fs and 0 or #(rabbit.opts.window.box.vertical) })
 end
 
 
 -- Renders a little keymap legend below the visible area
 ---@param mode string
----@param readonly boolean
-function rabbit.Legend(mode, readonly)
+function rabbit.Legend(mode)
     if rabbit.rabbit.win == nil then
         return
-    end
-
-    local all_funcs = vim.tbl_keys(rabbit.opts.default_keys)
-    set.sub(all_funcs, "open")
-    for k, _ in pairs(rabbit.ctx.plugin.keys) do
-        set.add(all_funcs, k)
-    end
-
-    if #vim.tbl_keys(all_funcs) > 0 and not readonly then
-        screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
-            { color = "RabbitTitle", text = " Keys:" },
-        })
-        for _, k in ipairs(all_funcs) do
-            local keys = rabbit.opts.default_keys[k] or rabbit.ctx.plugin.keys[k] or {}
-            local cb = rabbit.ctx.plugin.func[k] or rabbit.func[k]
-            if cb == nil then
-                goto continue
-            end
-            screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
-                { color = "RabbitPlugin_" .. mode, text = "   " .. k },
-            })
-            for _, key in ipairs(keys) do
-                screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
-                    { color = "RabbitFile", text = "   - " .. key },
-                })
-                vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", key, "", {
-                    noremap = true, silent = true,
-                    callback = function()
-                        local callback = rabbit.ctx.plugin.func[k] or rabbit.func[k]
-                        callback(vim.fn.line(".") - 2)
-                    end
-                })
-            end
-            ::continue::
-        end
     end
 
     screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
@@ -451,8 +415,8 @@ function rabbit.Legend(mode, readonly)
 
     for k, _ in pairs(rabbit.plugins) do
         local v = rabbit.plugins[k] ---@type RabbitPlugin
+        vim.api.nvim_set_hl(0, "RabbitPlugin_" .. v.name, { fg = v.color, bold = true })
         if k ~= mode then
-            vim.api.nvim_set_hl(0, "RabbitPlugin_" .. v.name, { fg = v.color, bold = true })
             vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", v.switch, "", {
                 noremap = true,
                 silent = true,
@@ -466,6 +430,44 @@ function rabbit.Legend(mode, readonly)
             })
         end
     end
+
+    local all_funcs = vim.tbl_keys(rabbit.opts.default_keys)
+    set.sub(all_funcs, "open")
+    for k, _ in pairs(rabbit.ctx.plugin.keys) do
+        set.add(all_funcs, k)
+    end
+
+    if #vim.tbl_keys(all_funcs) == 0 then
+        return
+    end
+
+    screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
+        { color = "RabbitTitle", text = " Keys:" },
+    })
+    for _, k in ipairs(all_funcs) do
+        local keys = rabbit.opts.default_keys[k] or rabbit.ctx.plugin.keys[k] or {}
+        local cb = rabbit.ctx.plugin.func[k] or rabbit.func[k]
+        if cb == nil then
+            goto continue
+        end
+        screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+            { color = "RabbitPlugin_" .. mode, text = "   " .. k },
+        })
+        for _, key in ipairs(keys) do
+            screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+                { color = "RabbitFile", text = "   - " .. key },
+            })
+            vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", key, "", {
+                noremap = true, silent = true,
+                callback = function()
+                    local callback = rabbit.ctx.plugin.func[k] or rabbit.func[k]
+                    callback(vim.fn.line(".") - 2)
+                end
+            })
+        end
+        ::continue::
+    end
+
 end
 
 
