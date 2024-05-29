@@ -1,9 +1,25 @@
 <div align="center">
     <img src="/rabbit.png" width="368" alt="logo"/>
     <h2 id="rabbitnvim">Jump between buffers faster than ever before</h2>
-    <img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FVoxelPrismatic%2Frabbit.nvim%2Freleases%2Flatest&query=%24.tag_name&style=flat&label=Rabbit&labelColor=white&logo=vowpalwabbit&logoColor=black"/>
-    <img src="https://img.shields.io/badge/Neovim-v0.10.0-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"/>
-    <img src="https://img.shields.io/github/downloads/voxelprismatic/rabbit.nvim/total?style=flat&logo=github&logoColor=black&label=Downloads&labelColor=white"/>
+    <a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img 
+        src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FVoxelPrismatic%2Frabbit.nvim%2Freleases%2Flatest&query=%24.tag_name&style=flat&label=Rabbit&labelColor=white&logo=vowpalwabbit&logoColor=black"
+    /></a>
+    <a href="https://neovim.io/" target="_blank"><img 
+        src="https://img.shields.io/badge/Neovim-v0.10.0-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"
+    /></a>
+    <a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img
+        src="https://img.shields.io/github/downloads/voxelprismatic/rabbit.nvim/total?style=flat&logo=github&logoColor=black&label=Downloads&labelColor=white"
+    /></a>
+    <br/>
+    <a href="https://x.com/voxelprismatic" target="_blank"><img
+        src="https://img.shields.io/badge/VoxelPrismatic-white?style=flat&logo=x&logoColor=white&labelColor=black"
+    /></a>
+    <a href="https://discord.com/" target="_blank"><img
+        src="https://img.shields.io/badge/Discord-white?style=flat&logo=discord&logoColor=white&labelColor=blue"
+    /></a>
+    <a href="https://patreon.com/voxelprismatic" target="_blank"><img
+        src="https://img.shields.io/badge/Donate-white?style=flat&logo=patreon&logoColor=white&labelColor=red"
+    /></a>
     <hr/>
 </div>
 
@@ -356,3 +372,4 @@ end
 
 return M
 ```
+
