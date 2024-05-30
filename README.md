@@ -1,3 +1,7 @@
+[rabbit.history]: https://img.shields.io/badge/History-v1-yellow?style=flat&labelColor=white
+[rabbit.reopen]: https://img.shields.io/badge/Reopen-v1-yellow?style=flat&labelColor=white
+[rabbit.oxide]: https://img.shields.io/badge/Oxide-v2-yellow?style=flat&labelColor=white
+
 <div align="center">
     <img src="/rabbit.png" width="368" alt="logo"/>
     <h2 id="rabbitnvim">Jump between buffers faster than ever before</h2>
@@ -15,11 +19,17 @@
         src="https://img.shields.io/badge/VoxelPrismatic-white?style=flat&logo=x&logoColor=white&labelColor=black"
     /></a>
     <a href="https://discord.com/" target="_blank"><img
-        src="https://img.shields.io/badge/Discord-white?style=flat&logo=discord&logoColor=white&labelColor=blue"
+        src="https://img.shields.io/badge/VoxelPrismatic-white?style=flat&logo=discord&logoColor=white&labelColor=blue"
     /></a>
     <a href="https://patreon.com/voxelprismatic" target="_blank"><img
         src="https://img.shields.io/badge/Donate-white?style=flat&logo=patreon&logoColor=white&labelColor=red"
     /></a>
+    <br>
+    <span title="i wish i could customize this, dotfyles">
+        <a href="https://dotfyle.com/plugins/VoxelPrismatic/rabbit.nvim"><img
+            src="https://dotfyle.com/plugins/VoxelPrismatic/rabbit.nvim/shield?style=social"
+        /></a>
+    </span>
     <hr/>
 </div>
 
@@ -87,6 +97,10 @@ return {
 }
 ```
 
+> [!WARNING]
+> Rabbit is only tested on Linux, although probably works as well on macOS.
+> Please help with any compatibility issues by raising an [issue](https://github.com/voxelprismatic/rabbit.nvim/issues)
+
 ## Usage
 Just run your keybind! (or `:Rabbit {{mode}}`)
 
@@ -114,12 +128,10 @@ require("rabbit").setup({
             fg = "#000000",     -- Grabs from :hi Comment
             italic = true,
         },
-        dir = {                 -- Folders
-            fg = "#000000",     -- Grabs from :hi NonText
-        },
-        file = {                -- File name
-            fg = "#000000",     -- Grabs from :hi Normal
-        },
+        dir = "#000000",        -- Folders; Grabs from :hi NonText
+        
+        file = "#000000",       -- File name; Grabs from :hi Normal
+
         term = {                -- Addons, eg :term or :Oil
             fg = "#000000",     -- Grabs from :hi Constant
             italic = true,
@@ -243,10 +255,6 @@ Sorts all the buffers this window has closed, in order of most recent close
 
 ### Oxide
 Like zoxide, but saves how often you open a particular file from your current directory
-
-[rabbit.history]: https://img.shields.io/badge/History-v1-yellow?style=flat&labelColor=white
-[rabbit.reopen]: https://img.shields.io/badge/Reopen-v1-yellow?style=flat&labelColor=white
-[rabbit.oxide]: https://img.shields.io/badge/Oxide-v2-yellow?style=flat&labelColor=white
 
 ---
 
