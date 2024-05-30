@@ -44,7 +44,7 @@ local compat = {
 
     linux = {
         path = "/",
-        warn = true,
+        warn = false,
         __name__ = "Linux",
         __has__ = { "linux" },
     },
