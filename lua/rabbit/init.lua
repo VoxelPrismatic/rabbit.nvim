@@ -44,7 +44,7 @@ local compat = {
 
     linux = {
         path = "/",
-        warn = false,
+        warn = true,
         __name__ = "Linux",
         __has__ = { "linux" },
     },
@@ -355,7 +355,7 @@ function rabbit.Window(mode)
 
     local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, rabbit.user.buf)
     if not has_name or buf_path:sub(1, 1) ~= "/" then
-        buf_path = vim.fn.getcwd() .. "rabbit.txt"
+        buf_path = vim.fn.getcwd() .. "/rabbit.txt"
     end
 
     local i = 1
@@ -594,23 +594,41 @@ function rabbit.setup(opts)
         })
     end
 
+    rabbit.get_compat()
+    if rabbit.compat.warn then
+        local has_warned = set.read(rabbit.make_mem("__has_warned__"))
+        if has_warned.value then
+            vim.cmd("echohl WarningMsg")
+            vim.cmd('echo "Reminder: "')
+            vim.cmd("echohl None")
+            vim.cmd('echon "' ..
+                "Report any compatibility issues to " ..
+                "http://prz0.github.io/rabbit/issues" ..
+            '"')
+        else
+            vim.cmd("echohl WarningMsg")
+            vim.cmd('echo "WARNING: "')
+            vim.cmd("echohl None")
+            vim.cmd('echon "Rabbit is not supported on ' .. rabbit.compat.__name__ .. '."')
+            vim.print("If you experience any problems, please open a ticket:")
+            vim.print("https://github.com/VoxelPrismatic/rabbit.nvim/issues")
+            set.save(rabbit.make_mem("__has_warned__"), { value = true })
+        end
+    end
+end
+
+
+function rabbit.get_compat()
     for _, v in pairs(compat) do
         for _, o in ipairs(v.__has__) do
             if vim.fn.has(o) == 1 then
                 rabbit.compat = v
-                if v.warn then
-                    vim.cmd("echohl WarningMsg")
-                    vim.cmd('echo "WARNING: "')
-                    vim.cmd("echohl None")
-                    vim.cmd('echon "Rabbit is not supported on ' .. v.__name__ .. '."')
-                    vim.print("If you experience any problems, please open a ticket:")
-                    vim.print("https://github.com/VoxelPrismatic/rabbit.nvim/issues")
-                end
                 return
             end
         end
     end
 end
+
 
 ---@param plugin RabbitPlugin | RabbitBuiltin
 function rabbit.attach(plugin)
@@ -633,18 +651,7 @@ function rabbit.attach(plugin)
         plugin.opts = vim.tbl_deep_extend("force", plugin.opts, opts.opts or {})
     end
     if plugin.memory then
-        local parts = vim.split(debug.getinfo(1).source:sub(2), rabbit.compat.path)
-        table.remove(parts, #parts)
-        table.remove(parts, #parts)
-        table.remove(parts, #parts)
-        local path = table.concat(parts, rabbit.compat.path) ..
-            rabbit.compat.path .. "memory" .. rabbit.compat.path
-        vim.uv.fs_mkdir(path, 493) -- 0x755 = u=rwx; g=r-x; o=r-x
-        local file = path .. plugin.name .. ".rabbit.plugin"
-        if io.open(file, "r") == nil then
-            set.save(file, {})
-        end
-        plugin.memory = vim.fn.fnamemodify(file, ":p")
+        plugin.memory = rabbit.make_mem(plugin.name)
     end
     if #rabbit.default == 0 then
         rabbit.default = plugin.name
@@ -652,5 +659,24 @@ function rabbit.attach(plugin)
     rabbit.plugins[plugin.name] = plugin
     plugin.init(plugin)
 end
+
+function rabbit.make_mem(name)
+    local parts = vim.split(debug.getinfo(1).source:sub(2), rabbit.compat.path)
+    table.remove(parts, #parts)
+    table.remove(parts, #parts)
+    table.remove(parts, #parts)
+
+    local path = table.concat(parts, rabbit.compat.path) ..
+        rabbit.compat.path .. "memory" .. rabbit.compat.path
+
+    vim.uv.fs_mkdir(path, 493) -- 0x755 = u=rwx; g=r-x; o=r-x
+    local file = path .. name .. ".rabbit.plugin"
+    if io.open(file, "r") == nil then
+        set.save(file, {})
+    end
+
+    return vim.fn.fnamemodify(file, ":p")
+end
+
 
 return rabbit
