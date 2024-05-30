@@ -240,8 +240,8 @@ require("rabbit").setup({
 ```
 
 ## Preview
-very old preview, but i cant find a keyboard overlay for wayland
-https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/da149bd5-4f6d-4c83-b6cb-67f1be762e2a
+
+[2024-05-30 15-36-13.webm](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/eee4a60c-1302-469b-a329-471bfc59cddf)
 
 ---
 
