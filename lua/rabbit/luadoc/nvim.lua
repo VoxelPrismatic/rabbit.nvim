@@ -1,0 +1,31 @@
+---@class NvimHlKwargs
+---@field fg? string Foreground color name or "#RRGGBB"
+---@field bg? string Background color name or "#RRGGBB"
+---@field sp? string Space color name or "#RRGGBB"
+---@field blend? integer Opacity between 0 and 100
+---@field bold? boolean **Bold** text
+---@field standout? boolean
+---@field underline? boolean __Underline__ text
+---@field undercurl? boolean __Underline__, but curled like misspelled words
+---@field underdouble? boolean __Underline__, but double underline
+---@field underdotted? boolean __Underline__, but dotted underline
+---@field underdashed? boolean __Underline__, but dashed underline
+---@field strikethrough? boolean ~~Strike~~
+---@field italic? boolean *Italic* text
+---@field reverse? boolean Reverse FG and BG
+---@field nocombine? boolean
+---@field link? string Link to another highlight group name
+---@field default? boolean Don't override existing definition
+---@field ctermfg? string Sets foreground of cterm color
+---@field ctermbg? string Sets background of cterm color
+---@field cterm? NvimHlKwargs cterm attr map
+---@field force? boolean Update the highlight group if it exists
+
+
+---@class NvimEvent
+---@field buf integer Buffer ID
+---@field event string Event type
+---@field file string File name
+---@field id integer Event ID
+---@field match string
+

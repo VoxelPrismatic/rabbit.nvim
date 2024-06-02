@@ -1,6 +1,6 @@
 local set = require("rabbit.plugins.util")
 
----@type RabbitPlugin
+---@type Rabbit.Plugin
 local M = {
     color = "#907aa9",
     name = "reopen",
@@ -11,7 +11,7 @@ local M = {
     skip_same = false,
     keys = {},
     evt = {},
-    init = function(p) ---@param p RabbitPlugin
+    init = function(p) ---@param p Rabbit.Plugin
         p.listing[0] = {}
     end,
 }

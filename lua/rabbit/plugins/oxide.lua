@@ -1,6 +1,6 @@
 local set = require("rabbit.plugins.util")
 
----@type RabbitPlugin
+---@type Rabbit.Plugin
 ---@class RabbitOxide
 local M = {
     color = "#c4a7e7",
@@ -25,9 +25,9 @@ local M = {
 
 
 ---@class RabbitOxideListing
----@field [0] RabbitPluginWinListing Listing shown in Rabbit Oxide plugin
+---@field [0] Rabbit.Plugin.Listing.Window Listing shown in Rabbit Oxide plugin
 ---@field [1] RabbitOxideFreqListing Oxide internal listing
----@field [2] RabbitPluginWinListing Tracks open files to prevent increasing score when moving between buffers
+---@field [2] Rabbit.Plugin.Listing.Window Tracks open files to prevent increasing score when moving between buffers
 
 
 ---@class RabbitOxideOpts

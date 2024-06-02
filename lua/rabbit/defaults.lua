@@ -1,4 +1,4 @@
----@type DefaultRabbitBox
+---@type Rabbit.Box.Default
 local box = {
     round = {
         top_left = "╭",
@@ -44,7 +44,7 @@ local function grab_color(name)
     return string.format("#%06x", details.fg)
 end
 
----@type RabbitOptions
+---@type Rabbit.Options
 local options = {
     colors = {
         title = { fg = grab_color("Normal"), bold = true },

@@ -1,6 +1,6 @@
 local set = require("rabbit.plugins.util")
 
----@type RabbitPlugin
+---@type Rabbit.Plugin
 local M = {
     color = "#907aa9",
     name = "reopen",

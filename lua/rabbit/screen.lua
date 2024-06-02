@@ -2,10 +2,10 @@
 ---@class screen
 local screen = {
     ctx = {
-        title = {}, ---@type ScreenSpec[]
-        middle = {}, ---@type ScreenSpec[]
-        footer = {}, ---@type ScreenSpec[]
-        box = {}, ---@type RabbitBox | {}
+        title = {}, ---@type Rabbit.Screen.Spec[]
+        middle = {}, ---@type Rabbit.Screen.Spec[]
+        footer = {}, ---@type Rabbit.Screen.Spec[]
+        box = {}, ---@type Rabbit.Box | {}
         height = 0,
         width = 0,
         bufnr = nil,
@@ -15,7 +15,7 @@ local screen = {
 }
 
 -- Undo possible recursion in screen spec
----@param specs ScreenSpec[]
+---@param specs Rabbit.Screen.Spec[]
 ---@param width number
 function screen.helper(specs, width)
     local fulltext = ""
@@ -73,7 +73,7 @@ end
 ---@param win integer
 ---@param buf integer
 ---@param line number
----@param specs ScreenSpec[]
+---@param specs Rabbit.Screen.Spec[]
 function screen.render(win, buf, line, specs)
     if line == -1 then
         line = vim.api.nvim_buf_line_count(buf)
@@ -91,7 +91,7 @@ end
 -- Places a newline before the specs
 ---@param win integer
 ---@param buf integer
----@param spec ScreenSpec[]
+---@param spec Rabbit.Screen.Spec[]
 function screen.newline(win, buf, spec)
     screen.render(win, buf, -1, { color = "RabbitBorder", text = " " })
     screen.render(win, buf, -1, spec)
@@ -110,7 +110,7 @@ end
 
 
 -- Sets the highlight group names
----@param colors RabbitOptsColor
+---@param colors Rabbit.Options.Color
 ---@param border_color NvimHlKwargs | string
 function screen.set_hl(colors, border_color)
     vim.api.nvim_set_hl(0, "RabbitBorder", maybe_hl(border_color))
@@ -126,8 +126,8 @@ end
 -- Adds a new border to the screen
 ---@param win integer
 ---@param buf integer
----@param kwargs ScreenSetBorderKwargs
----@return false | ScreenSpec
+---@param kwargs Rabbit.Screen.Border_Kwargs
+---@return false | Rabbit.Screen.Spec
 function screen.set_border(win, buf, kwargs)
     local fs = kwargs.fullscreen and { text = "", color = "" } or false
     local c = (kwargs.width - 2 - #(kwargs.title)) / 2 - 1
@@ -235,7 +235,7 @@ end
 -- Add a buffer entry to the screen.
 -- __NOTE:__ Only place the file/term/dir specs. This
 -- function handles the border and index for you.
----@param spec ScreenSpec[]
+---@param spec Rabbit.Screen.Spec[]
 function screen.add_entry(spec)
     local i = #vim.api.nvim_buf_get_lines(screen.ctx.bufnr, 0, -1, false) - 1
 
@@ -249,7 +249,7 @@ function screen.add_entry(spec)
         })
     end
 
-    ---@type ScreenSpec[]
+    ---@type Rabbit.Screen.Spec[]
     local to_render = screen.ctx.fullscreen and {} or {
         {
             color = "RabbitBorder",
