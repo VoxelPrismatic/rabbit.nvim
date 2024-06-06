@@ -69,17 +69,31 @@ end
 ---@param n integer
 function M.func.select(n)
     local rabbit = require("rabbit")
-    M.listing[0] = rabbit.ctx.listing
     if M.listing[0] == nil or n ~= 1 then
         return rabbit.func.select(n)
     end
 
+    M.listing[0] = rabbit.ctx.listing
     table.remove(M.listing[0], 1)
     M.listing[rabbit.user.win] = M.listing[0]
     vim.api.nvim_win_set_buf(rabbit.user.win, tonumber(M.listing[0][1]) or 0)
     M.listing[0] = nil
 
     rabbit.func.close()
+end
+
+
+---@param n integer
+function M.func.file_del(n)
+    local rabbit = require("rabbit")
+    M.listing[rabbit.user.win] = rabbit.ctx.listing
+    table.remove(M.listing[rabbit.user.win], n)
+    if M.listing[0] ~= nil then
+        table.remove(M.listing[rabbit.user.win], 1)
+        M.listing[0] = vim.deepcopy(M.listing[rabbit.user.win])
+        table.insert(M.listing[0], 1, "rabbitmsg://Restore full history")
+    end
+    require("rabbit").Redraw()
 end
 
 

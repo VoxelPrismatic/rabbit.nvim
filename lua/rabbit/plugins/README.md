@@ -73,7 +73,6 @@ require("rabbit").setup({
                 <li>Added <code>ignore_opened</code> option</li>
                 <li>No longer redraws the entire window upon delete</li>
                 <li>Switched storage to dir:file instead of file:dir</li>
-                <li><b>NOTE:</b> Your previous Oxide usage will be cleared</li>
             </ul>
         </li>
         <li>
@@ -112,4 +111,4 @@ require("rabbit").setup({
         </li>
     </ol>
 </details>
-
+[harpoon2]: https://github.com/ThePrimeagen/harpoon/tree/harpoon2
