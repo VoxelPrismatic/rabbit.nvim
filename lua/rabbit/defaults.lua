@@ -56,6 +56,7 @@ local options = {
         file = { fg = grab_color("Normal") },
         term = { fg = grab_color("Constant"), italic = true },
         noname = { fg = grab_color("Function"), italic = true },
+        message = { fg = grab_color("Identifier"), italic = true },
     },
     window = {
         box = box.round,
@@ -84,6 +85,7 @@ local options = {
         "history",
         "reopen",
         "oxide",
+        "harpoon",
     },
 }
 

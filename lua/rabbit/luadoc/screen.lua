@@ -1,4 +1,4 @@
----@class Rabbit.Screen.Border_Kwargs
+---@class (exact) Rabbit.Screen.Border_Kwargs
 ---@field colors Rabbit.Options.Color
 ---@field border_color NvimHlKwargs | string
 ---@field width integer

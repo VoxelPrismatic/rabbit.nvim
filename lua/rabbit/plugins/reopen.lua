@@ -1,8 +1,8 @@
 local set = require("rabbit.plugins.util")
 
----@type Rabbit.Plugin
-local M = {
-    color = "#907aa9",
+---@class Rabbit.Plugin.Reopen: Rabbit.Plugin
+local M = { ---@type Rabbit.Plugin
+    color = "#40c9a2",
     name = "reopen",
     func = {},
     switch = "o",
@@ -11,22 +11,81 @@ local M = {
     skip_same = true,
     keys = {},
     evt = {},
-    init = function(_) end,
+    memory = "",
+
+    ---@param p Rabbit.Plugin
+    init = function(p)
+        p.listing.persist = set.clean(set.read(p.memory))
+    end,
 }
+
+
+---@param evt NvimEvent
+---@return string | nil Nil if event should be ignored
+local function prepare(evt)
+    local cwd = vim.fn.getcwd()
+    M.listing.persist[cwd] = M.listing.persist[cwd] or {}
+
+    if vim.uv.fs_stat(evt.file) == nil then
+        return nil
+    end
+
+    return cwd
+end
+
 
 ---@param evt NvimEvent
 ---@param winid integer
 function M.evt.BufEnter(evt, winid)
+    local cwd = prepare(evt)
+    if cwd == nil then
+        return
+    end
+
     set.sub(M.listing[winid], evt.file)
+    set.add(M.listing.persist[cwd], evt.file)
+    set.save(M.memory, M.listing.persist)
 end
 
 
 ---@param evt NvimEvent
 ---@param winid integer
 function M.evt.BufDelete(evt, winid)
-    if #evt.file > 0 and evt.file:sub(1, 1) == "/" then
-        set.add(M.listing[winid], evt.file)
+    local cwd = prepare(evt)
+    if cwd == nil then
+        return
+    end
+
+    set.sub(M.listing.persist[cwd], evt.file)
+    set.add(M.listing[winid], evt.file)
+    set.save(M.memory, M.listing.persist)
+end
+
+
+---@param winid integer
+function M.evt.RabbitEnter(winid)
+    M.listing[0] = nil
+    if #vim.tbl_keys(M.listing) ~= 2 or #M.listing[winid] > 0 then
+        return
+    end
+    local cwd = vim.fn.getcwd()
+    M.listing[0] = vim.tbl_values(M.listing.persist[cwd])
+    table.insert(M.listing[0], 1, "rabbitmsg://Open all files")
+end
+
+
+---@param n integer
+function M.func.select(n)
+    M.listing[0] = require("rabbit").ctx.listing
+    if M.listing[0] == nil or n ~= 1 then
+        return require("rabbit").func.select(n)
+    end
+
+    table.remove(M.listing[0], 1)
+    for _, v in ipairs(M.listing[0]) do
+        vim.cmd("edit " .. v)
     end
 end
+
 
 return M

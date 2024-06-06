@@ -230,6 +230,7 @@ end
 
 -- Creates the buffer for the given mode
 ---@param mode string
+---@return Rabbit.Context.Buffer
 function rabbit.MakeBuf(mode)
     rabbit.user.buf = vim.api.nvim_get_current_buf()
     rabbit.user.win = vim.api.nvim_get_current_win()
@@ -244,18 +245,7 @@ function rabbit.MakeBuf(mode)
 
 -- In case the plugin has a listing it must prepare
     if rabbit.ctx.plugin.evt.RabbitEnter ~= nil then
-        rabbit.ctx.plugin.evt.RabbitEnter()
-    end
-
--- Copy listing; remove first entry if needed
-    local ls = rabbit.ctx.plugin.listing[0] or rabbit.ctx.plugin.listing[rabbit.user.win]
-    rabbit.ctx.listing = vim.tbl_deep_extend("force", ls, {})   -- Copy
-
-    if #rabbit.ctx.listing > 0 and rabbit.ctx.plugin.skip_same then
-        local name = vim.api.nvim_buf_get_name(rabbit.user.buf)
-        if rabbit.ctx.listing[1] == rabbit.user.buf or rabbit.ctx.listing[1] == name then
-            table.remove(rabbit.ctx.listing, 1)
-        end
+        rabbit.ctx.plugin.evt.RabbitEnter(rabbit.user.win)
     end
 
 -- Create buffer
@@ -265,15 +255,19 @@ function rabbit.MakeBuf(mode)
 
 -- Generate configuration
     local opts = {
-        width = math.min(rabbit.opts.window.width, win_conf.width),
-        height = math.min(rabbit.opts.window.height, win_conf.height),
+        width = math.min(rabbit.opts.window.width or 64, win_conf.width),
+        height = math.min(rabbit.opts.window.height or 24, win_conf.height),
         style = "minimal",
     }
 
     local floating = rabbit.opts.window.float == true and { "bottom", "right" } or rabbit.opts.window.float
     local splitting = rabbit.opts.window.split == true and "right" or rabbit.opts.window.split
 
-    if floating then
+    if floating == "center" then
+        opts.relative = "win"
+        opts.row = (win_conf.height - opts.height) / 2
+        opts.col = (win_conf.width - opts.width) / 2
+    elseif floating then
         opts.relative = "win"
         opts.row = floating.top or (floating[1] == "top" and 0 or (win_conf.height - opts.height))
         opts.col = floating.left or (floating[2] == "left" and 0 or (win_conf.width - opts.width))
@@ -328,7 +322,7 @@ function rabbit.MakeBuf(mode)
         mode = b_mode,
     }
 
-    return {
+    return { ---@type Rabbit.Context.Buffer
         nr = buf,
         w = opts.width,
         h = opts.height,
@@ -347,12 +341,44 @@ function rabbit.Window(mode)
         if status == true then return end
     end
 
-    local buf = rabbit.MakeBuf(mode)
+    rabbit.ctx.buffer = rabbit.MakeBuf(mode)
+    screen.draw_top()
+    if rabbit.Redraw() then
+        vim.api.nvim_win_set_cursor(rabbit.rabbit.win, { 3, rabbit.ctx.buffer.fs and 0 or #(rabbit.opts.window.box.vertical) })
+    end
+end
+
+
+-- Redraws the window
+---@return boolean whether or not the cursor needs to be moved
+function rabbit.Redraw()
+    if rabbit.rabbit.win == nil then
+        return false
+    end
+
+    local mode = rabbit.ctx.plugin.name
+    local buf = rabbit.ctx.buffer
+    if buf == nil then
+        return false
+    end
+
+-- Copy listing; remove first entry if needed
+    local ls = rabbit.ctx.plugin.listing[0] or rabbit.ctx.plugin.listing[rabbit.user.win]
+    rabbit.ctx.listing = vim.tbl_deep_extend("force", ls, {})   -- Copy
+
+    if #rabbit.ctx.listing > 0 and rabbit.ctx.plugin.skip_same then
+        local name = vim.api.nvim_buf_get_name(rabbit.user.buf)
+        if rabbit.ctx.listing[1] == rabbit.user.buf or rabbit.ctx.listing[1] == name then
+            table.remove(rabbit.ctx.listing, 1)
+        end
+    end
 
     local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, rabbit.user.buf)
     if not has_name or buf_path:sub(1, 1) ~= "/" then
         buf_path = vim.fn.getcwd() .. "/rabbit.txt" -- Relative to CWD if no name set
     end
+
+    screen.draw_bottom(2)
 
     local i = 1
     while i <= #rabbit.ctx.listing do
@@ -366,6 +392,11 @@ function rabbit.Window(mode)
             target = vim.api.nvim_buf_get_name(j)
         elseif type(rabbit.ctx.listing[i]) == "string" then
             target = "" .. rabbit.ctx.listing[i]
+            local stat = vim.uv.fs_stat(target)
+            if #target <= 0 or (target[1] == "/" and stat == nil) then
+                table.remove(rabbit.ctx.listing, i)
+                goto continue
+            end
         else
             break
         end
@@ -374,20 +405,24 @@ function rabbit.Window(mode)
             screen.add_entry({
                 { text = "#nil ", color = "RabbitNil" },
                 { text = rabbit.ctx.listing[i] .. "", color = "RabbitFile" },
-            })
+            }, i + 1)
+        elseif string.find(target, "rabbitmsg://") == 1 then
+            screen.add_entry({
+                { text = target:sub(#"rabbitmsg://" + 1), color = "RabbitMsg" },
+            }, i + 1)
         elseif target:sub(1, 1) ~= "/" then
             local rel = rabbit.RelPath(buf_path, target)
             local mod = vim.split(target, ":/")[1]
             screen.add_entry({
                 { text = "#" .. (#rel.name > 0 and rel.name or mod) .. " ", color = "RabbitTerm" },
                 { text = rabbit.ctx.listing[i] .. "", color = "RabbitFile" },
-            })
+            }, i + 1)
         else
             local rel = rabbit.RelPath(buf_path, target)
             screen.add_entry({
                 { text = rel.dir, color = "RabbitDir" },
                 { text = rel.name, color = "RabbitFile" },
-            })
+            }, i + 1)
         end
 
         i = i + 1
@@ -395,27 +430,28 @@ function rabbit.Window(mode)
     end
 
     if #rabbit.ctx.listing < 1 then
-        return rabbit.ShowMessage(rabbit.ctx.plugin.empty_msg or DEFAULT_MSG)
+        rabbit.ShowMessage(rabbit.ctx.plugin.empty_msg or DEFAULT_MSG)
+        return false
     end
 
-    screen.draw_bottom()
-    rabbit.Legend(mode)
-    vim.api.nvim_win_set_cursor(rabbit.rabbit.win, { 3, buf.fs and 0 or #(rabbit.opts.window.box.vertical) })
+    rabbit.Legend(mode, math.max(i + 2, buf.h))
+    return true
 end
 
 
 -- Renders a little keymap legend below the visible area
 ---@param mode string
-function rabbit.Legend(mode)
+---@param line? integer
+function rabbit.Legend(mode, line)
     if rabbit.rabbit.win == nil then
         return
     end
 
     mode = mode or rabbit.ctx.plugin.name
 
-    screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
+    line = screen.newline({
         { color = "RabbitTitle", text = " Switch:" },
-    })
+    }, line)
 
     for k, _ in pairs(rabbit.plugins) do
         local v = rabbit.plugins[k] ---@type Rabbit.Plugin
@@ -425,7 +461,7 @@ function rabbit.Legend(mode)
                 noremap = true, silent = true,
                 callback = function() rabbit.Switch(v.name) end
             })
-            screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+            line = screen.render(line, {
                 { color = "RabbitFile", text = "   " .. v.switch .. " - ", },
                 { color = "RabbitPlugin_" .. k, text = v.name, },
             })
@@ -442,9 +478,9 @@ function rabbit.Legend(mode)
         return
     end
 
-    screen.newline(rabbit.rabbit.win, rabbit.rabbit.buf, {
+    line = screen.newline({
         { color = "RabbitTitle", text = " Keys:" },
-    })
+    }, line)
 
     for _, k in ipairs(all_funcs) do
         local keys = rabbit.opts.default_keys[k] or rabbit.ctx.plugin.keys[k] or {}
@@ -452,11 +488,11 @@ function rabbit.Legend(mode)
         if cb == nil then
             goto continue
         end
-        screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+        line = screen.render(line, {
             { color = "RabbitPlugin_" .. mode, text = "   " .. k },
         })
         for _, key in ipairs(keys) do
-            screen.render(rabbit.rabbit.win, rabbit.rabbit.buf, -1, {
+            line = screen.render(line, {
                 { color = "RabbitFile", text = "   - " .. key },
             })
             vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", key, "", {
@@ -467,17 +503,6 @@ function rabbit.Legend(mode)
         ::continue::
     end
 
-end
-
-
--- Redraws the window
-function rabbit.Redraw()
-    if rabbit.rabbit.win == nil then
-        return
-    end
-    local cur = vim.api.nvim_win_get_cursor(rabbit.rabbit.win)
-    rabbit.Switch(rabbit.ctx.plugin.name)
-    vim.api.nvim_win_set_cursor(rabbit.rabbit.win, cur)
 end
 
 
@@ -536,9 +561,14 @@ vim.api.nvim_create_autocmd("BufUnload", {
 vim.api.nvim_create_autocmd("WinClosed", {
     pattern = {"*"},
     callback = function(evt)
+        local w = tonumber(evt.file) or -2
         for k, _ in pairs(rabbit.plugins) do
             local p = rabbit.plugins[k] ---@type Rabbit.Plugin
-            p.listing[evt.file] = nil
+            if p.evt.WinClosed ~= nil then
+                p.evt.WinClosed(evt, w)
+            else
+                p.listing[w] = nil
+            end
         end
     end,
 })
@@ -546,7 +576,11 @@ vim.api.nvim_create_autocmd("WinClosed", {
 
 vim.api.nvim_create_autocmd("WinResized", {
     pattern = {"*"},
-    callback = rabbit.Redraw
+    callback = function()
+        if rabbit.rabbit.win ~= nil then
+            rabbit.Switch(rabbit.ctx.plugin.name)
+        end
+    end
 })
 
 ---@param opts Rabbit.Options | string

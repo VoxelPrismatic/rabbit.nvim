@@ -1,9 +1,17 @@
 local set = require("rabbit.plugins.util")
 
----@type Rabbit.Plugin
----@class RabbitOxide
-local M = {
-    color = "#c4a7e7",
+---@class Rabbit.Plugin.Oxide.Options
+---@field public maxage? integer Like zoxide's AGING algorithm
+---@field public ignore_opened? boolean Do not display currently open buffers
+
+
+---@class QuickSortEntry
+---@field name string Context name; untouched
+---@field score integer Score
+
+---@class Rabbit.Plugin.Oxide: Rabbit.Plugin
+local M = { ---@type Rabbit.Plugin
+    color = "#8aaacd",
     name = "oxide",
     func = {},
     switch = "x",
@@ -13,52 +21,29 @@ local M = {
     keys = {},
     evt = {},
     memory = "",
-    opts = { ---@type RabbitOxideOpts
-        maxage = 1000
+    ---@type Rabbit.Plugin.Oxide.Options
+    opts = {
+        maxage = 1000,
+        ignore_opened = true,
     },
-    init = function(p) ---@param p RabbitOxide
+    ---@param p Rabbit.Plugin.Oxide
+    init = function(p)
         p.listing[0] = {}
-        p.listing[1] = set.read(p.memory)
-        p.listing[2] = {}
+        p.listing.persist = set.clean(set.read(p.memory))
     end
 }
 
 
----@class RabbitOxideListing
----@field [0] Rabbit.Plugin.Listing.Window Listing shown in Rabbit Oxide plugin
----@field [1] RabbitOxideFreqListing Oxide internal listing
----@field [2] Rabbit.Plugin.Listing.Window Tracks open files to prevent increasing score when moving between buffers
-
-
----@class RabbitOxideOpts
----@field maxage integer Like zoxide's AGING algorithm
-
-
----@class RabbitOxideFreqListing
----@field [string] table<string, RabbitOxideEntry> Name:Entry table
-
-
----@class RabbitOxideEntry
----@field age integer The last time the file was accessed
----@field count integer The total number of times this file was accessed
-
-
----@class QuickSortEntry
----@field name string Context name; untouched
----@field score integer Score
-
-
----@param arr RabbitOxideFreqListing
----@return RabbitOxideFreqListing, string[]
+---@param arr Rabbit.Plugin.Listing.Persist.Table
+---@return Rabbit.Plugin.Listing.Persist.Table, string[]
 local function quickscore(arr, maxage)
     local ret = {} ---@type QuickSortEntry[]
     local time = os.time()
-    local cwd = vim.fn.getcwd()
     local sum = 0
-    for k, _ in pairs(arr) do
-        local v = arr[k][cwd] ---@type RabbitOxideEntry
-        if v == nil then
-            -- Never opened this file from current directory
+    for k, _ in pairs(arr or {}) do
+        local v = arr[k] ---@type Rabbit.Plugin.Listing.Persist.Entry
+        if vim.uv.fs_stat(k) == nil then
+            arr[k] = nil
             goto continue
         end
 
@@ -89,7 +74,7 @@ local function quickscore(arr, maxage)
             ret[i].score = v.score * clip
             if ret[i].score < 1 then
                 table.remove(ret, i)
-                arr[v.name][cwd] = nil
+                arr[v.name] = nil
             end
         end
     end
@@ -99,48 +84,55 @@ local function quickscore(arr, maxage)
     end
 
     local names = {}
+    local winid = require("rabbit").user.win
     for _, v in ipairs(ret) do
-        table.insert(names, v.name)
+        if not M.opts.ignore_opened or set.index(M.listing[winid], v.name) == nil then
+            table.insert(names, v.name)
+        end
     end
     return arr, names
 end
 
 
-
 function M.evt.RabbitEnter()
-    M.listing[1], M.listing[0] = quickscore(M.listing[1], M.opts.maxage)
+    local cwd = vim.fn.getcwd()
+    M.listing.persist[cwd], M.listing[0] = quickscore(M.listing.persist[cwd], M.opts.maxage)
+    set.save(M.memory, M.listing.persist)
 end
 
 
 ---@param evt NvimEvent
-function M.evt.BufEnter(evt, _)
-    if #evt.file == 0 or evt.file:sub(1, 1) ~= "/" then
+---@param winid integer
+function M.evt.BufEnter(evt, winid)
+    if vim.uv.fs_stat(evt.file) == nil then
         return -- Not a local file
-    end
-
-    if set.index(M.listing[2], evt.file) then
+    elseif set.index(M.listing[winid], evt.file) then
         return -- Already opened
     end
 
-    local entry = M.listing[1][evt.file] ---@type table<string, RabbitOxideEntry>
+    table.insert(M.listing[winid], evt.file)
+
     local cwd = vim.fn.getcwd()
+    local entry = M.listing.persist[cwd] ---@type Rabbit.Plugin.Listing.Persist.Table
+
     if entry == nil then
-        entry = { [cwd] = { age = 0, count = 0 } }
-    elseif entry[cwd] == nil then
-        entry[cwd] = { age = 0, count = 0 }
+        entry = { [evt.file] = { age = 0, count = 0 } }
+    elseif entry[evt.file] == nil then
+        entry[evt.file] = { age = 0, count = 0 }
     end
 
-    entry[cwd].age = os.time()
-    entry[cwd].count = entry[cwd].count + 1
-    M.listing[1][evt.file] = entry
+    entry[evt.file].age = os.time()
+    entry[evt.file].count = entry[evt.file].count + 1
+    M.listing.persist[cwd] = entry
 
-    set.save(M.memory, M.listing[1])
+    set.save(M.memory, M.listing.persist)
 end
 
 
 ---@param evt NvimEvent
-function M.evt.BufDelete(evt, _)
-    set.sub(M.listing[2], evt.file)
+---@param winid integer
+function M.evt.BufDelete(evt, winid)
+    set.sub(M.listing[winid], evt.file)
 end
 
 
@@ -148,12 +140,14 @@ end
 function M.func.file_del(ln)
     local arr = require("rabbit").ctx.listing ---@type string[]
     local filename = arr[ln]
-    if filename == nil or M.listing[1][filename] == nil then
+    local cwd = vim.fn.getcwd()
+    if filename == nil or M.listing.persist[cwd][filename] == nil then
         return
     end
-    local entry = M.listing[1][filename] ---@type RabbitOxideEntry
-    entry[vim.fn.getcwd()] = nil
+    M.listing.persist[cwd][filename] = nil
+    table.remove(M.listing[0], ln)
     require("rabbit").Redraw()
 end
+
 
 return M

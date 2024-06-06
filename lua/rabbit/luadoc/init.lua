@@ -23,15 +23,24 @@
 ---@field close fun(integer) Close Rabbit window
 
 
----@class Rabbit.Context
+---@class (exact) Rabbit.Context
 ---@field plugin Rabbit.Plugin | nil Active plugin
 ---@field listing Rabbit.Plugin.Listing.Window
+---@field buffer? Rabbit.Context.Buffer Buffer details
+
+
+---@class (exact) Rabbit.Context.Buffer
+---@field nr integer Buffer ID
+---@field w integer Window width
+---@field h integer Window height
+---@field fs boolean | Rabbit.Screen.Spec Fullscreen
+
 
 ---@class Rabbit.Plugin_Table
 ---@field [string] Rabbit.Plugin
 
 
----@class Rabbit.Workspace
+---@class (exact) Rabbit.Workspace
 ---@field win integer | nil Window ID
 ---@field buf integer | nil Buffer ID
 ---@field ns integer Highlight Namespace ID
@@ -41,7 +50,7 @@
 ---@field [string] Rabbit.Compat.Entry Compatibility entry
 
 
----@class Rabbit.Compat.Entry
+---@class (exact) Rabbit.Compat.Entry
 ---@field path string Directory separator. Linux and macOS use `/`
 ---@field warn boolean Whether or not to warn about compatibility issues
 ---@field __name__ string OS Name

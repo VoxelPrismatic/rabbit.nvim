@@ -1,14 +1,10 @@
-[rabbit.history]: https://img.shields.io/badge/History-v1-yellow?style=flat&labelColor=white
-[rabbit.reopen]: https://img.shields.io/badge/Reopen-v1-yellow?style=flat&labelColor=white
-[rabbit.oxide]: https://img.shields.io/badge/Oxide-v2-yellow?style=flat&labelColor=white
-
 <div align="center">
     <img src="/rabbit.png" width="368" alt="logo"/>
     <h2 id="rabbitnvim">Jump between buffers faster than ever before</h2>
-    <a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img 
+    <a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img
         src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FVoxelPrismatic%2Frabbit.nvim%2Freleases%2Flatest&query=%24.tag_name&style=flat&label=Rabbit&labelColor=white&logo=vowpalwabbit&logoColor=black"
     /></a>
-    <a href="https://neovim.io/" target="_blank"><img 
+    <a href="https://neovim.io/" target="_blank"><img
         src="https://img.shields.io/badge/Neovim-v0.10.0-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"
     /></a>
     <a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img
@@ -39,10 +35,7 @@
   - [Usage](#usage)
   - [Configuration](#configuration)
   - [Preview](#preview)
-- [Plugins](#plugins)
-  - [![history][rabbit.history]](#history)
-  - [![reopen][rabbit.reopen]](#reopen)
-  - [![oxide][rabbit.oxide]](#oxide)
+- [Plugins](/lua/rabbit/plugins)
 - [API](#api)
   - [Using Rabbit](#using-rabbit)
   - [Internals](#internals)
@@ -129,7 +122,7 @@ require("rabbit").setup({
             italic = true,
         },
         dir = "#000000",        -- Folders; Grabs from :hi NonText
-        
+
         file = "#000000",       -- File name; Grabs from :hi Normal
 
         term = {                -- Addons, eg :term or :Oil
@@ -138,6 +131,10 @@ require("rabbit").setup({
         },
         noname = {              -- No buffer name set
             fg = "#000000",     -- Grabs from :hi Function
+            italic = true,
+        },
+        message = {
+            fg = "#000000",     -- Grabs from :hi Identifier
             italic = true,
         },
     },
@@ -170,6 +167,7 @@ require("rabbit").setup({
 
 
         float = true,           -- Plain `true` means use bottom right corner
+        float = "center",       -- Aligns to center
         float = {
             top = 10000,        -- Top offset in lines
             left = 10000,       -- Left offset in columns
@@ -246,15 +244,7 @@ require("rabbit").setup({
 ---
 
 # Plugins
-![history][rabbit.history] ![reopen][rabbit.reopen] ![oxide][rabbit.oxide]
-### History
-Sorts all the buffers this window has visited, in order of most recent visit
-
-### Reopen
-Sorts all the buffers this window has closed, in order of most recent close
-
-### Oxide
-Like zoxide, but saves how often you open a particular file from your current directory
+Moved to [./lua/rabbit/plugins](/lua/rabbit/plugins)
 
 ---
 
@@ -272,9 +262,17 @@ rabbit.Switch(mode)             -- Open with mode
 rabbit.func.close()             -- Default func to close rabbit window
 rabbit.func.select(n)           -- Default func to select an entry
 rabbit.setup(opts)              -- Setup options
-rabbit.attach(plugin)           -- Attach a custom plugin
-rabbit.Redraw()                 -- Like rabbit.Switch(mode), but recovers cursor position
+rabbit.Redraw()                 -- Actually draws the window
 ```
+
+
+### Attaching your plugin
+```lua
+rabbit.attach(plugin)
+```
+`plugin` can be a string **only** if it is a default plugin. For example, `history` is a default plugin.
+Custom plugins must be attached by passing the plugin table, not the name.
+
 
 ### Internals
 ```lua
@@ -287,7 +285,7 @@ rabbit.autocmd(evt)             -- Calls ensure_listing, and runs all relevant p
 ```
 
 ### Create your own Rabbit listing
-All luadoc information is included in [doc.lua](/lua/rabbit/doc.lua)
+All luadoc information is included in [./lua/rabbit/doc](/lua/rabbit/doc)
 
 Just remember to call `rabbit.setup()` before calling `rabbit.attach(plugin)`.
 
@@ -301,7 +299,7 @@ local set = require("rabbit.plugins.util")
 -- * Save a table to a file
 -- * Recover a table from a file
 
----@type RabbitPlugin
+---@type Rabbit.Plugin
 local M = {
     color = "#d7827e",  -- Border color
 
@@ -345,9 +343,6 @@ local M = {
         -- Event handlers. Key names should be the Autocmd name, like `BufEnter` or `BufDelete`. Only these two
         -- events are automatically registered by Rabbit.
         --
-        -- There is also a `RabbitEnter` event which is called right before Rabbit is displayed. This is useful when
-        -- you need to set up your global listing. In the case of Oxide, it filters and sorts internal listings before
-        -- producing M.listing[0]. RabbitEnter takes zero parameters.
     },
 
     opts = {},          -- Plugin specific options you'd like to set
@@ -363,6 +358,7 @@ local M = {
     memory = nil,
 }
 
+
 ---@param evt NvimEvent
 ---@param winid integer
 function M.evt.BufEnter(evt, winid)
@@ -377,6 +373,25 @@ function M.evt.BufDelete(evt, winid)
     -- Remove the current buffer altogether
     set.sub(M.listing[winid], evt.buf)
 end
+
+
+-- There is also a `RabbitEnter` event which is called right before Rabbit is displayed. This is useful when
+-- you need to set up your global listing. In the case of Oxide, it filters and sorts internal listings before
+-- producing M.listing[0]. RabbitEnter takes zero parameters.
+---@param winid integer
+function M.evt.RabbitEnter(winid)
+    -- Called before the listing is copied. Do whatever you like here.
+    -- Just remember that M.listing[0] is the global listing.
+end
+
+
+-- Example of a plugin with custom functions
+---@param ln integer
+function M.func.select(ln)
+    vim.cmd("b " .. M.listing[0][ln])
+    require("rabbit").func.close()
+end
+
 
 return M
 ```

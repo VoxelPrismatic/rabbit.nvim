@@ -70,13 +70,16 @@ function screen.helper(specs, width)
 end
 
 -- Renders to the screen
----@param win integer
----@param buf integer
 ---@param line number
 ---@param specs Rabbit.Screen.Spec[]
-function screen.render(win, buf, line, specs)
+---@return integer the next available line
+function screen.render(line, specs)
+    local win = screen.ctx.winnr or 0
+    local buf = screen.ctx.bufnr or 0
     if line == -1 then
         line = vim.api.nvim_buf_line_count(buf)
+    else
+        line = math.max(0, math.min(line, vim.api.nvim_buf_line_count(buf)))
     end
 
     local finalspec = screen.helper(specs, vim.api.nvim_win_get_width(win))
@@ -85,16 +88,21 @@ function screen.render(win, buf, line, specs)
     for _, hl in ipairs(finalspec.highlights) do
         vim.api.nvim_buf_add_highlight(buf, -1, hl.name, line, hl.start, hl.last)
     end
+    return line + 1
 end
 
 
 -- Places a newline before the specs
----@param win integer
----@param buf integer
 ---@param spec Rabbit.Screen.Spec[]
-function screen.newline(win, buf, spec)
-    screen.render(win, buf, -1, { color = "RabbitBorder", text = " " })
-    screen.render(win, buf, -1, spec)
+---@param line? integer the line to start at
+---@return integer the next available line
+function screen.newline(spec, line)
+    if line == nil then
+        line = -1
+    end
+    screen.render(line, { color = "RabbitBorder", text = " " })
+    screen.render(line == -1 and -1 or line + 1, spec)
+    return line == -1 and -1 or line + 2
 end
 
 
@@ -120,6 +128,7 @@ function screen.set_hl(colors, border_color)
     vim.api.nvim_set_hl(0, "RabbitTitle", maybe_hl(colors.title))
     vim.api.nvim_set_hl(0, "RabbitTerm", maybe_hl(colors.term))
     vim.api.nvim_set_hl(0, "RabbitNil", maybe_hl(colors.noname))
+    vim.api.nvim_set_hl(0, "RabbitMsg", maybe_hl(colors.message))
 end
 
 
@@ -208,27 +217,35 @@ function screen.set_border(win, buf, kwargs)
 end
 
 -- Draw the header and first empty line
-function screen.draw_top()
+function screen.draw_top(clear)
     if #screen.ctx.title == 0 then
         return false
     end
 
-    vim.api.nvim_buf_set_lines(screen.ctx.bufnr, 0, -1, false, {})
+    if clear or clear == nil then
+        vim.api.nvim_buf_set_lines(screen.ctx.bufnr, 0, -1, false, {})
+    end
 
-    screen.render(screen.ctx.winnr, screen.ctx.bufnr, 0, screen.ctx.title)
-    screen.render(screen.ctx.winnr, screen.ctx.bufnr, 1, screen.ctx.middle)
+    screen.render(0, screen.ctx.title)
+    screen.render(1, screen.ctx.middle)
 end
 
 -- Fill the rest of the screen with empty lines
-function screen.draw_bottom()
-    local h = #vim.api.nvim_buf_get_lines(screen.ctx.bufnr, 0, -1, false)
+---@param line? integer Which line to use (default = -1)
+function screen.draw_bottom(line)
+    local max = vim.api.nvim_buf_line_count(screen.ctx.bufnr)
 
-    ---@diagnostic disable-next-line: unused-local
-    for i = 1, math.max(1, screen.ctx.height - h - 1) do
-        screen.render(screen.ctx.winnr, screen.ctx.bufnr, -1, screen.ctx.middle)
+    if line == nil then
+        line = max
+    else
+        line = math.max(0, math.min(max + 1, line))
     end
 
-    screen.render(screen.ctx.winnr, screen.ctx.bufnr, -1, screen.ctx.footer)
+    for i = line, screen.ctx.height - 2 do
+        screen.render(i, screen.ctx.middle)
+    end
+
+    screen.render(screen.ctx.height - 1, screen.ctx.footer)
 end
 
 
@@ -236,8 +253,12 @@ end
 -- __NOTE:__ Only place the file/term/dir specs. This
 -- function handles the border and index for you.
 ---@param spec Rabbit.Screen.Spec[]
-function screen.add_entry(spec)
-    local i = #vim.api.nvim_buf_get_lines(screen.ctx.bufnr, 0, -1, false) - 1
+---@param line? integer Which line to use (default = -1)
+function screen.add_entry(spec, line)
+    if line == nil then
+        line = -1
+    end
+    local i = #vim.api.nvim_buf_get_lines(screen.ctx.bufnr, 0, line, false) - 1
 
     if i < 10 then
         vim.api.nvim_buf_set_keymap(screen.ctx.bufnr, "n", "" .. i, "", {
@@ -270,7 +291,7 @@ function screen.add_entry(spec)
         expand = true
     })
 
-    screen.render(screen.ctx.winnr, screen.ctx.bufnr, -1, to_render)
+    screen.render(line, to_render)
 end
 
 
@@ -290,7 +311,7 @@ function screen.display_message(msg)
     end
 
     for _, line in ipairs(lines) do
-        screen.render(screen.ctx.winnr, screen.ctx.bufnr, -1, {
+        screen.render(-1, {
             fullscreen or { color = "RabbitBorder", text = screen.ctx.box.vertical .. " " },
             { color = "RabbitFile", text = line },
             fullscreen or { color = "RabbitBorder", text = screen.ctx.box.vertical, expand = true },

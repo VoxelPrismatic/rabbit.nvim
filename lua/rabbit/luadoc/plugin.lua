@@ -1,4 +1,4 @@
----@class Rabbit.Plugin
+---@class (exact) Rabbit.Plugin
 ---@field public evt Rabbit.Plugin.Event Autocmd:Function table
 ---@field public func Rabbit.Plugin.Functions Extra functions
 ---@field public switch string Default key pressed to switch to this plugin
@@ -8,7 +8,7 @@
 ---@field public empty_msg string Message shown when listing is empty
 ---@field public color NvimHlKwargs | string Border color
 ---@field public skip_same boolean Whether or not to skip the first entry if it's the same as the current one
----@field public init function Initializes the plugin
+---@field public init fun(p: Rabbit.Plugin) Initializes the plugin
 ---@field public memory? string If set, Rabbit will make a file, and set `memory` to the file name
 ---@field public opts? table Plugin specific options
 
@@ -30,14 +30,18 @@
 
 
 ---@class Rabbit.Plugin.Listing
+---@field [0] Rabbit.Plugin.Listing.Window Listing shown to the user
+---@field persist? Rabbit.Plugin.Listing.Persist Internal persistent listing
+---@field opened? Rabbit.Plugin.Listing.Window Tracks open files
 ---@field [integer] Rabbit.Plugin.Listing.Window
+---@field [string] Rabbit.Plugin.Listing.Window
 
 
 ---@class Rabbit.Plugin.Listing.Window
 ---@field [integer] integer | string
 
 
----@class Rabbit.Plugin.Options
+---@class (exact) Rabbit.Plugin.Options
 ---@field public color? NvimHlKwargs | string
 ---@field public keys? Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
 ---@field public switch? string Key to switch to this plugin
@@ -47,10 +51,22 @@
 ---@class Rabbit.Plugin.Event
 ---@field BufEnter? Rabbit.Event.Handler Autocmd on BufEnter
 ---@field BufDelete? Rabbit.Event.Handler Autocmd on BufDelete
----@field RabbitEnter? fun() Called when the Rabbit window is opened
+---@field RabbitEnter? fun(winnr: integer) Called when the Rabbit window is opened
 ---@field [string] Rabbit.Event.Handler
 
 ---@alias Rabbit.Event.Handler fun(evt: NvimEvent, winid: integer)
 
 
+---@class Rabbit.Plugin.Listing.Persist
+---@field [string] Rabbit.Plugin.Listing.Persist.Table `Directory Name : Table` table
+
+
+---@class Rabbit.Plugin.Listing.Persist.Table
+---@field [integer] string Just the filename; no Oxide details
+---@field [string] Rabbit.Plugin.Listing.Persist.Entry `File Name : Entry` table
+
+
+---@class Rabbit.Plugin.Listing.Persist.Entry
+---@field age integer The last time the file was accessed
+---@field count integer The total number of times this file was accessed
 

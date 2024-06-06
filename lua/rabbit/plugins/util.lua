@@ -74,4 +74,31 @@ function M.save(s, tbl)
     return true
 end
 
+
+-- Removes references to deleted files and folders
+---@param tbl Rabbit.Plugin.Listing.Persist
+---@return Rabbit.Plugin.Listing.Persist
+function M.clean(tbl)
+    for dir, ls in pairs(tbl) do
+        local stat = vim.uv.fs_stat(dir)
+        if stat == nil or stat.type == "file" then
+            tbl[dir] = nil
+            goto continue
+        end
+
+        for key, file in pairs(ls) do
+            if type(key) == "number" and file == vim.NIL then
+                table.remove(tbl[dir], key)
+            elseif type(key) == "number" and vim.uv.fs_stat(file) == nil then
+                table.remove(tbl[dir], key)
+            elseif type(key) == "string" and vim.uv.fs_stat(key) == nil then
+                tbl[dir][key] = nil
+            end
+        end
+
+        ::continue::
+    end
+    return tbl
+end
+
 return M
