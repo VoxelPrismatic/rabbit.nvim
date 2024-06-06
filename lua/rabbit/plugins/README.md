@@ -1,7 +1,12 @@
+[history]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.history&label=History&labelColor=white&color=yellow
+[oxide]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.oxide&label=Oxide&labelColor=white&color=yellow
+[harpoon]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.harpoon&label=Harpoon&labelColor=white&color=yellow
+[reopen]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.reopen&label=Reopen&labelColor=white&color=yellow
+
 # Plugins
 This describes the currently available plugins and their configuration options
 
-## History
+## History ![history][history]
 Sorts all the buffers this window has visited, in order of most recent visit
 ```lua
 require("rabbit").setup({
@@ -12,7 +17,7 @@ require("rabbit").setup({
 ```
 <details>
     <summary><h3>Changelog</h3></summary>
-    <ol>
+    <ul>
         <li>
             <b>v2</b>
             <ul>
@@ -26,18 +31,19 @@ require("rabbit").setup({
                 <li>Initial verson</li>
             </ul>
         </li>
-    </ol>
+    </ul>
 </details>
+<hr/>
 
 
-## Reopen
+## Reopen ![reopen][reopen]
 Sorts all the buffers this window has closed, in order of most recent close
 ```lua
 -- No options supported
 ```
 <details>
     <summary><h3>Changelog</h3></summary>
-    <ol>
+    <ul>
         <li>
             <b>v2</b>
             <ul>
@@ -50,11 +56,11 @@ Sorts all the buffers this window has closed, in order of most recent close
                 <li>Initial verson</li>
             </ul>
         </li>
-    </ol>
+    </ul>
 </details>
+<hr/>
 
-
-## Oxide
+## Oxide ![oxide][oxide]
 Like zoxide, but saves how often you open a particular file from your current directory
 ```lua
 require("rabbit").setup({
@@ -66,7 +72,7 @@ require("rabbit").setup({
 ```
 <details>
     <summary><h3>Changelog</h3></summary>
-    <ol>
+    <ul>
         <li>
             <b>v3</b>
             <ul>
@@ -87,12 +93,13 @@ require("rabbit").setup({
                 <li>Initial verson</li>
             </ul>
         </li>
-    </ol>
+    </ul>
 </details>
+<hr/>
 
 
-## Harpoon
-Like [ThePrimeagen/Harpoon][harpoon2], as far as I know.
+## Harpoon ![harpoon][harpoon]
+Like [ThePrimeagen/Harpoon][https://github.com/ThePrimeagen/harpoon/tree/harpoon2], as far as I know.
 ```lua
 require("rabbit").setup({
     plugins_opts = { harpoon = { opts = { ---@type Rabbit.Plugin.Harpoon.Options
@@ -102,13 +109,13 @@ require("rabbit").setup({
 ```
 <details>
     <summary><h3>Changelog</h3></summary>
-    <ol>
+    <ul>
         <li>
             <b>v1</b>
             <ul>
                 <li>Initial verson</li>
             </ul>
         </li>
-    </ol>
+    </ul>
 </details>
-[harpoon2]: https://github.com/ThePrimeagen/harpoon/tree/harpoon2
+<hr/>

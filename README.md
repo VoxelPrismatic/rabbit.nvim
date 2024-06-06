@@ -1,3 +1,8 @@
+[rabbit.history]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.history&label=History&labelColor=white&color=yellow
+[rabbit.oxide]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.oxide&label=Oxide&labelColor=white&color=yellow
+[rabbit.harpoon]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.harpoon&label=Harpoon&labelColor=white&color=yellow
+[rabbit.reopen]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.reopen&label=Reopen&labelColor=white&color=yellow
+
 <div align="center">
     <img src="/rabbit.png" width="368" alt="logo"/>
     <h2 id="rabbitnvim">Jump between buffers faster than ever before</h2>
@@ -36,6 +41,10 @@
   - [Configuration](#configuration)
   - [Preview](#preview)
 - [Plugins](/lua/rabbit/plugins)
+  - ![history][rabbit.history]
+  - ![reopen][rabbit.reopen]
+  - ![oxide][rabbit.oxide]
+  - ![harpoon][rabbit.harpoon]
 - [API](#api)
   - [Using Rabbit](#using-rabbit)
   - [Internals](#internals)
@@ -285,7 +294,8 @@ rabbit.autocmd(evt)             -- Calls ensure_listing, and runs all relevant p
 ```
 
 ### Create your own Rabbit listing
-All luadoc information is included in [./lua/rabbit/doc](/lua/rabbit/doc)
+All luadoc information is included in [luadoc](/lua/rabbit/luadoc)
+> Whatever flavor luals uses. It isn't ldoc.
 
 Just remember to call `rabbit.setup()` before calling `rabbit.attach(plugin)`.
 
@@ -342,10 +352,10 @@ local M = {
     evt = {
         -- Event handlers. Key names should be the Autocmd name, like `BufEnter` or `BufDelete`. Only these two
         -- events are automatically registered by Rabbit.
-        --
     },
 
     opts = {},          -- Plugin specific options you'd like to set
+
 
     -- Initializer, if you need it. The first parameter is the plugin object so Ldoc doesn't scream at you.
     -- In the case of Oxide, it reads the memory file and sets `M.listing[0]`
