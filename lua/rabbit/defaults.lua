@@ -41,6 +41,9 @@ local box = {
 
 local function grab_color(name)
     local details = vim.api.nvim_get_hl(0, { name = name })
+    if details == nil or details.fg == nil then
+        return nil
+    end
     return string.format("#%06x", details.fg)
 end
 

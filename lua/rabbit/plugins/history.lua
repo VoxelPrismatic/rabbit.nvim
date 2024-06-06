@@ -1,6 +1,12 @@
 local set = require("rabbit.plugins.util")
 
+---@class Rabbit.Plugin.History.Options
+---@field public ignore_unlisted? boolean If true, will ignore unlisted buffers (like Oil)
+
+
 ---@type Rabbit.Plugin
+---@class Rabbit.Plugin.History
+---@field opts Rabbit.Plugin.History.Options
 local M = {
     color = "#d7827e",
     name = "history",
@@ -12,11 +18,17 @@ local M = {
     keys = {},
     evt = {},
     init = function(_) end,
+    opts = {
+        ignore_unlisted = false
+    }
 }
 
 ---@param evt NvimEvent
 ---@param winid integer
 function M.evt.BufEnter(evt, winid)
+    if M.opts.ignore_unlisted and not vim.fn.getbufinfo(evt.buf)[1].listed then
+        return
+    end
     set.add(M.listing[winid], evt.buf)
 end
 
