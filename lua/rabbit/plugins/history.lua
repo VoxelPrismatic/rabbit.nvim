@@ -88,6 +88,7 @@ function M.func.file_del(n)
     local rabbit = require("rabbit")
     M.listing[rabbit.user.win] = rabbit.ctx.listing
     table.remove(M.listing[rabbit.user.win], n)
+    table.insert(M.listing[rabbit.user.win], 1, rabbit.user.buf)
     if M.listing[0] ~= nil then
         table.remove(M.listing[rabbit.user.win], 1)
         M.listing[0] = vim.deepcopy(M.listing[rabbit.user.win])
