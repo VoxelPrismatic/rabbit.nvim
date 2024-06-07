@@ -54,7 +54,6 @@ function M.func.file_add(n)
     M.listing[0] = require("rabbit").ctx.listing
     local cwd = vim.fn.getcwd()
     M.listing.persist[cwd] = M.listing.persist[cwd] or {}
-    n = math.max(1, math.min(#M.listing[0] + 1, n))
 
     M.listing.opened[1] = M.listing.opened[1] or vim.api.nvim_buf_get_name(require("rabbit").user.buf)
     if vim.uv.fs_stat(M.listing.opened[1] .. "") == nil then
@@ -63,6 +62,7 @@ function M.func.file_add(n)
 
     set.sub(M.listing.persist[cwd], M.listing.opened[1])
     set.sub(M.listing[0], M.listing.opened[1])
+    n = math.max(1, math.min(#M.listing[0] + 1, n))
     table.insert(M.listing.persist[cwd], n, M.listing.opened[1])
     table.insert(M.listing[0], n, M.listing.opened[1])
     set.save(M.memory, M.listing.persist)

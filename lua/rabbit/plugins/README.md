@@ -99,7 +99,7 @@ require("rabbit").setup({
 
 
 ## Harpoon ![harpoon][harpoon]
-Like [ThePrimeagen/Harpoon][https://github.com/ThePrimeagen/harpoon/tree/harpoon2], as far as I know.
+Like [ThePrimeagen/Harpoon](https://github.com/ThePrimeagen/harpoon/tree/harpoon2), as far as I know.
 ```lua
 require("rabbit").setup({
     plugins_opts = { harpoon = { opts = { ---@type Rabbit.Plugin.Harpoon.Options
@@ -110,6 +110,15 @@ require("rabbit").setup({
 <details>
     <summary><h3>Changelog</h3></summary>
     <ul>
+        <li>
+            <b>v1.1</b>
+            <ul>
+                <li>
+                    Fixed a bug where you could duplicate entries out of bounds
+                    <br><sub><i>I had the right code, just in the wrong spot :facepalm:</i></sub>
+                </li>
+            </ul>
+        </li>
         <li>
             <b>v1</b>
             <ul>
