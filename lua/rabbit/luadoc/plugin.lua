@@ -13,6 +13,13 @@
 ---@field public opts? table Plugin specific options
 
 
+---@alias Rabbit.plugin.default_store
+---| "bufnr" # Rabbit will automatically add the buffer ID to new window listings
+---| "filename" # Rabbit will automatically add the filename to new window listings
+---| "custom" # Rabbit will not add anything to new window listings
+---| fun(evt: NvimEvent, winid: integer) -> any # Custom function to add to new window listings
+
+
 ---@class Rabbit.Plugin.Functions
 ---@field select? fun(integer) Select current entry
 ---@field close? fun(integer) Close Rabbit window
@@ -46,6 +53,34 @@
 ---@field public keys? Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
 ---@field public switch? string Key to switch to this plugin
 ---@field public opts? table Any plugin specific options
+
+
+---@class (exact) Rabbit.Plugin.Options.History
+---@field public color? NvimHlKwargs | string
+---@field public keys? Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
+---@field public switch? string Key to switch to this plugin
+---@field public opts? Rabbit.Plugin.History.Options Any plugin specific options
+
+
+---@class (exact) Rabbit.Plugin.Options.Oxide
+---@field public color? NvimHlKwargs | string
+---@field public keys? Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
+---@field public switch? string Key to switch to this plugin
+---@field public opts? Rabbit.Plugin.Oxide.Options Any plugin specific options
+
+
+---@class (exact) Rabbit.Plugin.Options.Harpoon
+---@field public color? NvimHlKwargs | string
+---@field public keys? Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
+---@field public switch? string Key to switch to this plugin
+---@field public opts? Rabbit.Plugin.Harpoon.Options Any plugin specific options
+
+
+---@class (exact) Rabbit.Plugin.Options.Reopen
+---@field public color? NvimHlKwargs | string
+---@field public keys? Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
+---@field public switch? string Key to switch to this plugin
+
 
 
 ---@class Rabbit.Plugin.Event

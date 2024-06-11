@@ -56,8 +56,10 @@ function M.evt.BufDelete(evt, winid)
         return
     end
 
-    set.sub(M.listing.persist[cwd], evt.file)
-    set.add(M.listing[winid], evt.file)
+    vim.print(evt)
+
+    set.sub(M.listing.persist[cwd], evt.match)
+    set.add(M.listing[winid], evt.match)
     set.save(M.memory, M.listing.persist)
 end
 
@@ -76,10 +78,10 @@ end
 
 ---@param n integer
 function M.func.select(n)
-    M.listing[0] = require("rabbit").ctx.listing
     if M.listing[0] == nil or n ~= 1 then
         return require("rabbit").func.select(n)
     end
+    M.listing[0] = require("rabbit").ctx.listing
 
     table.remove(M.listing[0], 1)
     for _, v in ipairs(M.listing[0]) do

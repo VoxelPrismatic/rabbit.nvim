@@ -1,5 +1,6 @@
 local set = require("rabbit.plugins.util")
 
+
 ---@class Rabbit.Plugin.Oxide.Options
 ---@field public maxage? integer Like zoxide's AGING algorithm
 ---@field public ignore_opened? boolean Do not display currently open buffers
@@ -8,6 +9,7 @@ local set = require("rabbit.plugins.util")
 ---@class QuickSortEntry
 ---@field name string Context name; untouched
 ---@field score integer Score
+
 
 ---@class Rabbit.Plugin.Oxide: Rabbit.Plugin
 local M = { ---@type Rabbit.Plugin
@@ -21,11 +23,13 @@ local M = { ---@type Rabbit.Plugin
     keys = {},
     evt = {},
     memory = "",
+
     ---@type Rabbit.Plugin.Oxide.Options
     opts = {
         maxage = 1000,
         ignore_opened = true,
     },
+
     ---@param p Rabbit.Plugin.Oxide
     init = function(p)
         p.listing[0] = {}

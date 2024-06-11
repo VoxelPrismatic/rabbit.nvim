@@ -7,6 +7,10 @@
 
 
 ---@class Rabbit.Options.Plugin_Options
+---@field history? Rabbit.Plugin.Options.History
+---@field oxide? Rabbit.Plugin.Options.Oxide
+---@field reopen? Rabbit.Plugin.Options.Reopen
+---@field harpoon? Rabbit.Plugin.Options.Harpoon
 ---@field [string] Rabbit.Plugin.Options
 
 

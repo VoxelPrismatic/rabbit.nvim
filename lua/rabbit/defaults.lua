@@ -1,3 +1,5 @@
+local DEFAULT_MSG = "There's nothing to display, and the dev forgot to add a message"
+
 ---@type Rabbit.Box.Default
 local box = {
     round = {
@@ -91,5 +93,6 @@ local options = {
 
 return {
     options = options,
-    box = box
+    box = box,
+    msg = DEFAULT_MSG
 }

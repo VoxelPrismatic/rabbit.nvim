@@ -44,6 +44,8 @@
 ---@field win integer | nil Window ID
 ---@field buf integer | nil Buffer ID
 ---@field ns integer Highlight Namespace ID
+---@field view? vim.fn.winsaveview.ret Window viewport details
+---@field conf? vim.api.keyset.win_config Window configuration details
 
 
 ---@class Rabbit.Compat
@@ -53,6 +55,7 @@
 ---@class (exact) Rabbit.Compat.Entry
 ---@field path string Directory separator. Linux and macOS use `/`
 ---@field warn boolean Whether or not to warn about compatibility issues
----@field __name__ string OS Name
----@field __has__ string[] List of names under vim.fn.has(...)
+---@field name string OS Name
+---@field has string[] List of names under vim.fn.has(...)
+
 
