@@ -16,7 +16,7 @@ require("rabbit").setup({
 })
 ```
 <details>
-    <summary><h3>Changelog</h3></summary>
+    <summary><b>Changelog</b></summary>
     <ul>
         <li>
             <b>v2</b>
@@ -42,7 +42,7 @@ Sorts all the buffers this window has closed, in order of most recent close
 -- No options supported
 ```
 <details>
-    <summary><h3>Changelog</h3></summary>
+    <summary><b>Changelog</b></summary>
     <ul>
         <li>
             <b>v2</b>
@@ -71,7 +71,7 @@ require("rabbit").setup({
 })
 ```
 <details>
-    <summary><h3>Changelog</h3></summary>
+    <summary><b>Changelog</b></summary>
     <ul>
         <li>
             <b>v3</b>
@@ -108,7 +108,7 @@ require("rabbit").setup({
 })
 ```
 <details>
-    <summary><h3>Changelog</h3></summary>
+    <summary><b>Changelog</b></summary>
     <ul>
         <li>
             <b>v1.1</b>
