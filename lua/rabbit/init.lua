@@ -416,7 +416,6 @@ function rabbit.Redraw()
                 { text = target:sub(#"rabbitmsg://" + 1), color = "RabbitMsg" },
             }, i + 1)
         elseif target:sub(1, 1) ~= "/" then
-            vim.print(target)
             local rel = rabbit.RelPath(buf_path, target)
             local mod = vim.split(target, ":/")[1]
             screen.add_entry({

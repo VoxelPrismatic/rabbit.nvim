@@ -56,8 +56,6 @@ function M.evt.BufDelete(evt, winid)
         return
     end
 
-    vim.print(evt)
-
     set.sub(M.listing.persist[cwd], evt.match)
     set.add(M.listing[winid], evt.match)
     set.save(M.memory, M.listing.persist)
