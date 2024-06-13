@@ -103,6 +103,10 @@ return {
 > Rabbit is only tested on Linux, although probably works as well on macOS.
 > Please help with any compatibility issues by raising an [issue](https://github.com/voxelprismatic/rabbit.nvim/issues)
 
+> [!NOTE]
+> Rabbit is only tested on the latest version of Neovim, which is detailed at the top of the ReadMe.
+> If your version of Neovim is significantly older, bite the bullet and upgrade.
+
 ## Usage
 Just run your keybind! (or `:Rabbit {{mode}}`)
 
