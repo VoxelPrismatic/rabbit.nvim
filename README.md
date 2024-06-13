@@ -115,12 +115,15 @@ You can hop back and forth between buffers very quickly, almost like a rabbit...
 If you scroll down on the Rabbit window, you'll see all the keybinds available.
 
 ## Configuration
+**Please do not copy this config**, it is just an example detailing all the options available. 
+There are lots of duplicate keys, but all LSP info is available simply by adding `---@type Rabbit.Options` 
+to your config table
 ```lua
 -- Use all the below defaults, but set a custom keybind
 require("rabbit").setup("any keybind")
 
 -- Defaults
-require("rabbit").setup({
+require("rabbit").setup({ ---@type Rabbit.Options
     colors = {
         title = {               -- Title text
             fg = "#000000",     -- Grabs from :hi Normal
@@ -142,7 +145,7 @@ require("rabbit").setup({
             fg = "#000000",     -- Grabs from :hi Function
             italic = true,
         },
-        message = {
+        message = {             -- Message text, eg "Open all files" in Reopen
             fg = "#000000",     -- Grabs from :hi Identifier
             italic = true,
         },
