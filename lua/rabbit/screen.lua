@@ -72,7 +72,7 @@ end
 -- Renders to the screen
 ---@param line number
 ---@param specs Rabbit.Screen.Spec[]
----@return integer the next available line
+---@return integer integer The next available line
 function screen.render(line, specs)
     local win = screen.ctx.winnr or 0
     local buf = screen.ctx.bufnr or 0
@@ -95,7 +95,7 @@ end
 -- Places a newline before the specs
 ---@param spec Rabbit.Screen.Spec[]
 ---@param line? integer the line to start at
----@return integer the next available line
+---@return integer integer The next available line
 function screen.newline(spec, line)
     if line == nil then
         line = -1
@@ -217,6 +217,7 @@ function screen.set_border(win, buf, kwargs)
 end
 
 -- Draw the header and first empty line
+---@param clear? boolean Whether to clear the screen (default = true)
 function screen.draw_top(clear)
     if #screen.ctx.title == 0 then
         return false
@@ -232,11 +233,15 @@ end
 
 -- Fill the rest of the screen with empty lines
 ---@param line? integer Which line to use (default = -1)
+---@return integer integer The next empty line
 function screen.draw_bottom(line)
     local max = vim.api.nvim_buf_line_count(screen.ctx.bufnr)
 
     if line == nil then
         line = max
+    elseif line > screen.ctx.height - 2 then
+        screen.render(-1, screen.ctx.middle)
+        return screen.render(-1, screen.ctx.footer)
     else
         line = math.max(0, math.min(max + 1, line))
     end
@@ -245,7 +250,7 @@ function screen.draw_bottom(line)
         screen.render(i, screen.ctx.middle)
     end
 
-    screen.render(screen.ctx.height - 1, screen.ctx.footer)
+    return screen.render(screen.ctx.height - 1, screen.ctx.footer)
 end
 
 

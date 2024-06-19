@@ -2,6 +2,10 @@ local screen = require("rabbit.screen")
 local defaults = require("rabbit.defaults")
 local set = require("rabbit.plugins.util")
 local compat = require("rabbit.compat")
+local autocmd = require("rabbit.autocmd")
+
+-- Somehow Neovim 0.9.5 over alacritty doesn't have vim.uv
+vim.uv = vim.uv or vim.loop
 
 -- Replaces terminal codes and keycodes (<CR>, <Esc>, ...) in a string with
 -- the internal representation.
@@ -36,7 +40,7 @@ local rabbit = {
     default = "",
     plugins = {},
 
-    compat = require("rabbit.compat"),
+    compat = compat,
 }
 
 -- Display a message in the buffer
@@ -193,17 +197,18 @@ function rabbit.ensure_listing(winid)
 
     for k, _ in pairs(rabbit.plugins) do
         local p = rabbit.plugins[k] ---@type Rabbit.Plugin
-
+        local handler = (p.evt.BufEnter or function(_, _) end)
 
         if p.listing == nil then
             p.listing = { [winid] = {} }
-            p.evt.BufEnter(evt, winid)
+            handler(evt, winid)
         elseif p.listing[winid] == nil then
             p.listing[winid] = {}
-            p.evt.BufEnter(evt, winid)
+            handler(evt, winid)
         end
     end
 end
+
 
 -- Highlight manager
 function rabbit.BufHighlight()
@@ -212,22 +217,22 @@ function rabbit.BufHighlight()
     local line = vim.fn.line(".") - 1
     local e = rabbit.ctx.listing[math.max(1, line - 2)]
 
-    if type(e) == "number" then
-        local valid = vim.api.nvim_buf_is_valid(e or 0)
-        if not valid then
-            return rabbit.Redraw()
-        end
+    if type(e) == "number" and not vim.api.nvim_buf_is_valid(e) then
+        return rabbit.Redraw()
     end
 
-    if line - 1 > 0 and line - 1 <= len then
-        local fullscreen = rabbit.rabbit.win == rabbit.user.win
-        local offset = fullscreen and 0 or #(rabbit.opts.window.box.vertical)
-        vim.api.nvim_buf_add_highlight(
-            rabbit.rabbit.buf, rabbit.rabbit.ns, "CursorLine",
-            line, offset, #(vim.api.nvim_get_current_line()) - offset
-        )
+    if line - 1 <= 0 or line - 1 > len then
+        return
     end
+
+    local fullscreen = rabbit.rabbit.win == rabbit.user.win
+    local offset = fullscreen and 0 or #(rabbit.opts.window.box.vertical)
+    vim.api.nvim_buf_add_highlight(
+        rabbit.rabbit.buf, rabbit.rabbit.ns, "CursorLine",
+        line, offset, #(vim.api.nvim_get_current_line()) - offset
+    )
 end
+
 
 -- Creates the buffer for the given mode
 ---@param mode string
@@ -331,11 +336,14 @@ function rabbit.MakeBuf(mode)
         mode = b_mode,
     }
 
+    local fs = screen.set_border(rabbit.rabbit.win, buf, b_kwargs)
+
     return { ---@type Rabbit.Context.Buffer
         nr = buf,
         w = opts.width,
         h = opts.height,
-        fs = screen.set_border(rabbit.rabbit.win, buf, b_kwargs)
+        fs = fs,
+        pos = fs and 0 or #(b_kwargs.box.vertical),
     }
 end
 
@@ -353,7 +361,7 @@ function rabbit.Window(mode)
     rabbit.ctx.buffer = rabbit.MakeBuf(mode)
     screen.draw_top()
     if rabbit.Redraw() then
-        vim.api.nvim_win_set_cursor(rabbit.rabbit.win, { 3, rabbit.ctx.buffer.fs and 0 or #(rabbit.opts.window.box.vertical) })
+        vim.api.nvim_win_set_cursor(rabbit.rabbit.win, { 3, rabbit.ctx.buffer.pos })
     end
 end
 
@@ -369,11 +377,15 @@ function rabbit.Redraw()
     end
 
 -- Copy listing; remove first entry if needed
-    rabbit.ctx.listing = vim.deepcopy(rabbit.ctx.plugin.listing[0] or rabbit.ctx.plugin.listing[rabbit.user.win])
+    rabbit.ctx.listing = vim.deepcopy(
+        rabbit.ctx.plugin.listing[0] or
+        rabbit.ctx.plugin.listing[rabbit.user.win]
+    )
 
     if #rabbit.ctx.listing > 0 and rabbit.ctx.plugin.skip_same then
+        local first_entry = rabbit.ctx.listing[1]
         local name = vim.api.nvim_buf_get_name(rabbit.user.buf)
-        if rabbit.ctx.listing[1] == rabbit.user.buf or rabbit.ctx.listing[1] == name then
+        if first_entry == rabbit.user.buf or first_entry == name then
             table.remove(rabbit.ctx.listing, 1)
         end
     end
@@ -382,8 +394,6 @@ function rabbit.Redraw()
     if not has_name or buf_path:sub(1, 1) ~= "/" then
         buf_path = vim.fn.getcwd() .. "/rabbit.txt" -- Relative to CWD if no name set
     end
-
-    screen.draw_bottom(2)
 
     local i = 1
     while i <= #rabbit.ctx.listing do
@@ -403,7 +413,7 @@ function rabbit.Redraw()
                 goto continue
             end
         else
-            break
+            goto skip
         end
 
         if target == "" then
@@ -430,6 +440,7 @@ function rabbit.Redraw()
             }, i + 1)
         end
 
+        ::skip::
         i = i + 1
         ::continue::
     end
@@ -439,7 +450,7 @@ function rabbit.Redraw()
         return false
     end
 
-    rabbit.Legend(mode, math.max(i + 2, buf.h))
+    rabbit.Legend(mode, screen.draw_bottom(i + 1))
     return true
 end
 
@@ -454,21 +465,16 @@ function rabbit.Legend(mode, line)
 
     mode = mode or rabbit.ctx.plugin.name
 
-    vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", "i", "", {
-        callback = function() vim.fn.feed_termcodes("<esc>i", "t") end
-    })
-
-    vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", "I", "", {
-        callback = function() vim.fn.feed_termcodes("<esc>I", "t") end
-    })
-
-    vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", "A", "", {
-        callback = function() vim.fn.feed_termcodes("<esc>A", "t") end
-    })
-
-    vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", "a", "", {
-        callback = function() vim.fn.feed_termcodes("<esc>a", "t") end
-    })
+    local keys = "iIaArR"
+    for key in string.gmatch(keys, ".") do
+        vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", key, "", {
+            noremap = true, silent = true,
+            callback = function()
+                (rabbit.ctx.plugin.func.close or rabbit.func.close)()
+                vim.fn.feedkeys(key, "t")
+            end
+        })
+    end
 
     line = screen.newline({
         { color = "RabbitTitle", text = " Switch:" },
@@ -619,9 +625,20 @@ function rabbit.attach(plugin)
     end
     rabbit.plugins[plugin.name] = plugin
     plugin.init(plugin)
+
+    for evt, _ in pairs(plugin.evt) do
+        if not set.index(autocmd.attached, evt) then
+            table.insert(autocmd.attached, evt)
+            vim.api.nvim_create_autocmd(evt, {
+                pattern = {"*"},
+                callback = rabbit.autocmd
+            })
+        end
+    end
 end
 
 
+---@param name string Plugin name
 function rabbit.make_mem(name)
     local parts = vim.split(debug.getinfo(1).source:sub(2), rabbit.compat.path)
     table.remove(parts, #parts)
@@ -640,5 +657,5 @@ function rabbit.make_mem(name)
     return vim.fn.fnamemodify(file, ":p")
 end
 
-require("rabbit.autocmd")(rabbit)
+autocmd.attach(rabbit)
 return rabbit

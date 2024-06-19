@@ -19,6 +19,7 @@ local M = { ---@type Rabbit.Plugin
     ---@param p Rabbit.Plugin.History
     init = function(p)
         p.listing.last_closed = {}
+        p.listing.opened = {}
     end,
 
     ---@type Rabbit.Plugin.History.Options
@@ -36,6 +37,7 @@ function M.evt.BufEnter(evt, winid)
         return
     end
     set.add(M.listing[winid], evt.buf)
+    set.add(M.listing.opened, evt.buf)
 end
 
 
@@ -43,16 +45,24 @@ end
 ---@param winid integer
 function M.evt.BufDelete(evt, winid)
     set.sub(M.listing[winid], evt.buf)
+    set.sub(M.listing.opened, evt.buf)
 end
 
 
 ---@param winid integer
 function M.evt.RabbitEnter(winid)
-    if #M.listing[winid] <= 1 and #M.listing.last_closed > 0 then
+    M.listing[0] = nil
+    if #M.listing[winid] > 1 then
+        return
+    end
+
+    if #M.listing.last_closed > 1 then
         M.listing[0] = vim.deepcopy(M.listing.last_closed)
         table.insert(M.listing[0], 1, "rabbitmsg://Restore full history")
-    else
-        M.listing[0] = nil
+        M.listing.last_closed = {}
+    elseif #M.listing.opened > 1 then
+        M.listing[0] = vim.deepcopy(M.listing.opened)
+        table.insert(M.listing[0], 1, "rabbitmsg://Open all buffers")
     end
 end
 

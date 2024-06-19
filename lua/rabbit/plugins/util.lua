@@ -3,6 +3,7 @@ local M = {}
 -- Find the first index of an entry in the table
 ---@param t table
 ---@param e any
+---@return integer | nil The index, or nil if not found
 function M.index(t, e)
     for i, v in ipairs(t) do
         if v == e then
@@ -16,6 +17,7 @@ end
 -- Treats table like a set; removes all instances of the entry
 ---@param t table
 ---@param e any
+---@return boolean If anything was removed
 function M.sub(t, e)
     local i = M.index(t, e)
     local ret = i ~= nil

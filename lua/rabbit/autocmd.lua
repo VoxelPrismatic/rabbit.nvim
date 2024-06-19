@@ -1,5 +1,18 @@
+local M = {
+    attached = {
+        "BufEnter",
+        "BufDelete",
+        "BufUnload",
+        "WinClosed",
+        "WinResized",
+        "WinEnter",
+        "RabbitEnter",
+    }
+}
+
+
 ---@param rabbit Rabbit.Instance
-return function(rabbit)
+function M.attach(rabbit)
     vim.api.nvim_create_autocmd("BufEnter", {
         pattern = {"*"},
         callback = rabbit.autocmd
@@ -61,3 +74,5 @@ return function(rabbit)
     })
 end
 
+
+return M

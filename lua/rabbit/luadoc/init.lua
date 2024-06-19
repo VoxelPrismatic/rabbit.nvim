@@ -34,6 +34,7 @@
 ---@field w integer Window width
 ---@field h integer Window height
 ---@field fs boolean | Rabbit.Screen.Spec Fullscreen
+---@field pos integer Cursor position; 0 if fullscreen; length of vertical wall otherwise
 
 
 ---@class Rabbit.Plugin_Table
