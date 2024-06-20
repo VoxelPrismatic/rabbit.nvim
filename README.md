@@ -125,7 +125,7 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 > Be sure to use an LSP, like `lua_ls`. I have all the types created for your convenience.
 
 <details>
-    <summary><h3>Rabbit.Options</h3></summary>
+    <summary><b>Rabbit.Options</b></summary>
     
 | key | type | description | default |
 |-|-|-|-|
@@ -139,7 +139,7 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 </details>
 
 <details>
-    <summary><h3>Rabbit.Options.Colors</h3></summary>
+    <summary><b>Rabbit.Options.Colors</b></summary>
         
 ![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/5b441d5c-b6a9-4173-a762-f5361d984ee8)
 
@@ -160,7 +160,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><h3>Rabbit.Options.Window</h3></summary>
+    <summary><b>Rabbit.Options.Window</b></summary>
 
 ![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/0783b721-47bc-4779-b129-55225b7455ba)
 
@@ -181,7 +181,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><h3>Rabbit.Box</h3></summary>
+    <summary><b>Rabbit.Box</b></summary>
     
 | key | type | description |
 |-|-|-|
@@ -197,7 +197,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><h3>Rabbit.Keymap</h3></summary>
+    <summary><b>Rabbit.Keymap</b></summary>
     
 | key | type | description | default |
 |-|-|-|-|
@@ -213,7 +213,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><h3>Rabbit.Options.Plugin_Options</h3></summary>
+    <summary><b>Rabbit.Options.Plugin_Options</b></summary>
 
 **Note:** The key should be the plugin name, with the value being the table described below
 
@@ -227,7 +227,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><h3>Default config</h3></summary>
+    <summary><b>Default config</b></summary>
 
 **Please do not copy this config**, it is the default.
 
