@@ -84,5 +84,6 @@
 ---| "RabbitNil" # Color of Blank Filename
 ---| "RabbitTerm" # Color of extras, eg :term or :Oil
 ---| "RabbitMsg" # Color of messages
+---| "RabbitInput" # Color of the input prompt background
 
 

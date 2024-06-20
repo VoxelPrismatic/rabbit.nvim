@@ -88,17 +88,35 @@ function M.clean(tbl)
             goto continue
         end
 
-        for key, file in pairs(ls) do
-            if type(key) == "number" and file == vim.NIL then
-                table.remove(tbl[dir], key)
-            elseif type(key) == "number" and vim.uv.fs_stat(file) == nil then
-                table.remove(tbl[dir], key)
-            elseif type(key) == "string" and vim.uv.fs_stat(key) == nil then
-                tbl[dir][key] = nil
-            end
-        end
+        M.clean_recursive(ls)
 
         ::continue::
+    end
+    return tbl
+end
+
+-- Removes references to deleted files and folders
+---@param tbl Rabbit.Plugin.Listing.Persist.Table
+---@return Rabbit.Plugin.Listing.Persist.Table
+function M.clean_recursive(tbl)
+    for key, file in pairs(tbl) do
+        if type(key) == "number" and file == vim.NIL then
+            table.remove(tbl, key)
+        elseif type(key) == "number" and type(file) == "table" then
+            local name = file[1]
+            M.clean_recursive(file)
+            table.insert(file, 1, name)
+        elseif type(key) == "number" and vim.uv.fs_stat(file) == nil then
+            table.remove(tbl, key)
+        elseif type(key) == "table" then
+            local name = key.__name__
+            M.clean_recursive(key)
+            key.__name__ = name
+        elseif type(key) == "string" and vim.uv.fs_stat(key) == nil then
+            if type(tbl.age) == "number" and type(tbl.count) == "number" then
+                tbl[key] = nil
+            end
+        end
     end
     return tbl
 end

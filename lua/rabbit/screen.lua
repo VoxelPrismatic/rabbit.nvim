@@ -11,6 +11,7 @@ local screen = {
         bufnr = nil,
         winnr = nil,
         fullscreen = false,
+        in_input = false,
     }
 }
 
@@ -46,8 +47,8 @@ function screen.helper(specs, width)
         end
 
         if spec.expand then
-            local char = type(spec.expand) == "string" and spec.expand or " "
-            spectext = ("" .. char):rep(width - vim.fn.strwidth(fulltext .. spectext)) .. spectext
+            local char = type(spec.expand) == "string" and tostring(spec.expand) or " "
+            spectext = (char):rep(width - vim.fn.strwidth(fulltext .. spectext)) .. spectext
         end
 
         if spec.color ~= nil and #(spec.color) > 1 then
@@ -107,10 +108,11 @@ end
 
 
 ---@param c string | NvimHlKwargs
+---@param key? string The default highlight key, eg `fg` or `bg`
 ---@return vim.api.keyset.highlight
-local function maybe_hl(c)
+local function maybe_hl(c, key)
     if type(c) == "string" then
-        return { fg = c } ---@type vim.api.keyset.highlight
+        return { [key or "fg"] = c } ---@type vim.api.keyset.highlight
     end
     ---@type vim.api.keyset.highlight
     return c

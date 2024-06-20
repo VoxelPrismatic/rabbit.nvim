@@ -25,6 +25,8 @@
 ---@field close? fun(integer) Close Rabbit window
 ---@field file_add? fun(integer) Add a file, like in Harpoon
 ---@field file_del? fun(integer) Delete a file, like in Harpoon
+---@field group? fun(integer) Create a collection of files
+---@field group_up? fun(integer) Move up a collection
 ---@field [string] fun(integer)
 
 
@@ -33,6 +35,8 @@
 ---@field close? string[] Keys to close the window
 ---@field file_add? string[] Keys to add a file, like in Harpoon
 ---@field file_del? string[] Keys to delete a file, like in Harpoon
+---@field group? string[] Keys to create a collection of files
+---@field group_up? string[] Keys to move up a collection
 ---@field [string] string[]
 
 
@@ -40,6 +44,9 @@
 ---@field [0] Rabbit.Plugin.Listing.Window Listing shown to the user
 ---@field persist? Rabbit.Plugin.Listing.Persist Internal persistent listing
 ---@field opened? Rabbit.Plugin.Listing.Window Tracks open files
+---@field collections? Rabbit.Plugin.Listing.Persist.Recursive Tracks collections
+---@field recursive? Rabbit.Plugin.Listing.Persist.Recursive
+---@field paths? Rabbit.Plugin.Listing.Persist.Table[]
 ---@field [integer] Rabbit.Plugin.Listing.Window
 ---@field [string] Rabbit.Plugin.Listing.Window
 
@@ -89,6 +96,7 @@
 ---@field RabbitEnter? fun(winnr: integer) Called when the Rabbit window is opened
 ---@field [string] Rabbit.Event.Handler
 
+
 ---@alias Rabbit.Event.Handler fun(evt: NvimEvent, winid: integer)
 
 
@@ -98,10 +106,16 @@
 
 ---@class Rabbit.Plugin.Listing.Persist.Table
 ---@field [integer] string Just the filename; no Oxide details
----@field [string] Rabbit.Plugin.Listing.Persist.Entry `File Name : Entry` table
+---@field [string] Rabbit.Plugin.Listing.Persist.Entry | Rabbit.Plugin.Listing.Persist.Table `File Name : Entry` table
 
 
 ---@class Rabbit.Plugin.Listing.Persist.Entry
 ---@field age integer The last time the file was accessed
 ---@field count integer The total number of times this file was accessed
+
+
+---@alias Rabbit.Plugin.Listing.Persist.Recursive
+---| Rabbit.Plugin.Listing.Persist
+---| Rabbit.Plugin.Listing.Persist.Table
+---| Rabbit.Plugin.Listing.Persist.Entry
 

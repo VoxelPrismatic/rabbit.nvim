@@ -1,9 +1,11 @@
 ---@class Rabbit.Keymap
----@field public open? string[] Keys to open the window
----@field public select? string[] Keys to select the current entry
----@field public close? string[] Keys to close the window
----@field public file_add? string[] Keys to add a file, like in Harpoon
----@field public file_del? string[] Keys to delete a file, like in Harpoon
+---@field public open string[] Keys to open the window
+---@field public select string[] Keys to select the current entry
+---@field public close string[] Keys to close the window
+---@field public file_add string[] Keys to add a file, like in Harpoon
+---@field public file_del string[] Keys to delete a file, like in Harpoon
+---@field public group string[] Keys to create a collection of files
+---@field public group_up string[] Keys to move up a collection
 ---@field [string] string[]
 
 

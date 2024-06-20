@@ -41,6 +41,8 @@ local rabbit = {
     plugins = {},
 
     compat = compat,
+
+    input = require("rabbit.input"),
 }
 
 -- Display a message in the buffer
@@ -128,6 +130,10 @@ end
 
 -- Close the Rabbit window
 function rabbit.func.close(_)
+    if screen.ctx.in_input then
+        return
+    end
+
     if rabbit.rabbit.win ~= nil then
         if rabbit.rabbit.win == rabbit.user.win then
             vim.api.nvim_win_set_buf(rabbit.user.win, rabbit.user.buf)
@@ -151,6 +157,10 @@ end
 
 -- The window should not scroll when exiting Rabbit
 local function close_with_cursor(_)
+    if screen.ctx.in_input then
+        return
+    end
+
     (rabbit.ctx.plugin.func.close or rabbit.func.close)()
 
     local term_codes = ("<Up><Left>"):rep(rabbit.user.view.topline) ..
@@ -334,6 +344,8 @@ function rabbit.MakeBuf(mode)
         fullscreen = rabbit.user.win == rabbit.rabbit.win,
         title = b_title or "",
         mode = b_mode,
+        pos_col = opts.col,
+        pos_row = opts.row,
     }
 
     local fs = screen.set_border(rabbit.rabbit.win, buf, b_kwargs)
@@ -422,8 +434,13 @@ function rabbit.Redraw()
                 { text = rabbit.ctx.listing[i] .. "", color = "RabbitFile" },
             }, i + 1)
         elseif string.find(target, "rabbitmsg://") == 1 then
+            target = target:sub(#"rabbitmsg://" + 1) .. "\n"
+            local msg = vim.split(target, "\n")[1]
+            local extra = vim.split(target, "\n")[2]
+            local space = (" "):rep(buf.w - vim.fn.strwidth(msg .. extra .. "| .  |") - math.max(2, #(tostring(i))))
             screen.add_entry({
-                { text = target:sub(#"rabbitmsg://" + 1), color = "RabbitMsg" },
+                { text = msg, color = "RabbitMsg" },
+                { text = space .. extra, color = "RabbitDir" },
             }, i + 1)
         elseif target:sub(1, 1) ~= "/" then
             local rel = rabbit.RelPath(buf_path, target)

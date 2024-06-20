@@ -41,12 +41,16 @@ local box = {
 }
 
 
-local function grab_color(name)
+---@param name string Highlight group name
+---@param key? string Key, eg `fg` or `bg`
+---@return string | nil
+local function grab_color(name, key)
     local details = vim.api.nvim_get_hl(0, { name = name })
-    if details == nil or details.fg == nil then
+    key = key or "fg"
+    if details == nil or details[key] == nil then
         return nil
     end
-    return string.format("#%06x", details.fg)
+    return string.format("#%06x", details[key])
 end
 
 ---@type Rabbit.Options
@@ -58,7 +62,7 @@ local options = {
         file = { fg = grab_color("Normal") },
         term = { fg = grab_color("Constant"), italic = true },
         noname = { fg = grab_color("Function"), italic = true },
-        message = { fg = grab_color("Identifier"), italic = true },
+        message = { fg = grab_color("Identifier"), italic = true, bold = true },
     },
     window = {
         box = box.round,
@@ -81,6 +85,8 @@ local options = {
         open = { "<leader>r" },
         file_add = { "a" },
         file_del = { "<Del>" },
+        group = { "A" },
+        group_up = { "-" },
     },
     plugin_opts = {},
     enable = {
