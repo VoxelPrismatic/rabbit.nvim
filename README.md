@@ -116,141 +116,167 @@ You can hop back and forth between buffers very quickly, almost like a rabbit...
 
 If you scroll down on the Rabbit window, you'll see all the keybinds available.
 
+## Preview
+
+[2024-05-30 15-36-13.webm](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/eee4a60c-1302-469b-a329-471bfc59cddf)
+
 ## Configuration
-**Please do not copy this config**, it is just an example detailing all the options available. 
-There are lots of duplicate keys, but all LSP info is available simply by adding `---@type Rabbit.Options` 
-to your config table
+> [!NOTE]
+> Be sure to use an LSP, like `lua_ls`. I have all the types created for your convenience.
+
+<details>
+    <summary><h3>Rabbit.Options</h3></summary>
+    
+| key | type | description | default |
+|-|-|-|-|
+| colors | [Rabbit.Options.Colors](#rabbitoptionscolors) | Colors used by Rabbit | `{ ... }` |
+| window | [Rabbit.Options.Window](#rabbitoptionswindow) | Window options | `{ ... }` |
+| default_keys | [Rabbit.Keymap](#rabbitkeymap) | Keys and things | `{ ... }` |
+| plugin_opts | [Rabbit.Options.Plugin_Options](#rabbitoptionsplugin_options) | Plugin options | `{ ... }` |
+| enable | `string[]` | Which **builtin** plugins to enable immediately<br>*\*first plugin is considered default* | history,<br/>reopen,<br/>oxide,<br/>harpoon |
+
+<br><br>
+</details>
+
+<details>
+    <summary><h3>Rabbit.Options.Colors</h3></summary>
+        
+![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/5b441d5c-b6a9-4173-a762-f5361d984ee8)
+
+| key | type | description | default |
+|-|-|-|-|
+| title | `string` \| `NvimHlKwargs` | Title text | `#526091`,<br>**bold** |
+| index | `string` \| `NvimHlKwargs` | Index | `#7581ab`,<br>*italic* |
+| dir | `string` \| `NvimHlKwargs` | Directory | `#9396bd` |
+| file | `string` \| `NvimHlKwargs` | File | `#526091` |
+| term | `string` \| `NvimHlKwargs` | Terminal | `#40c9a2`,<br>*italic* |
+| noname | `string` \| `NvimHlKwargs` | No Name | `#d08e95`,<br>*italic* |
+| message | `string` \| `NvimHlKwargs` | Message | `#8aaacd`,<br>***bold ital*** |
+
+note: default colors listed here are from my color theme. rabbit will automatically
+pull your color theme using several highlight groups, eg `Normal` or `Comment`
+
+<br><br>
+</details>
+
+<details>
+    <summary><h3>Rabbit.Options.Window</h3></summary>
+
+![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/0783b721-47bc-4779-b129-55225b7455ba)
+
+| key | type | description | default |
+|-|-|-|-|
+| box | [Rabbit.Box](#rabbitbox) | Border box | Round |
+| box_style | `"round"` \| `"thick"` \| <br>`"square"` \| `"double"` | Border box style | `round` |
+| title | `string` | The plugin title, if you don't like Rabbit | `Rabbit` |
+| width | `integer` | Window width | 64 |
+| height | `integer` | Window height | 24 |
+| overflow | `string` | Characters to display when the dir path is too long | `:::` |
+| path_len | `integer` | Maximum length of a path segment | 12 |
+| float | { `"bottom"` \| `"top"`,<br>`"left"`, `"right"` }<br>\| `"center"`<br>\| `false` | Floating position. If set to `false`, will try to split<br>*note: bottom or top **must** precede left or right* | `{ "bottom", "right" }` |
+| split | `"left"` \| `"right"` \|<br>`"above"` \| `"below"` \|<br>`false` | Split window position. If set to `false`, will occupy full screen. Only available if `float` is set to `false` | `right` |
+| plugin_name_position | `"bottom"` \| `"title"` \| `"hide"` | Where to place the plugin name | `bottom` |
+
+<br><br>
+</details>
+
+<details>
+    <summary><h3>Rabbit.Box</h3></summary>
+    
+| key | type | description |
+|-|-|-|
+| top_left | `string` | Top left corner of the box |
+| top_right | `string` | Top right corner of the box |
+| horizontal | `string` | Horizontal ceiling |
+| vertical | `string` | Vertical wall |
+| bottom_left | `string` | Bottom left corner of the box |
+| bottom_right | `string` | Bottom right corner of the box |
+| emphasis | `string` | Title emphasis character |
+
+<br><br>
+</details>
+
+<details>
+    <summary><h3>Rabbit.Keymap</h3></summary>
+    
+| key | type | description | default |
+|-|-|-|-|
+| close | `string[]` | Keys to close Rabbit | `<Esc>`, `q`, `<leader>` |
+| select | `string[]` | Keys to select an entry | `<Enter>` |
+| open | `string[]` | Keys to open Rabbit<br>*this is how Rabbit will open* | `<leader>r` |
+| file_add | `string[]` | Keys to add the current file to a collection | `a` |
+| file_del | `string[]` | Keys to delete the current file from a collection | `<Del>` |
+| group | `string[]` | Keys to create a new collection | `A` |
+| group_up | `string[]` | Keys to move to the parent collection | `-` |
+
+<br><br>
+</details>
+
+<details>
+    <summary><h3>Rabbit.Options.Plugin_Options</h3></summary>
+
+**Note:** The key should be the plugin name, with the value being the table described below
+
+| key | type | description | example |
+|-|-|-|-|
+| color | `string` | Border color | `#00ffff` |
+| switch | `string` | Key to switch to this plugin from within Rabbit | `o` |
+| opts | `table` | Any plugin-specific options. My documentation is available in the wiki | `{}` |
+
+<br><br>
+</details>
+
+<details>
+    <summary><h3>Default config</h3></summary>
+
+**Please do not copy this config**, it is the default.
+
 ```lua
 -- Use all the below defaults, but set a custom keybind
 require("rabbit").setup("any keybind")
 
 -- Defaults
-require("rabbit").setup({ ---@type Rabbit.Options
+require("rabbit").setup({
     colors = {
-        title = {               -- Title text
-            fg = "#000000",     -- Grabs from :hi Normal
-            bold = true,
-        },
-        index = {               -- Index numbers
-            fg = "#000000",     -- Grabs from :hi Comment
-            italic = true,
-        },
-        dir = "#000000",        -- Folders; Grabs from :hi NonText
-
-        file = "#000000",       -- File name; Grabs from :hi Normal
-
-        term = {                -- Addons, eg :term or :Oil
-            fg = "#000000",     -- Grabs from :hi Constant
-            italic = true,
-        },
-        noname = {              -- No buffer name set
-            fg = "#000000",     -- Grabs from :hi Function
-            italic = true,
-        },
-        message = {             -- Message text, eg "Open all files" in Reopen
-            fg = "#000000",     -- Grabs from :hi Identifier
-            italic = true,
-        },
+        title = { fg = grab_color("Normal"), bold = true },
+        index = { fg = grab_color("Comment"), italic = true },
+        dir = { fg = grab_color("NonText") },
+        file = { fg = grab_color("Normal") },
+        term = { fg = grab_color("Constant"), italic = true },
+        noname = { fg = grab_color("Function"), italic = true },
+        message = { fg = grab_color("Identifier"), italic = true, bold = true },
     },
-
     window = {
-        -- If `box_style` is specified, it will overwrite anything set in `box`
-        box_style = "round",    -- One of "round", "square", "thick", "double"
-        box = {
-            top_left = "╭",     -- Top left corner of box
-            top_right = "╮",    -- Top right corner of box
-            bottom_left = "╰",  -- Bottom left corner of box
-            bottom_right = "╯", -- Bottom right corner of box
-            vertical = "│",     -- Vertical wall
-            horizontal = "─",   -- Horizontal ceiling
-            emphasis = "═",     -- Emphasis around title, like `──══ Rabbit ══──`
-        },
-
-        width = 64,             -- Width, in columns
-        height = 24,            -- Height, in rows
-
-        -- Where the plugin name should be displayed.
-        -- * "bottom" means in the bottom left corner, but not displayed in full screen
-        -- * "title" means next to rabbit, eg `──══ Rabbit History ══──`
-        -- * "hide" means to not display it at all
+        box = box.round,
+        title = "Rabbit",
         plugin_name_position = "bottom",
-
-        title = "Rabbit",       -- Title text, eg: `──══ Rabbit ══──` or `──══ NotHarpoon ══──`
-
-        emphasis_width = 8,     -- Eg: `──────══ Rabbit ══──────` or `──══════ Rabbit ══════──`
-
-
-        float = true,           -- Plain `true` means use bottom right corner
-        float = "center",       -- Aligns to center
+        emphasis_width = 8,
+        width = 64,
+        height = 24,
         float = {
-            top = 10000,        -- Top offset in lines
-            left = 10000,       -- Left offset in columns
+            "bottom",
+            "right",
         },
-        float = {
-            "bottom",           -- "top" or "bottom;" MUST BE FIRST
-            "right",            -- "left" or "right;" MUST BE LAST
-        },
-
-
-        -- When using split screen, it will try to use the width and height provided earlier.
-        -- Eg, when splitting left or right: height = 100%; width = `width`
-        -- Eg, when splitting above or below: height = `height`; width = 100%
-        -- NOTE: `float` must be explicitly set to false in order to split
-        -- NOTE: If both `float` and `split` are false, a new buffer will open, "fullscreen"
-        split = true,           -- Plain `true` means use the right side
-        split = "right",        -- One of "left", "right", "above", "below"
-
-        overflow = ":::",       -- String to display when folders overflow
-        path_len = 12,          -- How many characters to display in folder name before cutting off
+        split = "right",
+        overflow = ":::",
+        path_len = 12,
     },
-
     default_keys = {
-        close = {               -- Default bindings to close Rabbit
-            "<Esc>",
-            "q",
-            "<leader>",
-        },
-
-        select = {              -- Default bindings to select a buffer
-            "<CR>",
-        },
-
-        open = {                -- Default bindings to open Rabbit
-            "<leader>r",
-        },
-
-        file_add = {            -- Default bindings to add current buffer to persistent history
-            "a",                -- This would act like Prime's Harpoon, but it isn't implemented yet
-        },
-
-        file_del = {            -- Default bindings to remove current buffer from persistent history
-            "d",                -- This would act like Prime's Harpoon, but it isn't implemented yet
-        },
+        close = { "<Esc>", "q", "<leader>" },
+        select = { "<CR>" },
+        open = { "<leader>r" },
+        file_add = { "a" },
+        file_del = { "<Del>" },
+        group = { "A" },
+        group_up = { "-" },
     },
-
-    plugin_opts = {             -- Plugin specific options you'd like to set
-        history = {
-            color = "#d7827e",  -- Border color
-            switch = "r",       -- Keybind to switch to the history window from within Rabbit
-            keys = {},          -- See the API for more details
-            opts = {},          -- See the API for more details
-        },
-        reopen = {
-            color = "#907aa9",  -- Border color
-            switch = "o",       -- Keybind to switch to the reopen window from within Rabbit
-            keys = {},          -- See the API for more details
-            opts = {},          -- See the API for more details
-        },
-    },
-
-    enable = {                  -- Builtin plugins to enable immediately
-        "history",              -- The plugin shown when opening Rabbit
+    plugin_opts = {},
+    enable = {
+        "history",
         "reopen",
         "oxide",
+        "harpoon",
     },
 })
 ```
-
-## Preview
-
-[2024-05-30 15-36-13.webm](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/eee4a60c-1302-469b-a329-471bfc59cddf)
+</details>
