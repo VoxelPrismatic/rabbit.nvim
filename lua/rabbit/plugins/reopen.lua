@@ -63,13 +63,12 @@ end
 
 
 ---@param winid integer
-function M.evt.RabbitEnter(winid)
+function M.evt.RabbitEnter(evt, winid)
     M.listing[0] = nil
     if #vim.tbl_keys(M.listing) ~= 2 or #M.listing[winid] > 0 then
         return
     end
-    local cwd = vim.fn.getcwd()
-    M.listing[0] = vim.tbl_values(M.listing.persist[cwd])
+    M.listing[0] = vim.tbl_values(M.listing.persist[evt.match])
     table.insert(M.listing[0], 1, "rabbitmsg://Open all files")
 end
 

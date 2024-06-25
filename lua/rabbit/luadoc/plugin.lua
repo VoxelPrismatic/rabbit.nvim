@@ -1,3 +1,5 @@
+---@meta
+
 ---@class (exact) Rabbit.Plugin
 ---@field public evt Rabbit.Plugin.Event Autocmd:Function table
 ---@field public func Rabbit.Plugin.Functions Extra functions
@@ -89,14 +91,6 @@
 ---@field public switch? string Key to switch to this plugin
 
 
-
----@class Rabbit.Plugin.Event
----@field BufEnter? Rabbit.Event.Handler Autocmd on BufEnter
----@field BufDelete? Rabbit.Event.Handler Autocmd on BufDelete
----@field RabbitEnter? fun(winnr: integer) Called when the Rabbit window is opened
----@field [string] Rabbit.Event.Handler
-
-
 ---@alias Rabbit.Event.Handler fun(evt: NvimEvent, winid: integer)
 
 
@@ -118,4 +112,3 @@
 ---| Rabbit.Plugin.Listing.Persist
 ---| Rabbit.Plugin.Listing.Persist.Table
 ---| Rabbit.Plugin.Listing.Persist.Entry
-

@@ -29,8 +29,6 @@ local M = { ---@type Rabbit.Plugin
 }
 
 
----@param evt NvimEvent
----@param winid integer
 function M.evt.BufEnter(evt, winid)
     local is_listed = vim.api.nvim_get_option_value("buflisted", { buf = evt.buf })
     if M.opts.ignore_unlisted and not is_listed then
@@ -41,16 +39,13 @@ function M.evt.BufEnter(evt, winid)
 end
 
 
----@param evt NvimEvent
----@param winid integer
 function M.evt.BufDelete(evt, winid)
     set.sub(M.listing[winid], evt.buf)
     set.sub(M.listing.opened, evt.buf)
 end
 
 
----@param winid integer
-function M.evt.RabbitEnter(winid)
+function M.evt.RabbitEnter(_, winid)
     M.listing[0] = nil
     if #M.listing[winid] > 1 then
         return
@@ -67,7 +62,6 @@ function M.evt.RabbitEnter(winid)
 end
 
 
----@param winid integer
 function M.evt.WinClosed(_, winid)
     if M.listing[winid] ~= nil and #M.listing[winid] > 0 then
         M.listing.last_closed = M.listing[winid]

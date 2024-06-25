@@ -98,15 +98,12 @@ local function quickscore(arr, maxage)
 end
 
 
-function M.evt.RabbitEnter()
-    local cwd = vim.fn.getcwd()
-    M.listing.persist[cwd], M.listing[0] = quickscore(M.listing.persist[cwd], M.opts.maxage)
+function M.evt.RabbitEnter(evt)
+    M.listing.persist[evt.match], M.listing[0] = quickscore(M.listing.persist[evt.match], M.opts.maxage)
     set.save(M.memory, M.listing.persist)
 end
 
 
----@param evt NvimEvent
----@param winid integer
 function M.evt.BufEnter(evt, winid)
     if vim.uv.fs_stat(evt.file) == nil then
         return -- Not a local file
@@ -133,10 +130,28 @@ function M.evt.BufEnter(evt, winid)
 end
 
 
----@param evt NvimEvent
----@param winid integer
 function M.evt.BufDelete(evt, winid)
     set.sub(M.listing[winid], evt.file)
+end
+
+
+function M.evt.RabbitInvalid(evt, _)
+    set.sub(M.listing.persist[vim.fn.getcwd()], evt.file)
+    set.save(M.memory, M.listing.persist)
+end
+
+
+function M.evt.RabbitFileRename(evt, _)
+    for dir, _ in pairs(M.listing.persist) do
+        local ls = M.listing.persist[dir] ---@type Rabbit.Plugin.Listing.Persist.Table
+        for k, v in pairs(ls) do
+            if k == evt.match then
+                ls[evt.file] = v
+                ls[k] = nil
+            end
+        end
+    end
+    set.save(M.memory, M.listing.persist)
 end
 
 

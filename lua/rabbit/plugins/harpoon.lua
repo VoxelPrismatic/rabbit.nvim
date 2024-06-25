@@ -190,13 +190,12 @@ end
 
 
 ---@param winid integer
-function M.evt.RabbitEnter(winid)
+function M.evt.RabbitEnter(evt, winid)
     M.listing.opened[1] = nil
     M.ctx.winid = winid
     if M.listing.recursive == nil then
-        local cwd = vim.fn.getcwd()
-        M.listing.persist[cwd] = M.listing.persist[cwd] or {}
-        M.listing.recursive = M.listing.persist[cwd]
+        M.listing.persist[evt.match] = M.listing.persist[evt.match] or {}
+        M.listing.recursive = M.listing.persist[evt.match]
     end
     M._generate()
     if #M.listing.paths > 0 then

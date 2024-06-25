@@ -1,48 +1,61 @@
-local M = {
-    attached = {
-        "BufEnter",
-        "BufDelete",
-        "BufUnload",
-        "WinClosed",
-        "WinResized",
-        "WinEnter",
-        "RabbitEnter",
-    }
+---@class Rabbit.Autocmd
+local M = { ---@type Rabbit.Autocmd
+    attached = { "WinClosed", "RabbitEnter", "RabbitInvalid", "RabbitFileRename" },
+    last_directory = "",
+    last_filename = "",
 }
 
 
 ---@param rabbit Rabbit.Instance
-function M.attach(rabbit)
-    vim.api.nvim_create_autocmd("BufEnter", {
-        pattern = {"*"},
-        callback = rabbit.autocmd
-    })
-
-
-    vim.api.nvim_create_autocmd("BufDelete", {
+---@param name string | string[]
+---@param callback fun(evt: NvimEvent)
+function M.attach_autocmd(rabbit, name, callback)
+    vim.api.nvim_create_autocmd(name, {
         pattern = {"*"},
         callback = function(evt)
             rabbit.autocmd(evt)
-            if rabbit.rabbit.win ~= nil then
-                rabbit.Redraw()
-            end
+            callback(evt)
         end
     })
+    table.insert(M.attached, name)
+end
 
 
-    vim.api.nvim_create_autocmd("BufUnload", {
-        pattern = {"*"},
-        callback = function(_)
-            if rabbit.rabbit.win ~= nil then
-                rabbit.Redraw()
-            end
+-- Attaches autocmds to Rabbit
+---@param rabbit Rabbit.Instance
+function M.attach(rabbit)
+    M.attach_autocmd(rabbit, "BufEnter", function() end)
+
+    M.attach_autocmd(rabbit, "BufFilePre", function(evt) ---@param evt NvimEvent.BufFilePre
+        M.last_filename = evt.file
+    end)
+
+    M.attach_autocmd(rabbit, "BufFilePost", function(evt) ---@param evt NvimEvent.BufFilePost
+        local mock_evt = { ---@type Rabbit.Event.FileRename
+            buf = evt.buf,
+            event = "RabbitFileRename",
+            file = evt.file,
+            id = rabbit.user.win,
+            match = M.last_filename
+        }
+        rabbit.autocmd(mock_evt)
+    end)
+
+    M.attach_autocmd(rabbit, { "BufDelete", "BufUnload" }, function()
+        if rabbit.rabbit.win ~= nil then
+            rabbit.Redraw()
         end
-    })
+    end)
 
+    M.attach_autocmd(rabbit, "WinResized", function()
+        if rabbit.rabbit.win ~= nil then
+            rabbit.Switch(rabbit.ctx.plugin.name)
+        end
+    end)
 
     vim.api.nvim_create_autocmd("WinClosed", {
         pattern = {"*"},
-        callback = function(evt)
+        callback = function(evt) ---@param evt NvimEvent.WinClosed
             local w = tonumber(evt.file) or -2
             for k, _ in pairs(rabbit.plugins) do
                 local p = rabbit.plugins[k] ---@type Rabbit.Plugin
@@ -54,25 +67,6 @@ function M.attach(rabbit)
             end
         end,
     })
-
-
-    vim.api.nvim_create_autocmd("WinResized", {
-        pattern = {"*"},
-        callback = function()
-            if rabbit.rabbit.win ~= nil then
-                rabbit.Switch(rabbit.ctx.plugin.name)
-            end
-        end
-    })
-
-
-    vim.api.nvim_create_autocmd("WinEnter", {
-        pattern = {"*"},
-        callback = function()
-            rabbit.ensure_listing(vim.api.nvim_get_current_win())
-        end
-    })
 end
-
 
 return M

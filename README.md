@@ -126,7 +126,7 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 
 <details>
     <summary><h3>Rabbit.Options</h3></summary>
-    
+
 | key | type | description | default |
 |-|-|-|-|
 | colors | [Rabbit.Options.Colors](#rabbitoptionscolors) | Colors used by Rabbit | `{ ... }` |
@@ -140,7 +140,7 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 
 <details>
     <summary><h3>Rabbit.Options.Colors</h3></summary>
-        
+
 ![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/5b441d5c-b6a9-4173-a762-f5361d984ee8)
 
 | key | type | description | default |
@@ -182,7 +182,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 
 <details>
     <summary><h3>Rabbit.Box</h3></summary>
-    
+
 | key | type | description |
 |-|-|-|
 | top_left | `string` | Top left corner of the box |
@@ -198,7 +198,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 
 <details>
     <summary><h3>Rabbit.Keymap</h3></summary>
-    
+
 | key | type | description | default |
 |-|-|-|-|
 | close | `string[]` | Keys to close Rabbit | `<Esc>`, `q`, `<leader>` |

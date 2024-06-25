@@ -268,7 +268,14 @@ function rabbit.MakeBuf(mode)
 
 -- In case the plugin has a listing it must prepare
     if rabbit.ctx.plugin.evt.RabbitEnter ~= nil then
-        rabbit.ctx.plugin.evt.RabbitEnter(rabbit.user.win)
+        local mock_evt = { ---@type Rabbit.Event.Enter
+            buf = rabbit.user.buf,
+            event = "RabbitEnter",
+            id = rabbit.user.win,
+            file = vim.fn.expand("%:p"),
+            match = vim.fn.getcwd()
+        }
+        rabbit.ctx.plugin.evt.RabbitEnter(mock_evt, rabbit.user.win)
     end
 
 -- Generate configuration
@@ -297,8 +304,6 @@ function rabbit.MakeBuf(mode)
         opts.width = win_conf.width
     else
         opts.width = win_conf.width
-
-
         opts.height = 4
     end
 
@@ -407,13 +412,24 @@ function rabbit.Redraw()
         buf_path = vim.fn.getcwd() .. "/rabbit.txt" -- Relative to CWD if no name set
     end
 
+    local mock_evt = { ---@type Rabbit.Event.Invalid
+        buf = rabbit.user.buf,
+        event = "RabbitInvalid",
+        id = rabbit.user.win
+    }
+
+    local invalid_callback = rabbit.ctx.plugin.evt.RabbitInvalid or function() end
+
     local i = 1
     while i <= #rabbit.ctx.listing do
         local target = ""
         if type(rabbit.ctx.listing[i]) == "number" then
             local j = tonumber(rabbit.ctx.listing[i]) or 0
             if not vim.api.nvim_buf_is_valid(j) then
+                mock_evt.file = tostring(j)
+                mock_evt.match = "bufnr"
                 table.remove(rabbit.ctx.listing, i)
+                invalid_callback(mock_evt, rabbit.user.win)
                 goto continue
             end
             target = vim.api.nvim_buf_get_name(j)
@@ -421,7 +437,10 @@ function rabbit.Redraw()
             target = "" .. rabbit.ctx.listing[i]
             local stat = vim.uv.fs_stat(target)
             if #target <= 0 or (target[1] == "/" and stat == nil) then
+                mock_evt.file = target
+                mock_evt.match = "filename"
                 table.remove(rabbit.ctx.listing, i)
+                invalid_callback(mock_evt, rabbit.user.win)
                 goto continue
             end
         else
