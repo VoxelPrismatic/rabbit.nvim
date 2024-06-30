@@ -23,7 +23,7 @@
         src="https://img.shields.io/badge/VoxelPrismatic-white?style=flat&logo=discord&logoColor=white&labelColor=blue"
     /></a>
     <a href="https://patreon.com/voxelprismatic" target="_blank"><img
-        src="https://img.shields.io/badge/Donate-white?style=flat&logo=patreon&logoColor=white&labelColor=red"
+        src="https://img.shields.io/badge/Support-white?style=flat&logo=patreon&logoColor=white&labelColor=red"
     /></a>
     <br>
     <span title="i wish i could customize this, dotfyles">
