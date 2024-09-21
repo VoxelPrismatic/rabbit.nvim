@@ -86,6 +86,10 @@ yourself.
 [tj_tele]: https://github.com/nvim-telescope/telescope.nvim
 [lspsaga]: https://nvimdev.github.io/lspsaga/
 
+## Active Development
+I know this project looks stalled, but that's because I think it's about perfect as-is! Feel free
+to open an issue.
+
 ## Install
 Lazy:
 ```lua
