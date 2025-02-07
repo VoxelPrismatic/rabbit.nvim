@@ -3,6 +3,7 @@ local set = require("rabbit.plugins.util")
 
 ---@class Rabbit.Plugin.Harpoon.Options
 ---@field public ignore_opened? boolean Do not display currently open buffers
+---@field public key? function:string Function to scope your working directory (default: Rabbit.opts.path_key)
 
 
 ---@class Rabbit.Plugin.Harpoon: Rabbit.Plugin
@@ -18,9 +19,12 @@ local M = { ---@type Rabbit.Plugin
     evt = {},
     memory = "",
 
+    _dir = "",
+
     ---@type Rabbit.Plugin.Harpoon.Options
     opts = {
-        ignore_opened = false
+        ignore_opened = false,
+        path_key = require("rabbit").opts.path_key
     },
 
     ---@param p Rabbit.Plugin.Harpoon
@@ -41,7 +45,7 @@ local M = { ---@type Rabbit.Plugin
 function M.func.group(n)
     require("rabbit.input").prompt("Collection name", function(name)
         n = math.max(1, math.min(#M.listing[0] + 1, n))
-        if #M.listing.paths > 0 then
+        if #M.listing.paths[M._dir] > 0 then
             set.add(M.listing[0], "rabbitmsg://#up!\n" .. M._path())
             n = math.max(2, n)
         end
@@ -86,13 +90,13 @@ function M.func.select(n)
     local entry = M.listing[0][n]:sub(#"rabbitmsg://" + 1)
 
     if string.find(entry, "#up!") == 1 then
-        table.remove(M.listing.paths, #M.listing.paths)
-        M.listing.recursive = M.listing.persist[vim.fn.getcwd()]
-        for _, v in ipairs(M.listing.paths) do
+        table.remove(M.listing.paths[M._dir], #M.listing.paths[M._dir])
+        M.listing.recursive = M.listing.persist[M.opts.path_key()]
+        for _, v in ipairs(M.listing.paths[M._dir]) do
             M.listing.recursive = M.listing.recursive[v]
         end
     else
-        table.insert(M.listing.paths, n)
+        table.insert(M.listing.paths[M._dir], n)
         local t = M.listing.recursive[n]
         if type(t) == "table" then
             M.listing.recursive = t
@@ -100,7 +104,7 @@ function M.func.select(n)
     end
 
     M._generate()
-    if #M.listing.paths > 0 then
+    if #M.listing.paths[M._dir] > 0 then
         set.add(M.listing[0], "rabbitmsg://#up!\n" .. M._path())
     end
     require("rabbit").Redraw()
@@ -138,7 +142,7 @@ function M.func.file_add(n)
 
     set.sub(M.listing.recursive, cur)
     set.sub(M.listing[0], cur)
-    n = math.max((#M.listing.paths > 0 and 2 or 1), math.min(#M.listing[0] + 1, n))
+    n = math.max((#M.listing.paths[M._dir] > 0 and 2 or 1), math.min(#M.listing[0] + 1, n))
 
     if collection ~= nil then
         for i, v in ipairs(M.listing.recursive) do
@@ -193,12 +197,27 @@ end
 function M.evt.RabbitEnter(evt, winid)
     M.listing.opened[1] = nil
     M.ctx.winid = winid
+
     if M.listing.recursive == nil then
         M.listing.persist[evt.match] = M.listing.persist[evt.match] or {}
         M.listing.recursive = M.listing.persist[evt.match]
     end
+
+    if M.listing.paths[evt.match] == nil then
+        M.listing.paths[evt.match] = {}
+    end
+
+    if M._dir ~= evt.match then
+        M._dir = evt.match
+        M.listing.recursive = M.listing.persist[evt.match]
+        for _, v in ipairs(M.listing.paths[M._dir]) do
+            M.listing.recursive = M.listing.recursive[v]
+        end
+    end
+
     M._generate()
-    if #M.listing.paths > 0 then
+
+    if #M.listing.paths[evt.match] > 0 then
         table.insert(M.listing[0], 1, "rabbitmsg://#up!\n" .. M._path())
     end
 end
@@ -207,7 +226,7 @@ end
 function M._generate()
     M.listing[0] = {}
     for i, v in pairs(M.listing.recursive) do
-        if i == 1 and #M.listing.paths > 0 then
+        if i == 1 and #M.listing.paths[M._dir] > 0 then
             -- pass
         elseif type(v) == "table" then
             table.insert(M.listing[0], "rabbitmsg://" .. v[1])
@@ -221,12 +240,12 @@ end
 ---Returns the collection path
 ---@return string string
 function M._path()
-    local s = (#M.listing.paths > 3 and require("rabbit").opts.window.overflow or "~")
-    local recur = M.listing.persist[vim.fn.getcwd()]
+    local s = (#M.listing.paths[M._dir] > 3 and require("rabbit").opts.window.overflow or "~")
+    local recur = M.listing.persist[M.opts.path_key()]
     local l = require("rabbit").opts.window.path_len
-    for i = 1, #M.listing.paths do
-        recur = recur[M.listing.paths[i]]
-        if i > #M.listing.paths - 3 then
+    for i = 1, #M.listing.paths[M._dir] do
+        recur = recur[M.listing.paths[M._dir][i]]
+        if i > #M.listing.paths[M._dir] - 3 then
             local a = recur[1]
             if #a > l then
                 a = a:sub(1, l - 1) .. "…"
@@ -239,7 +258,7 @@ end
 
 
 function M.func.group_up()
-    if #M.listing.paths > 0 then
+    if #M.listing.paths[M._dir] > 0 then
         M.func.select(1)
     end
 end

@@ -48,6 +48,7 @@
 ---@field opened? Rabbit.Plugin.Listing.Window Tracks open files
 ---@field collections? Rabbit.Plugin.Listing.Persist.Recursive Tracks collections
 ---@field recursive? Rabbit.Plugin.Listing.Persist.Recursive
+---@field _recursive? Rabbit.Plugin.Listing.Persist.Recursive
 ---@field paths? Rabbit.Plugin.Listing.Persist.Table[]
 ---@field [integer] Rabbit.Plugin.Listing.Window
 ---@field [string] Rabbit.Plugin.Listing.Window

@@ -95,6 +95,7 @@ local options = {
         "oxide",
         "harpoon",
     },
+    path_key = vim.fn.getcwd,
 }
 
 return {

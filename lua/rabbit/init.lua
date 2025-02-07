@@ -268,12 +268,19 @@ function rabbit.MakeBuf(mode)
 
 -- In case the plugin has a listing it must prepare
     if rabbit.ctx.plugin.evt.RabbitEnter ~= nil then
+        local path = vim.fn.getcwd()
+        if rabbit.ctx.plugin.opts ~= nil then
+            if type(rabbit.ctx.plugin.opts.path_key) == "function" then
+                path = rabbit.ctx.plugin.opts.path_key()
+            end
+        end
+
         local mock_evt = { ---@type Rabbit.Event.Enter
             buf = rabbit.user.buf,
             event = "RabbitEnter",
             id = rabbit.user.win,
             file = vim.fn.expand("%:p"),
-            match = vim.fn.getcwd()
+            match = path,
         }
         rabbit.ctx.plugin.evt.RabbitEnter(mock_evt, rabbit.user.win)
     end
@@ -409,7 +416,13 @@ function rabbit.Redraw()
 
     local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, rabbit.user.buf)
     if not has_name or buf_path:sub(1, 1) ~= "/" then
-        buf_path = vim.fn.getcwd() .. "/rabbit.txt" -- Relative to CWD if no name set
+        local path = vim.fn.getcwd()
+        if rabbit.ctx.plugin.opts ~= nil then
+            if type(rabbit.ctx.plugin.opts.path_key) == "function" then
+                path = rabbit.ctx.plugin.opts.path_key()
+            end
+        end
+        buf_path = path .. "/rabbit.txt" -- Relative to CWD if no name set
     end
 
     local mock_evt = { ---@type Rabbit.Event.Invalid

@@ -1,5 +1,8 @@
 local set = require("rabbit.plugins.util")
 
+---@class Rabbit.Plugin.Reopen.Options
+---@field public path_key? function:string Function to scope your working directory (default: Rabbit.opts.path_key)
+
 ---@class Rabbit.Plugin.Reopen: Rabbit.Plugin
 local M = { ---@type Rabbit.Plugin
     color = "#40c9a2",
@@ -13,6 +16,11 @@ local M = { ---@type Rabbit.Plugin
     evt = {},
     memory = "",
 
+    ---@type Rabbit.Plugin.Reopen.Options
+    opts = {
+        path_key = require("rabbit").opts.path_key
+    },
+
     ---@param p Rabbit.Plugin
     init = function(p)
         p.listing.persist = set.clean(set.read(p.memory))
@@ -23,7 +31,7 @@ local M = { ---@type Rabbit.Plugin
 ---@param evt NvimEvent
 ---@return string | nil Nil if event should be ignored
 local function prepare(evt)
-    local cwd = vim.fn.getcwd()
+    local cwd = M.opts.path_key()
     M.listing.persist[cwd] = M.listing.persist[cwd] or {}
 
     if vim.uv.fs_stat(evt.file) == nil then

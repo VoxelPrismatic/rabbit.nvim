@@ -4,6 +4,7 @@ local set = require("rabbit.plugins.util")
 ---@class Rabbit.Plugin.Oxide.Options
 ---@field public maxage? integer Like zoxide's AGING algorithm
 ---@field public ignore_opened? boolean Do not display currently open buffers
+---@field public path_key? function:string Function to scope your working directory (default: Rabbit.opts.path_key)
 
 
 ---@class QuickSortEntry
@@ -28,6 +29,7 @@ local M = { ---@type Rabbit.Plugin
     opts = {
         maxage = 1000,
         ignore_opened = true,
+        path_key = require("rabbit").opts.path_key,
     },
 
     ---@param p Rabbit.Plugin.Oxide
