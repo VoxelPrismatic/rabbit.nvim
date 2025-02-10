@@ -3,7 +3,7 @@ local set = require("rabbit.plugins.util")
 
 ---@class Rabbit.Plugin.Harpoon.Options
 ---@field public ignore_opened? boolean Do not display currently open buffers
----@field public key? function:string Function to scope your working directory (default: Rabbit.opts.path_key)
+---@field public path_key? string|function:string Scope your working directory
 
 
 ---@class Rabbit.Plugin.Harpoon: Rabbit.Plugin
@@ -24,7 +24,7 @@ local M = { ---@type Rabbit.Plugin
     ---@type Rabbit.Plugin.Harpoon.Options
     opts = {
         ignore_opened = false,
-        path_key = require("rabbit").opts.path_key
+        path_key = nil,
     },
 
     ---@param p Rabbit.Plugin.Harpoon
@@ -91,7 +91,7 @@ function M.func.select(n)
 
     if string.find(entry, "#up!") == 1 then
         table.remove(M.listing.paths[M._dir], #M.listing.paths[M._dir])
-        M.listing.recursive = M.listing.persist[M.opts.path_key()]
+        M.listing.recursive = M.listing.persist[M._dir]
         for _, v in ipairs(M.listing.paths[M._dir]) do
             M.listing.recursive = M.listing.recursive[v]
         end
@@ -198,6 +198,10 @@ function M.evt.RabbitEnter(evt, winid)
     M.listing.opened[1] = nil
     M.ctx.winid = winid
 
+    if M.listing.persist[evt.match] == nil then
+        M.listing.persist[evt.match] = {}
+    end
+
     if M.listing.recursive == nil then
         M.listing.persist[evt.match] = M.listing.persist[evt.match] or {}
         M.listing.recursive = M.listing.persist[evt.match]
@@ -241,7 +245,7 @@ end
 ---@return string string
 function M._path()
     local s = (#M.listing.paths[M._dir] > 3 and require("rabbit").opts.window.overflow or "~")
-    local recur = M.listing.persist[M.opts.path_key()]
+    local recur = M.listing.persist[M._dir]
     local l = require("rabbit").opts.window.path_len
     for i = 1, #M.listing.paths[M._dir] do
         recur = recur[M.listing.paths[M._dir][i]]

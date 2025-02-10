@@ -1,7 +1,7 @@
 local set = require("rabbit.plugins.util")
 
 ---@class Rabbit.Plugin.Reopen.Options
----@field public path_key? function:string Function to scope your working directory (default: Rabbit.opts.path_key)
+---@field public path_key? string|function:string Scope your working directory
 
 ---@class Rabbit.Plugin.Reopen: Rabbit.Plugin
 local M = { ---@type Rabbit.Plugin
@@ -18,7 +18,7 @@ local M = { ---@type Rabbit.Plugin
 
     ---@type Rabbit.Plugin.Reopen.Options
     opts = {
-        path_key = require("rabbit").opts.path_key
+        path_key = nil,
     },
 
     ---@param p Rabbit.Plugin
@@ -31,7 +31,7 @@ local M = { ---@type Rabbit.Plugin
 ---@param evt NvimEvent
 ---@return string | nil Nil if event should be ignored
 local function prepare(evt)
-    local cwd = M.opts.path_key()
+    local cwd = require("rabbit").path_key_fallback(M)
     M.listing.persist[cwd] = M.listing.persist[cwd] or {}
 
     if vim.uv.fs_stat(evt.file) == nil then

@@ -39,11 +39,51 @@ local rabbit = {
 
     default = "",
     plugins = {},
+    flags = {
+        path_key = "unset", -- Indicates the path_key function used last time, "plugin", "global", or "fallback"
+        last_path = "",
+        path_debug = "",
+    },
 
     compat = compat,
 
     input = require("rabbit.input"),
 }
+
+-- Path Key Fallback
+-- Sets a couple flags, too
+---@param plugin? Rabbit.Plugin
+---@return string Path key
+function rabbit.path_key_fallback(plugin)
+    if plugin == nil then
+        plugin = rabbit.ctx.plugin
+    end
+
+    if plugin == nil then
+        error("Plugin not found")
+    end
+
+    if plugin.opts ~= nil and type(plugin.opts.path_key) == "function" then
+        rabbit.flags.path_key = "plugin:func"
+        rabbit.flags.last_path = plugin.opts.path_key()
+    elseif plugin.opts ~= nil and type(plugin.opts.path_key) == "string" then
+        rabbit.flags.path_key = "plugin:str"
+        rabbit.flags.last_path = plugin.opts.path_key
+    elseif type(rabbit.opts.path_key) == "function" then
+        rabbit.flags.path_key = "global:func"
+        rabbit.flags.last_path = rabbit.opts.path_key()
+    elseif type(rabbit.opts.path_key) == "string"then
+        rabbit.flags.path_key = "global:str"
+        rabbit.flags.last_path = rabbit.opts.path_key
+    else
+        rabbit.flags.path_key = "fallback"
+        rabbit.flags.last_path = vim.fn.getcwd()
+    end
+
+    -- Type discrepancy is already handled
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return rabbit.flags.last_path
+end
 
 -- Display a message in the buffer
 ---@param text string
@@ -268,12 +308,7 @@ function rabbit.MakeBuf(mode)
 
 -- In case the plugin has a listing it must prepare
     if rabbit.ctx.plugin.evt.RabbitEnter ~= nil then
-        local path = vim.fn.getcwd()
-        if rabbit.ctx.plugin.opts ~= nil then
-            if type(rabbit.ctx.plugin.opts.path_key) == "function" then
-                path = rabbit.ctx.plugin.opts.path_key()
-            end
-        end
+        local path = rabbit.path_key_fallback()
 
         local mock_evt = { ---@type Rabbit.Event.Enter
             buf = rabbit.user.buf,
@@ -416,12 +451,8 @@ function rabbit.Redraw()
 
     local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, rabbit.user.buf)
     if not has_name or buf_path:sub(1, 1) ~= "/" then
-        local path = vim.fn.getcwd()
-        if rabbit.ctx.plugin.opts ~= nil then
-            if type(rabbit.ctx.plugin.opts.path_key) == "function" then
-                path = rabbit.ctx.plugin.opts.path_key()
-            end
-        end
+        local path = rabbit.path_key_fallback()
+
         buf_path = path .. "/rabbit.txt" -- Relative to CWD if no name set
     end
 
@@ -514,13 +545,13 @@ function rabbit.Legend(mode, line)
 
     mode = mode or rabbit.ctx.plugin.name
 
-    local keys = "iIaArR"
-    for key in string.gmatch(keys, ".") do
-        vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", key, "", {
+    local motions = "iIaArR"
+    for motion in string.gmatch(motions, ".") do
+        vim.api.nvim_buf_set_keymap(rabbit.rabbit.buf, "n", motion, "", {
             noremap = true, silent = true,
             callback = function()
                 (rabbit.ctx.plugin.func.close or rabbit.func.close)()
-                vim.fn.feedkeys(key, "t")
+                vim.fn.feedkeys(motion, "t")
             end
         })
     end
@@ -579,6 +610,18 @@ function rabbit.Legend(mode, line)
         ::continue::
     end
 
+    if rabbit.flags.path_key ~= "fallback" then
+        line = screen.newline({
+            { color = "RabbitTitle", text = " Path:" },
+            { color = "RabbitIndex", text = " [" .. rabbit.flags.path_key .. "]" },
+        }, line)
+        line = screen.render(line, {
+            { color = "RabbitDir", text = " " .. rabbit.flags.last_path },
+        })
+        line = screen.render(line, {
+            { color = "RabbitMsg", text = " " .. rabbit.flags.path_debug },
+        })
+    end
 end
 
 

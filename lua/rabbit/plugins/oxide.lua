@@ -4,7 +4,7 @@ local set = require("rabbit.plugins.util")
 ---@class Rabbit.Plugin.Oxide.Options
 ---@field public maxage? integer Like zoxide's AGING algorithm
 ---@field public ignore_opened? boolean Do not display currently open buffers
----@field public path_key? function:string Function to scope your working directory (default: Rabbit.opts.path_key)
+---@field public path_key? string|function:string Scope your working directory
 
 
 ---@class QuickSortEntry
@@ -29,7 +29,7 @@ local M = { ---@type Rabbit.Plugin
     opts = {
         maxage = 1000,
         ignore_opened = true,
-        path_key = require("rabbit").opts.path_key,
+        path_key = nil,
     },
 
     ---@param p Rabbit.Plugin.Oxide
@@ -115,7 +115,7 @@ function M.evt.BufEnter(evt, winid)
 
     table.insert(M.listing[winid], evt.file)
 
-    local cwd = vim.fn.getcwd()
+    local cwd = require("rabbit").path_key_fallback(M)
     local entry = M.listing.persist[cwd] ---@type Rabbit.Plugin.Listing.Persist.Table
 
     if entry == nil then
@@ -138,7 +138,7 @@ end
 
 
 function M.evt.RabbitInvalid(evt, _)
-    set.sub(M.listing.persist[vim.fn.getcwd()], evt.file)
+    set.sub(M.listing.persist[require("rabbit").path_key_fallback(M)], evt.file)
     set.save(M.memory, M.listing.persist)
 end
 
@@ -161,7 +161,7 @@ end
 function M.func.file_del(ln)
     local arr = require("rabbit").ctx.listing ---@type string[]
     local filename = arr[ln]
-    local cwd = vim.fn.getcwd()
+    local cwd = require("rabbit").path_key_fallback(M)
     if filename == nil or M.listing.persist[cwd][filename] == nil then
         return
     end

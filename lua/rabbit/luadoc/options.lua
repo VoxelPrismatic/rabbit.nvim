@@ -4,7 +4,7 @@
 ---@field public default_keys? Rabbit.Keymap Default keymaps
 ---@field public plugin_opts? Rabbit.Options.Plugin_Options Plugin options
 ---@field public enable? Rabbit.Builtin[] List of builtin plugins to enable
----@field public path_key? function:string Function to scope your working directory (default: vim.fn.getcwd)
+---@field public path_key? string|function:string Function to scope your working directory (default: vim.fn.getcwd)
 
 
 ---@class Rabbit.Options.Plugin_Options
