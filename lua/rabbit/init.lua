@@ -54,7 +54,7 @@ local rabbit = {
 -- Sets a couple flags, too
 ---@param plugin? Rabbit.Plugin
 ---@return string Path key
-function rabbit.func.path_key(plugin)
+function rabbit.path_key(plugin)
     if plugin == nil then
         plugin = rabbit.ctx.plugin
     end

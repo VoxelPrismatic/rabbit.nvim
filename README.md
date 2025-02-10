@@ -10,7 +10,7 @@
         src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FVoxelPrismatic%2Frabbit.nvim%2Freleases%2Flatest&query=%24.tag_name&style=flat&label=Rabbit&labelColor=white&logo=vowpalwabbit&logoColor=black"
     /></a>
     <a href="https://neovim.io/" target="_blank"><img
-        src="https://img.shields.io/badge/Neovim-v0.10.0-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"
+        src="https://img.shields.io/badge/Neovim-v0.10.4-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"
     /></a>
     <a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img
         src="https://img.shields.io/github/downloads/voxelprismatic/rabbit.nvim/total?style=flat&logo=github&logoColor=black&label=Downloads&labelColor=white"
@@ -57,10 +57,18 @@ details.
 Unlike other tools, this remembers history *per window*, so you can really jump
 quickly.
 
+<br><br>
 ## Why
+
+<ul>
+    <li>
+
 ### [Harpoon][harpoon2]
 - Harpoon requires explicit adding of files; too much effort
   - Rabbit:Oxide remembers your most frequently accessed files in your current directory
+
+</li>
+<li>
 
 ### [Telescope][tj_tele]
 - Telescope:Buffers doesn't order by last BufEnter
@@ -68,9 +76,15 @@ quickly.
   - Rabbit:History does NOT list the file you're currently in, meaning a lightning-quick motion,
     `<leader>r` `<CR>` returns you to whence you came.
 
+</li>
+<li>
+
 ### `:ls` and `:b`
 - Too much typing and looking and processing
   - That's what this plugin is designed to solve
+
+</li>
+<li>
 
 ### And this too...
 None of these solutions actually support split screen. You must remember all the details
@@ -86,9 +100,15 @@ yourself.
 [tj_tele]: https://github.com/nvim-telescope/telescope.nvim
 [lspsaga]: https://nvimdev.github.io/lspsaga/
 
+</li></ul>
+
+<br><br>
+
 ## Active Development
 I know this project looks stalled, but that's because I think it's about perfect as-is! Feel free
 to open an issue.
+
+<br><br>
 
 ## Install
 Lazy:
@@ -106,8 +126,10 @@ return {
 > Please help with any compatibility issues by raising an [issue](https://github.com/voxelprismatic/rabbit.nvim/issues)
 
 > [!NOTE]
-> Rabbit is only tested on the latest version of Neovim, which is detailed at the top of the ReadMe.
+> Rabbit is only tested on the latest version of Neovim, which is detailed at the top of the readme.
 > If your version of Neovim is significantly older, bite the bullet and upgrade.
+
+<br><br>
 
 ## Usage
 Just run your keybind! (or `:Rabbit {{mode}}`)
@@ -120,16 +142,20 @@ You can hop back and forth between buffers very quickly, almost like a rabbit...
 
 If you scroll down on the Rabbit window, you'll see all the keybinds available.
 
+<br><br>
+
 ## Preview
 
 [2024-05-30 15-36-13.webm](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/eee4a60c-1302-469b-a329-471bfc59cddf)
+
+<br><br>
 
 ## Configuration
 > [!NOTE]
 > Be sure to use an LSP, like `lua_ls`. I have all the types created for your convenience.
 
 <details>
-    <summary><b>Rabbit.Options</b></summary>
+    <summary><h3>Rabbit.Options</h3></summary>
 
 | key | type | description | default |
 |-|-|-|-|
@@ -138,7 +164,7 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 | default_keys | [Rabbit.Keymap](#rabbitkeymap) | Keys and things | `{ ... }` |
 | plugin_opts | [Rabbit.Options.Plugin_Options](#rabbitoptionsplugin_options) | Plugin options | `{ ... }` |
 | enable | `string[]` | Which **builtin** plugins to enable immediately<br>*\*first plugin is considered default* | history,<br/>reopen,<br/>oxide,<br/>harpoon |
-| path_key | `function()` -> `string` | Scope directory, [wiki][path_key] | `vim.fn.getcwd` |
+| path_key | `str` \| `func():str` | Scope directory, [wiki][path_key] | `vim.fn.getcwd` |
 
 <br><br>
 </details>
@@ -146,7 +172,7 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 [path_key]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Custom-Path-Key
 
 <details>
-    <summary><b>Rabbit.Options.Colors</b></summary>
+    <summary><h3>Rabbit.Options.Colors</h3></summary>
 
 ![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/5b441d5c-b6a9-4173-a762-f5361d984ee8)
 
@@ -167,7 +193,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><b>Rabbit.Options.Window</b></summary>
+    <summary><h3>Rabbit.Options.Window</h3></summary>
 
 ![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/0783b721-47bc-4779-b129-55225b7455ba)
 
@@ -188,7 +214,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><b>Rabbit.Box</b></summary>
+    <summary><h3>Rabbit.Box</h3></summary>
 
 | key | type | description |
 |-|-|-|
@@ -204,7 +230,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><b>Rabbit.Keymap</b></summary>
+    <summary><h3>Rabbit.Keymap</h3></summary>
 
 | key | type | description | default |
 |-|-|-|-|
@@ -220,7 +246,7 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 </details>
 
 <details>
-    <summary><b>Rabbit.Options.Plugin_Options</b></summary>
+    <summary><h3>Rabbit.Options.Plugin_Options</h3></summary>
 
 **Note:** The key should be the plugin name, with the value being the table described below
 
@@ -228,13 +254,15 @@ pull your color theme using several highlight groups, eg `Normal` or `Comment`
 |-|-|-|-|
 | color | `string` | Border color | `#00ffff` |
 | switch | `string` | Key to switch to this plugin from within Rabbit | `o` |
-| opts | `table` | Any plugin-specific options. My documentation is available in the wiki | `{}` |
+| opts | `table` | Any plugin-specific options. | `{}` |
+
+See the [wiki](https://github.com/VoxelPrismatic/rabbit.nvim/wiki) for the various plugins' options.
 
 <br><br>
 </details>
 
 <details>
-    <summary><b>Default config</b></summary>
+    <summary><h3>Default config</h3></summary>
 
 **Please do not copy this config**, it is the default.
 
