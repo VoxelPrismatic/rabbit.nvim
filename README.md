@@ -138,10 +138,12 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 | default_keys | [Rabbit.Keymap](#rabbitkeymap) | Keys and things | `{ ... }` |
 | plugin_opts | [Rabbit.Options.Plugin_Options](#rabbitoptionsplugin_options) | Plugin options | `{ ... }` |
 | enable | `string[]` | Which **builtin** plugins to enable immediately<br>*\*first plugin is considered default* | history,<br/>reopen,<br/>oxide,<br/>harpoon |
-| path_key | `function()` -> `string` | Function to scope the current directory (eg scope to the git root) | `vim.fn.getcwd` |
+| path_key | `function()` -> `string` | Scope directory, [wiki][path_key] | `vim.fn.getcwd` |
 
 <br><br>
 </details>
+
+[path_key]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Custom-Path-Key
 
 <details>
     <summary><b>Rabbit.Options.Colors</b></summary>

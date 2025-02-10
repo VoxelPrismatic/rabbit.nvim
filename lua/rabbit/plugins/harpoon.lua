@@ -83,7 +83,9 @@ end
 ---@param n integer
 function M.func.select(n)
     M.listing[0] = require("rabbit").ctx.listing
+    vim.print(n)
     if string.find(M.listing[0][n], "rabbitmsg://") ~= 1 then
+        vim.print("Not a group")
         return require("rabbit").func.select(n)
     end
 

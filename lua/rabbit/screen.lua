@@ -272,7 +272,9 @@ function screen.add_entry(spec, line)
             noremap = true,
             silent = true,
             callback = function()
-                require("rabbit").func.select(i)
+                local r = require("rabbit")
+                local cb = r.ctx.plugin.func.select or r.func.select
+                cb(i)
             end
         })
     end

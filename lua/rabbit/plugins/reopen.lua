@@ -31,7 +31,7 @@ local M = { ---@type Rabbit.Plugin
 ---@param evt NvimEvent
 ---@return string | nil Nil if event should be ignored
 local function prepare(evt)
-    local cwd = require("rabbit").path_key_fallback(M)
+    local cwd = require("rabbit").func.path_key(M)
     M.listing.persist[cwd] = M.listing.persist[cwd] or {}
 
     if vim.uv.fs_stat(evt.file) == nil then

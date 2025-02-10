@@ -115,7 +115,7 @@ function M.evt.BufEnter(evt, winid)
 
     table.insert(M.listing[winid], evt.file)
 
-    local cwd = require("rabbit").path_key_fallback(M)
+    local cwd = require("rabbit").func.path_key(M)
     local entry = M.listing.persist[cwd] ---@type Rabbit.Plugin.Listing.Persist.Table
 
     if entry == nil then
@@ -138,7 +138,7 @@ end
 
 
 function M.evt.RabbitInvalid(evt, _)
-    set.sub(M.listing.persist[require("rabbit").path_key_fallback(M)], evt.file)
+    set.sub(M.listing.persist[require("rabbit").func.path_key(M)], evt.file)
     set.save(M.memory, M.listing.persist)
 end
 
@@ -161,7 +161,7 @@ end
 function M.func.file_del(ln)
     local arr = require("rabbit").ctx.listing ---@type string[]
     local filename = arr[ln]
-    local cwd = require("rabbit").path_key_fallback(M)
+    local cwd = require("rabbit").func.path_key(M)
     if filename == nil or M.listing.persist[cwd][filename] == nil then
         return
     end
