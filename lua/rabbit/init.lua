@@ -308,7 +308,7 @@ function rabbit.MakeBuf(mode)
 
 -- In case the plugin has a listing it must prepare
     if rabbit.ctx.plugin.evt.RabbitEnter ~= nil then
-        local path = rabbit.func.path_key()
+        local path = rabbit.path_key()
 
         local mock_evt = { ---@type Rabbit.Event.Enter
             buf = rabbit.user.buf,
@@ -451,7 +451,7 @@ function rabbit.Redraw()
 
     local has_name, buf_path = pcall(vim.api.nvim_buf_get_name, rabbit.user.buf)
     if not has_name or buf_path:sub(1, 1) ~= "/" then
-        local path = rabbit.func.path_key()
+        local path = rabbit.path_key()
 
         buf_path = path .. "/rabbit.txt" -- Relative to CWD if no name set
     end
