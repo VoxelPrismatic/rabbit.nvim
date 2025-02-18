@@ -2,6 +2,10 @@
 [rabbit.oxide]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.oxide&label=Oxide&labelColor=white&color=yellow
 [rabbit.harpoon]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.harpoon&label=Harpoon&labelColor=white&color=yellow
 [rabbit.reopen]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.reopen&label=Reopen&labelColor=white&color=yellow
+[wiki.harpoon]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-Harpoon
+[wiki.history]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-History
+[wiki.reopen]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-Reopen
+[wiki.oxide]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-Oxide
 
 <div align="center">
     <img src="/rabbit.png" width="368" alt="logo"/>
@@ -41,10 +45,10 @@
   - [Configuration](#configuration)
   - [Preview](#preview)
 - [Plugins](/lua/rabbit/plugins)
-  - ![history][rabbit.history]
-  - ![reopen][rabbit.reopen]
-  - ![oxide][rabbit.oxide]
-  - ![harpoon][rabbit.harpoon]
+  - [![history][rabbit.history]][wiki.history]
+  - [![reopen][rabbit.reopen]][wiki.reopen]
+  - [![oxide][rabbit.oxide]][wiki.oxide]
+  - [![harpoon][rabbit.harpoon]][wiki.harpoon]
 - [API](https://github.com/voxelprismatic/rabbit.nvim/wiki/API-Documentation)
 - [Custom Plugin](https://github.com/voxelprismatic/rabbit.nvim/wiki/Custom-Plugin)
 
