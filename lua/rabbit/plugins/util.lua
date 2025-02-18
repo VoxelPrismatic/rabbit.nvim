@@ -78,12 +78,13 @@ end
 
 
 -- Removes references to deleted files and folders
----@param tbl Rabbit.Plugin.Listing.Persist
+---@param tbl Rabbit.Plugin.Listing.Persist Table to clean
+---@param only_children? boolean Don't touch the first level of keys
 ---@return Rabbit.Plugin.Listing.Persist
-function M.clean(tbl)
+function M.clean(tbl, only_children)
     for dir, ls in pairs(tbl) do
         local stat = vim.uv.fs_stat(dir)
-        if stat == nil or stat.type == "file" then
+        if (not only_children) and (stat == nil or stat.type == "file") then
             tbl[dir] = nil
             goto continue
         end

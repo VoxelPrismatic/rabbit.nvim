@@ -690,7 +690,8 @@ end
 
 
 ---@param plugin Rabbit.Plugin | Rabbit.Builtin
-function rabbit.attach(plugin)
+---@param default? boolean If true, this plugin will be set as the default
+function rabbit.attach(plugin, default)
     if rabbit.user.ns ~= 0 then
         error("Call rabbit.setup() before attaching plugins")
     end
@@ -702,19 +703,34 @@ function rabbit.attach(plugin)
         end
         plugin = p
     end
+
     local opts = rabbit.opts.plugin_opts[plugin.name] or {} ---@type Rabbit.Plugin.Options
     plugin.keys = vim.tbl_extend("force", plugin.keys, opts.keys or {})
     plugin.color = opts.color or plugin.color
     plugin.switch = opts.switch or plugin.switch
+
     if plugin.opts ~= nil then
         plugin.opts = vim.tbl_deep_extend("force", plugin.opts, opts.opts or {})
     end
+
     if plugin.memory then
         plugin.memory = rabbit.make_mem(plugin.name)
     end
-    if #rabbit.default == 0 then
+
+    if #rabbit.default == 0 or default then
         rabbit.default = plugin.name
     end
+
+    if plugin.flags == nil then
+        plugin.flags = {}
+    end
+
+    if plugin.flags.sys == nil then
+        plugin.flags.sys = {}
+    end
+
+    plugin.flags.sys.path_key = plugin.opts.path_key ~= nil or rabbit.opts.path_key ~= nil
+
     rabbit.plugins[plugin.name] = plugin
     plugin.init(plugin)
 

@@ -17,6 +17,7 @@ local M = { ---@type Rabbit.Plugin
     skip_same = false,
     keys = {},
     evt = {},
+    flags = {},
     memory = "",
 
     _dir = "",
@@ -31,7 +32,7 @@ local M = { ---@type Rabbit.Plugin
     init = function(p)
         p.listing[0] = {}
         p.listing.paths = {}
-        p.listing.persist = set.clean(set.read(p.memory))
+        p.listing.persist = set.clean(set.read(p.memory), p.flags.sys.path_key)
         p.listing.opened = {}
         p.listing.collections = {}
         p.listing.recursive = nil

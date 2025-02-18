@@ -23,7 +23,7 @@ local M = { ---@type Rabbit.Plugin
 
     ---@param p Rabbit.Plugin
     init = function(p)
-        p.listing.persist = set.clean(set.read(p.memory))
+        p.listing.persist = set.clean(set.read(p.memory), p.flags.sys.path_key)
     end,
 }
 

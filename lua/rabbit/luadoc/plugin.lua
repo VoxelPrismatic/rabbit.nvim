@@ -13,6 +13,16 @@
 ---@field public init fun(p: Rabbit.Plugin) Initializes the plugin
 ---@field public memory? string If set, Rabbit will make a file, and set `memory` to the file name
 ---@field public opts? table Plugin specific options
+---@field public flags? Rabbit.Plugin.Flags
+
+
+---@class Rabbit.Plugin.Flags
+---@field sys? Rabbit.Plugin.Flags.System
+---@field [string] any Any other flags the plugin wants to mark
+
+
+---@class (exact) Rabbit.Plugin.Flags.System
+---@field public path_key? boolean If set, then there is a custom path_key function
 
 
 ---@alias Rabbit.plugin.default_store
