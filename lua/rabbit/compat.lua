@@ -1,43 +1,43 @@
 ---@type Rabbit.Compat
 local compat = {
-    windows = {
-        path = "\\",
-        warn = true,
-        name = "Windows",
-        has = { "win32", "win64" },
-    },
+	windows = {
+		path = "\\",
+		warn = true,
+		name = "Windows",
+		has = { "win32", "win64" },
+	},
 
-    linux = {
-        path = "/",
-        warn = false,
-        name = "Linux",
-        has = { "linux" },
-    },
+	linux = {
+		path = "/",
+		warn = false,
+		name = "Linux",
+		has = { "linux" },
+	},
 
-    macos = {
-        path = "/",
-        warn = false,
-        name = "macOS",
-        has = { "macos" },
-    },
+	macos = {
+		path = "/",
+		warn = false,
+		name = "macOS",
+		has = { "macos" },
+	},
 
-    __default__ = {
-        path = "/",
-        warn = false,
-        name = "<nil>",
-        has = {},
-    },
+	__default__ = {
+		path = "/",
+		warn = false,
+		name = "<nil>",
+		has = {},
+	},
 }
 
 local ret = compat.__default__
 
 for _, v in pairs(compat) do
-    for _, o in ipairs(v.has) do
-        if vim.fn.has(o) == 1 then
-            ret = v
-            break
-        end
-    end
+	for _, o in ipairs(v.has) do
+		if vim.fn.has(o) == 1 then
+			ret = v
+			break
+		end
+	end
 end
 
 local parts = vim.split(debug.getinfo(1).source:sub(2), ret.path)
@@ -51,23 +51,23 @@ local file = path .. "__compat_warning__"
 vim.fn.fnamemodify(file, ":p")
 
 if ret.warn == false then
-    --pass
+	--pass
 elseif io.open(file, "r") == nil then
-    vim.cmd("echohl WarningMsg")
-    vim.cmd('echo "WARNING: "')
-    vim.cmd("echohl None")
-    vim.cmd('echon "Rabbit is not supported on ' .. ret.name .. '."')
-    vim.print("If you experience any problems, please open a ticket:")
-    vim.print("https://github.com/VoxelPrismatic/rabbit.nvim/issues")
-    io.open(file, "w+"):write("1")
+	vim.cmd("echohl WarningMsg")
+	vim.cmd('echo "WARNING: "')
+	vim.cmd("echohl None")
+	vim.cmd('echon "Rabbit is not supported on ' .. ret.name .. '."')
+	vim.print("If you experience any problems, please open a ticket:")
+	vim.print("https://github.com/VoxelPrismatic/rabbit.nvim/issues")
+	io.open(file, "w+"):write("1")
 else
-    vim.cmd("echohl WarningMsg")
-    vim.cmd('echo "Reminder: "')
-    vim.cmd("echohl None")
-    vim.cmd('echon "' ..
-        "Report any compatibility issues to " ..
-        "http://prz0.github.io/rabbit/issues" ..
-    '"')
+	vim.cmd("echohl WarningMsg")
+	vim.cmd('echo "Reminder: "')
+	vim.cmd("echohl None")
+	vim.cmd('echon "' ..
+		"Report any compatibility issues to " ..
+		"http://prz0.github.io/rabbit/issues" ..
+	'"')
 end
 
 return ret
