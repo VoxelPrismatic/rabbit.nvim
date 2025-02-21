@@ -41,6 +41,32 @@ local M = { ---@type Rabbit.Plugin
 	ctx = {},
 }
 
+function M._validate_group_name(name)
+	if #M.listing.paths[M._dir] > 0 and name ~= M.listing.recursive[1] then
+		local recur = M.listing.persist[M._dir]
+		for i, v in ipairs(M.listing.paths[M._dir]) do
+			if i < #M.listing.paths[M._dir] then
+				recur = recur[v]
+			end
+		end
+
+		for _, v in ipairs(recur) do
+			if type(v) == "table" and name == v[1] then
+				return "That name already exists!", false
+			end
+		end
+	elseif name == "" then
+		return "Name can't be empty!", false
+	elseif string.find(name, "#up!") == 1 then
+		return "Can't go up from here!", false
+	elseif string.find(name, "rabbitmsg://") == 1 then
+		return "That's a reserved name!", false
+	elseif set.index(M.listing[0], "rabbitmsg://" .. name) ~= nil then
+		return "That name already exists!", false
+	end
+
+	return "", true
+end
 
 ---@param n integer
 function M.func.group(n)
@@ -51,13 +77,9 @@ function M.func.group(n)
 			n = math.max(2, n)
 		end
 
-		if string.find(name, "#up!") == 1 then
-			vim.print("That's a reserved name!")
-			return
-		end
-
-		if set.index(M.listing[0], "rabbitmsg://" .. name) ~= nil then
-			vim.print("That name already exists!")
+		local msg, valid = M._validate_group_name(name)
+		if not valid then
+			vim.print(msg)
 			return
 		end
 
@@ -67,25 +89,37 @@ function M.func.group(n)
 		set.save(M.memory, M.listing.persist)
 		require("rabbit").Redraw()
 	end, function(name)
-		if name == "" then
-			return false
-		end
-		if string.find(name, "#up!") == 1 then
-			return false
-		end
-		if set.index(M.listing[0], "rabbitmsg://" .. name) ~= nil then
-			return false
-		end
-		return true
+		local _, valid = M._validate_group_name(name)
+		return valid
 	end)
 end
 
+---@param old_name string
+function M._rename(old_name)
+	require("rabbit.input").prompt("Rename collection", function(name)
+		local msg, valid = M._validate_group_name(name)
+		if not valid then
+			vim.print(msg)
+			return
+		end
+
+		M.listing.recursive[1] = name
+		M.listing[0][1] = "rabbitmsg://#up!\n" .. M._path()
+		set.save(M.memory, M.listing.persist)
+		require("rabbit").Redraw()
+	end, function(name)
+		local _, valid = M._validate_group_name(name)
+		return valid
+	end, old_name)
+end
 
 ---@param n integer
 function M.func.select(n)
 	M.listing[0] = require("rabbit").ctx.listing
-	vim.print(n)
-	if string.find(M.listing[0][n], "rabbitmsg://") ~= 1 then
+	if M.listing[0][n] == nil then
+		M.listing.paths[M._dir] = {""}
+		M.listing[0][n] = "rabbitmsg://#up!"
+	elseif string.find(M.listing[0][n], "rabbitmsg://") ~= 1 then
 		vim.print("Not a group")
 		return require("rabbit").func.select(n)
 	end
@@ -131,9 +165,60 @@ function M.evt.BufDelete(evt, winid)
 end
 
 
+function M._prevent_duped_collections(obj)
+	local recur = M.listing.persist[M._dir]
+
+	for _, v in ipairs(M.listing.paths[M._dir]) do
+		recur = recur[v]
+		if obj == recur then
+			vim.print("You cannot put a collection in itself!")
+			return false
+		end
+	end
+
+	recur = M.listing.persist[M._dir]
+	local route = M.listing.refs[("%p"):format(obj)]
+	local path = "~"
+	for _, v in ipairs(route) do
+		recur = recur[v]
+		path = path .. "/" .. recur[1]
+	end
+
+	local ret = true
+
+	for i, v in ipairs(recur) do
+		if obj == v then
+			vim.ui.select({"Copy", "Move"}, {
+				prompt = "This collection (" .. v[1] .. ") is already in `" .. path .. "`. What do you want to do?",
+			}, function(choice)
+				if choice == "Move" then
+					table.remove(recur, i)
+					if #M.listing.paths[M._dir] > 0 and i <= M.listing.paths[M._dir][#M.listing.paths[M._dir]] then
+						M.listing.paths[M._dir][#M.listing.paths[M._dir]] = M.listing.paths[M._dir][#M.listing.paths[M._dir]] - 1
+					end
+					if #route > 0 and i <= route[#route] then
+						route[#route] = route[#route] - 1
+					end
+					if M.listing.recursive == recur then
+						set.sub(M.listing.recursive, v)
+						set.sub(M.listing[0], "rabbitmsg://" .. v[1])
+					end
+				elseif choice == "Copy" then
+					recur[i] = vim.deepcopy(obj)
+				else
+					ret = false
+				end
+			end)
+		end
+	end
+
+	return ret
+end
+
 ---@param n integer
 function M.func.file_add(n)
 	M.listing[0] = require("rabbit").ctx.listing
+	print("")
 
 	local cur = M.listing.opened[1] or vim.api.nvim_buf_get_name(require("rabbit").user.buf)
 	M.listing.opened[1] = cur
@@ -143,19 +228,30 @@ function M.func.file_add(n)
 		return
 	end
 
-	set.sub(M.listing.recursive, cur)
-	set.sub(M.listing[0], cur)
 	n = math.max((#M.listing.paths[M._dir] > 0 and 2 or 1), math.min(#M.listing[0] + 1, n))
 
 	if collection ~= nil then
-		for i, v in ipairs(M.listing.recursive) do
-			if v[1] == collection[1] then
-				table.remove(M.listing.recursive, i)
+		if not M._prevent_duped_collections(collection) then
+			return
+		end
+
+		M.listing.refs[("%p"):format(collection)] = vim.deepcopy(M.listing.paths[M._dir])
+		local conflict = true
+		while conflict do
+			conflict = false
+			for _, v in pairs(M.listing.recursive) do
+				if v[1] == collection[1] then
+					conflict = true
+					collection[1] = collection[1] .. "+"
+					break
+				end
 			end
 		end
 		table.insert(M.listing.recursive, n, collection)
 		table.insert(M.listing[0], n, "rabbitmsg://" .. collection[1])
 	else
+		set.sub(M.listing.recursive, cur)
+		set.sub(M.listing[0], cur)
 		table.insert(M.listing.recursive, n, cur)
 		table.insert(M.listing[0], n, cur)
 	end
@@ -172,17 +268,21 @@ function M.func.file_del(n)
 		return
 	end
 
-	if string.find(entry, "#up!") == #"rabbitmsg://" then
-		vim.print("That's a reserved name!")
-		return
+	if string.find(entry, "rabbitmsg://#up!") == 1 then
+		return M._rename(M.listing.recursive[1])
 	end
 
 	set.sub(M.listing[0], entry)
 	if string.find(entry, "rabbitmsg://") == 1 then
 		local t = M.listing.recursive[n]
 		if type(t) == "table" then
-			M.listing.collections[entry] = vim.deepcopy(t)
+			local new_t = vim.deepcopy(t)
+			M.listing.collections[entry] = new_t
 			M.listing.opened[1] = entry
+			if M.listing.refs == nil then
+				M.listing.refs = {}
+			end
+			M.listing.refs[("%p"):format(new_t)] = {}
 		end
 
 		table.remove(M.listing.recursive, n)
@@ -236,6 +336,9 @@ function M._generate()
 		if i == 1 and #M.listing.paths[M._dir] > 0 then
 			-- pass
 		elseif type(v) == "table" then
+			if #v <= 0 then
+				table.insert(v, 1, "something went terribly wrong here")
+			end
 			table.insert(M.listing[0], "rabbitmsg://" .. v[1])
 		elseif not M.opts.ignore_opened or set.index(M.listing[M.ctx.winid], v) == nil then
 			table.insert(M.listing[0], v)

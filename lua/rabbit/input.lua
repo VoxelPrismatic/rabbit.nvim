@@ -9,10 +9,15 @@ local M = {}
 ---@param title string The question/input prompt
 ---@param callback fun(response: string) The callback to be called with the user's input
 ---@param check? fun(response: string): boolean The callback to check the user's input
-function M.prompt(title, callback, check)
+---@param default? string The default value
+function M.prompt(title, callback, check, default)
 	local rabbit = require("rabbit")
 
 	check = check or function() return true end
+
+	if default == nil then
+		default = ""
+	end
 
 	screen.ctx.in_input = true
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -42,6 +47,7 @@ function M.prompt(title, callback, check)
 	})
 
 	vim.fn.feedkeys("i", "n")
+	vim.fn.feedkeys(default, "n")
 
 	vim.api.nvim_create_autocmd("InsertLeave", {
 		buffer = buf,

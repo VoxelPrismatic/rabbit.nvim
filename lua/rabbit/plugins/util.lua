@@ -114,7 +114,9 @@ function M.clean_recursive(tbl)
 			M.clean_recursive(key)
 			key.__name__ = name
 		elseif type(key) == "string" and vim.uv.fs_stat(key) == nil then
-			if type(tbl.age) == "number" and type(tbl.count) == "number" then
+			if string.find(key, "rabbitmsg://") == 1 then
+				-- pass
+			elseif type(tbl.age) == "number" and type(tbl.count) == "number" then
 				tbl[key] = nil
 			end
 		end

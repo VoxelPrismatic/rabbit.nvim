@@ -59,6 +59,7 @@
 ---@field collections? Rabbit.Plugin.Listing.Persist.Recursive Tracks collections
 ---@field recursive? Rabbit.Plugin.Listing.Persist.Recursive
 ---@field _recursive? Rabbit.Plugin.Listing.Persist.Recursive
+---@field refs? Rabbit.Plugin.Listing.MemRefs
 ---@field paths? Rabbit.Plugin.Listing.Persist.Table[]
 ---@field [integer] Rabbit.Plugin.Listing.Window
 ---@field [string] Rabbit.Plugin.Listing.Window
@@ -66,6 +67,10 @@
 
 ---@class Rabbit.Plugin.Listing.Window
 ---@field [integer] integer | string
+
+
+---@class (exact) Rabbit.Plugin.Listing.MemRefs
+---@field [string] table<integer, integer>
 
 
 ---@class (exact) Rabbit.Plugin.Options
