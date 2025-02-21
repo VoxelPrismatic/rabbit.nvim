@@ -14,8 +14,23 @@
 
 ---@class Rabbit.Screen.Spec
 ---@field [integer] Rabbit.Screen.Spec
----@field color RabbitHlGroup Highlight group name
+---@field color RabbitHlGroup | string Highlight group name
 ---@field text string | string[] Text to render
 ---@field expand? boolean | string Expand to full width
 
 
+---@class Rabbit.Input.Prompt.Entry.Named
+---@field text string Menu item text
+---@field callback function Callback when selected
+---@field color? RabbitHlGroup | string Highlight group
+
+
+---@class Rabbit.Input.Prompt.Entry.Positional
+---@field [1] string Menu item text
+---@field [2] function Callback when selected
+---@field [3]? RabbitHlGroup | string Highlight group
+
+
+---@alias Rabbit.Input.Prompt.Entry
+---| Rabbit.Input.Prompt.Entry.Named
+---| Rabbit.Input.Prompt.Entry.Positional
