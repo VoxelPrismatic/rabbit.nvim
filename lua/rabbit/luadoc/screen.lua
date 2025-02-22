@@ -23,12 +23,14 @@
 ---@field text string Menu item text
 ---@field callback function Callback when selected
 ---@field color? RabbitHlGroup | string Highlight group
+---@field hidden? boolean Do not display
 
 
 ---@class Rabbit.Input.Prompt.Entry.Positional
 ---@field [1] string Menu item text
 ---@field [2] function Callback when selected
 ---@field [3]? RabbitHlGroup | string Highlight group
+---@field [4]? boolean Do not display
 
 
 ---@alias Rabbit.Input.Prompt.Entry

@@ -115,8 +115,8 @@ end
 -- Prompts the user with a list of options (up to nine)
 ---@param title string The question/input prompt
 ---@param description string Clarifies the question
----@param default string The default value (will immediately call callback if match is found)
----@param finally fun() The callback to call after the user has made their choice (or quit)
+---@param default? string The default value (will immediately call callback if match is found)
+---@param finally? fun() The callback to call after the user has made their choice (or quit)
 ---@param entries Rabbit.Input.Prompt.Entry[] List of entries
 function M.menu(title, description, default, finally, entries)
 	local rabbit = require("rabbit")
@@ -129,6 +129,10 @@ function M.menu(title, description, default, finally, entries)
 		finally = function() end
 	end
 
+	local desc_lines = {}
+	local height = #entries
+	local width = screen.ctx.width - 4
+
 	for _, e in ipairs(entries) do
 		if e.text == nil then
 			e.text = e[1]
@@ -140,6 +144,14 @@ function M.menu(title, description, default, finally, entries)
 
 		if e.color == nil then
 			e.color = e[3]
+		end
+
+		if e.hidden == nil then
+			e.hidden = e[4] or false
+		end
+
+		if e.hidden then
+			height = height - 1
 		end
 
 		if e.text == default then
@@ -158,9 +170,6 @@ function M.menu(title, description, default, finally, entries)
 	end
 
 
-	local desc_lines = {}
-	local width = screen.ctx.width - 4
-	local height = #entries
 
 	for line in description:gmatch("[^\n]+") do
 		desc_lines[#desc_lines + 1] = " "
@@ -213,6 +222,13 @@ function M.menu(title, description, default, finally, entries)
 	M._buf = buf
 	M._win = win
 
+	local kill = function()
+		screen.ctx.in_input = false
+		pcall(vim.api.nvim_win_close, win, true)
+		pcall(vim.api.nvim_buf_delete, buf, { force = true })
+		finally()
+	end
+
 	vim.api.nvim_create_autocmd("InsertEnter", {
 		buffer = buf,
 		callback = function()
@@ -222,34 +238,31 @@ function M.menu(title, description, default, finally, entries)
 
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, desc_lines)
 
+	local hidden = 0
+
 	for i, e in ipairs(entries) do
 		local j = i + #desc_lines - 1
-		local off = #(" " .. i .. ". ")
-		local line = " " .. i .. ". " .. e.text
-		line = line .. (" "):rep(width - #line)
+		if e.hidden then
+			hidden = hidden + 1
+			goto continue
+		end
+		local line = " " .. (i - hidden) .. ". "
+		local off = #line
+		line = line .. e.text .. (" "):rep(width - #line - #e.text)
 		vim.api.nvim_buf_set_lines(buf, j, j, false, { line })
 		vim.api.nvim_buf_add_highlight(buf, -1, "RabbitIndex", j, 0, off)
-		vim.api.nvim_buf_add_highlight(buf, -1, e.color or "RabbitFile", j, off, off + #e.text)
-		vim.api.nvim_buf_set_keymap(buf, "n", "" .. i, "", { callback = function()
+		vim.api.nvim_buf_add_highlight(buf, -1, e.color or "RabbitFile", j, off, #line)
+		vim.api.nvim_buf_set_keymap(buf, "n", "" .. (i - hidden), "", { callback = function()
 			e.callback()
-			finally()
+			kill()
 		end})
+		::continue::
 	end
 
 	local cb = function()
 		local line = vim.api.nvim_win_get_cursor(win)[1] - #desc_lines
-		screen.ctx.in_input = false
-		vim.api.nvim_win_close(win, true)
-		vim.api.nvim_buf_delete(buf, { force = true })
 		entries[line].callback()
-		finally()
-	end
-
-	local kill = function()
-		screen.ctx.in_input = false
-		vim.api.nvim_win_close(win, true)
-		vim.api.nvim_buf_delete(buf, { force = true })
-		finally()
+		kill()
 	end
 
 	for _, k in ipairs(rabbit.ctx.plugin.keys.select or rabbit.opts.default_keys.select) do
@@ -271,12 +284,10 @@ end
 
 
 function M.warn(title, msg, color)
-	local rabbit = require("rabbit")
-
 	screen.ctx.in_input = true
 
 	if color == nil then
-		color = "ErrorMsg"
+		color = "RabbitPopupErr"
 	end
 
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -313,6 +324,7 @@ function M.warn(title, msg, color)
 		callback = function()
 			vim.api.nvim_win_close(win, true)
 			vim.api.nvim_buf_delete(buf, { force = true })
+			require("rabbit").BufHighlight()
 		end
 	}
 

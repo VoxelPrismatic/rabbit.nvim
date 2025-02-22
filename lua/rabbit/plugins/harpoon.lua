@@ -1,10 +1,12 @@
 local set = require("rabbit.plugins.util")
+local screen = require("rabbit.screen")
 
 
 ---@class Rabbit.Plugin.Harpoon.Options
 ---@field public ignore_opened? boolean Do not display currently open buffers
 ---@field public path_key? string|function:string Scope your working directory
----@field public conflict_default? "copy" | "move" | "prompt" Default action for copy/move conflicts
+---@field public conflict_parent? "copy" | "move" | "prompt" Default action when you try to move a collection into itself
+---@field public conflict_copy? "copy" | "move" | "prompt" Default action when you try to move an existing collection
 
 
 ---@class Rabbit.Plugin.Harpoon: Rabbit.Plugin
@@ -27,7 +29,8 @@ local M = { ---@type Rabbit.Plugin
 	opts = {
 		ignore_opened = false,
 		path_key = nil,
-		conflict_default = "prompt",
+		conflict_parent = "prompt",
+		conflict_copy = "prompt",
 	},
 
 	---@param p Rabbit.Plugin.Harpoon
@@ -43,6 +46,10 @@ local M = { ---@type Rabbit.Plugin
 	ctx = {},
 }
 
+
+-- Validates this collection name against this collection and the parent collection
+---@param name string The collection name
+---@return string, boolean
 function M._validate_group_name(name)
 	if #M.listing.paths[M._dir] > 0 and name ~= M.listing.recursive[1] then
 		local recur = M.listing.persist[M._dir]
@@ -70,6 +77,7 @@ function M._validate_group_name(name)
 	return "", true
 end
 
+-- Creates a new collection
 ---@param n integer
 function M.func.group(n)
 	require("rabbit.input").prompt("Collection name", function(name)
@@ -90,12 +98,14 @@ function M.func.group(n)
 
 		set.save(M.memory, M.listing.persist)
 		require("rabbit").Redraw()
+		vim.api.nvim_win_set_cursor(require("rabbit").rabbit.win, { n + 2, #(screen.ctx.box.horizontal) + 1 })
 	end, function(name)
 		local _, valid = M._validate_group_name(name)
 		return valid
 	end)
 end
 
+-- Renames a collection
 ---@param old_name string
 function M._rename(old_name)
 	require("rabbit.input").prompt("Rename collection", function(name)
@@ -119,8 +129,7 @@ end
 function M.func.select(n)
 	M.listing[0] = require("rabbit").ctx.listing
 	if M.listing[0][n] == nil then
-		M.listing.paths[M._dir] = {""}
-		M.listing[0][n] = "rabbitmsg://#up!"
+		return
 	elseif string.find(M.listing[0][n], "rabbitmsg://") ~= 1 then
 		vim.print("Not a group")
 		return require("rabbit").func.select(n)
@@ -167,69 +176,58 @@ function M.evt.BufDelete(evt, winid)
 end
 
 
-function M._duped_elsewhere_prompt(recur, route, i, v, obj, choice)
-	if choice == "move" then
-		table.remove(recur, i)
-		if #M.listing.paths[M._dir] > 0 and i <= M.listing.paths[M._dir][#M.listing.paths[M._dir]] then
-			M.listing.paths[M._dir][#M.listing.paths[M._dir]] = M.listing.paths[M._dir][#M.listing.paths[M._dir]] - 1
-		end
-		if #route > 0 and i <= route[#route] then
-			route[#route] = route[#route] - 1
-		end
-		if M.listing.recursive == recur then
-			set.sub(M.listing.recursive, v)
-			set.sub(M.listing[0], "rabbitmsg://" .. v[1])
-		end
-	elseif choice == "copy" then
-		recur[i] = vim.deepcopy(obj)
-	else
-		return false
-	end
-	return true
-end
-
-function M._duped_parent_prompt(recur, obj, choice)
-	if choice == "copy" then
-		recur = M.listing.persist[M._dir]
-		for i, v in ipairs(M.listing.paths[M._dir]) do
-			if i < #M.listing.paths[M._dir] then
-				recur = recur[v]
-			end
-		end
-
-		for i, v in ipairs(recur) do
-			if obj == v then
-				recur[i] = vim.deepcopy(obj)
-				M.listing.recursive = recur[i]
-			end
-		end
-		return true
-	end
-
-	vim.print("You cannot copy a collection into itself!")
-	return false
-end
-
-function M._prevent_duped_collections(obj)
+-- Prevents duplicate collections
+---@param obj Rabbit.Plugin.Listing.Persist.Recursive The collection possibly being duplicated
+---@param n integer The index of the collection
+function M._prevent_duped_collections(obj, n)
 	local recur = M.listing.persist[M._dir]
 
+	-- When you insert a collection into itself
 	for _, v in ipairs(M.listing.paths[M._dir]) do
 		recur = recur[v]
-		if obj == recur then
-			if M.opts.conflict_default == "copy" or M.opts.conflict_default == "move" then
-				return M._duped_parent_prompt(recur, obj, M.opts.conflict_default)
-			else
-				local ret = true
-				vim.ui.select({"copy", "cancel"}, {
-					prompt = "You are about to place a collection into itself.\nWhat do you want to do?",
-				}, function(choice)
-					ret = M._duped_parent_prompt(recur, obj, choice)
-				end)
-				return ret
-			end
+		if obj ~= recur then
+			goto continue
 		end
+		require("rabbit.input").menu(
+			"What do you want to do?",
+			"You are about to place a collection into itself",
+			M.opts.conflict_parent,
+			nil,
+			{
+				{"copy", function()
+					recur = M.listing.persist[M._dir]
+					for i, p in ipairs(M.listing.paths[M._dir]) do
+						if i < #M.listing.paths[M._dir] then
+							recur = recur[p]
+						end
+					end
+
+					for i, p in ipairs(recur) do
+						if obj == p then
+							recur[i] = vim.deepcopy(obj)
+							M.listing.recursive = recur[i]
+						end
+					end
+					M._dupe_handled(obj, n)
+				end},
+				{"cancel", function()
+				end},
+				{"move", function()
+					require("rabbit.input").warn("Error!", "You cannot move a collection into itself!")
+				end, hidden = true}
+			}
+		)
+
+		do
+			return
+		end
+
+		::continue::
 	end
 
+
+
+	-- When you try to insert the same collection in multiple places
 	recur = M.listing.persist[M._dir]
 	local route = M.listing.refs[("%p"):format(obj)]
 	local path = "~"
@@ -238,23 +236,75 @@ function M._prevent_duped_collections(obj)
 		path = path .. "/" .. recur[1]
 	end
 
-	local ret = true
-
 	for i, v in ipairs(recur) do
-		if obj == v then
-			if M.opts.conflict_default == "copy" or M.opts.conflict_default == "move" then
-				return M._duped_elsewhere_prompt(recur, route, i, v, obj, M.opts.conflict_default)
-			else
-				vim.ui.select({"copy", "move"}, {
-					prompt = "This collection (" .. v[1] .. ") is already in `" .. path .. "`.\nWhat do you want to do?",
-				}, function(choice)
-					ret = M._duped_elsewhere_prompt(recur, route, i, v, obj, choice)
-				end)
+		if obj ~= v then
+			goto continue
+		end
+
+		require("rabbit.input").menu(
+			"What do you want to do?",
+			"This collection (" .. v[1] .. ") is already in `" .. path .. "`",
+			M.opts.conflict_copy,
+			nil,
+			{
+				{"move", function()
+					table.remove(recur, i)
+					local paths = M.listing.paths[M._dir]
+					if #paths > 0 and i <= paths[#paths] then
+						paths[#paths]= paths[#paths] - 1
+					end
+					if #route > 0 and i <= route[#route] then
+						route[#route] = route[#route] - 1
+					end
+					if M.listing.recursive == recur then
+						set.sub(M.listing.recursive, v)
+						set.sub(M.listing[0], "rabbitmsg://" .. v[1])
+					end
+					M._dupe_handled(obj, n)
+				end},
+				{"copy", function()
+					recur[i] = vim.deepcopy(obj)
+					M._dupe_handled(obj, n)
+				end},
+			}
+		)
+
+		do
+			return
+		end
+
+		::continue::
+	end
+
+	-- No conflicts
+	M._dupe_handled(obj, n)
+end
+
+-- Adds the collection to the listing
+---@param collection Rabbit.Plugin.Listing.Persist.Recursive The target collection
+---@param n integer Where to place it
+function M._dupe_handled(collection, n)
+	n = math.max((#M.listing.paths[M._dir] > 0 and 2 or 1), math.min(#M.listing[0] + 1, n))
+
+	M.listing.refs[("%p"):format(collection)] = vim.deepcopy(M.listing.paths[M._dir])
+
+	local conflict = true
+	while conflict do
+		conflict = false
+		for _, v in pairs(M.listing.recursive) do
+			if v[1] == collection[1] then
+				conflict = true
+				collection[1] = collection[1] .. "+"
+				break
 			end
 		end
 	end
 
-	return ret
+	table.insert(M.listing.recursive, n, collection)
+	table.insert(M.listing[0], n, "rabbitmsg://" .. collection[1])
+
+	set.save(M.memory, M.listing.persist)
+	require("rabbit").Redraw()
 end
 
 ---@param n integer
@@ -271,34 +321,17 @@ function M.func.file_add(n)
 	end
 
 
-	if collection ~= nil then
-		if not M._prevent_duped_collections(collection) then
-			return
-		end
-
-		n = math.max((#M.listing.paths[M._dir] > 0 and 2 or 1), math.min(#M.listing[0] + 1, n))
-
-		M.listing.refs[("%p"):format(collection)] = vim.deepcopy(M.listing.paths[M._dir])
-		local conflict = true
-		while conflict do
-			conflict = false
-			for _, v in pairs(M.listing.recursive) do
-				if v[1] == collection[1] then
-					conflict = true
-					collection[1] = collection[1] .. "+"
-					break
-				end
-			end
-		end
-		table.insert(M.listing.recursive, n, collection)
-		table.insert(M.listing[0], n, "rabbitmsg://" .. collection[1])
-	else
-		set.sub(M.listing.recursive, cur)
-		set.sub(M.listing[0], cur)
-		n = math.max((#M.listing.paths[M._dir] > 0 and 2 or 1), math.min(#M.listing[0] + 1, n))
-		table.insert(M.listing.recursive, n, cur)
-		table.insert(M.listing[0], n, cur)
+	if type(collection) == "table" then
+		return M._prevent_duped_collections(collection, n)
 	end
+
+	set.sub(M.listing.recursive, cur)
+	set.sub(M.listing[0], cur)
+
+	n = math.max((#M.listing.paths[M._dir] > 0 and 2 or 1), math.min(#M.listing[0] + 1, n))
+
+	table.insert(M.listing.recursive, n, cur)
+	table.insert(M.listing[0], n, cur)
 	set.save(M.memory, M.listing.persist)
 	require("rabbit").Redraw()
 end
@@ -399,8 +432,8 @@ function M._path()
 	local s = (#M.listing.paths[M._dir] > 3 and require("rabbit").opts.window.overflow or "~")
 	local recur = M.listing.persist[M._dir]
 	local l = require("rabbit").opts.window.path_len
-	for i = 1, #M.listing.paths[M._dir] do
-		recur = recur[M.listing.paths[M._dir][i]]
+	for i, v in ipairs(M.listing.paths[M._dir]) do
+		recur = recur[v]
 		if i > #M.listing.paths[M._dir] - 3 then
 			local a = recur[1]
 			if #a > l then
