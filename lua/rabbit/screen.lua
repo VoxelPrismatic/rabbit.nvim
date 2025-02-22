@@ -131,6 +131,9 @@ function screen.set_hl(colors, border_color)
 	vim.api.nvim_set_hl(0, "RabbitTerm", maybe_hl(colors.term))
 	vim.api.nvim_set_hl(0, "RabbitNil", maybe_hl(colors.noname))
 	vim.api.nvim_set_hl(0, "RabbitMsg", maybe_hl(colors.message))
+	vim.api.nvim_set_hl(0, "RabbitPopupErr", maybe_hl(colors.popup.error))
+	vim.api.nvim_set_hl(0, "RabbitPopupWarn", maybe_hl(colors.popup.warning))
+	vim.api.nvim_set_hl(0, "RabbitPopupInfo", maybe_hl(colors.popup.info))
 end
 
 

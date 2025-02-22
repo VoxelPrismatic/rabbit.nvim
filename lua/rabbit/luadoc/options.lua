@@ -37,6 +37,13 @@
 ---@field public noname? NvimHlKwargs | string Displayed when the buffer has no filename
 ---@field public term? NvimHlKwargs | string Displayed when the buffer is a terminal
 ---@field public message? NvimHlKwargs | string Message
+---@field public popup? Rabbit.Options.Color.Popup Popup colors
+
+
+---@class Rabbit.Options.Color.Popup
+---@field public error NvimHlKwargs | string
+---@field public warning NvimHlKwargs | string
+---@field public info NvimHlKwargs | string
 
 
 ---@class Rabbit.Box
@@ -85,6 +92,9 @@
 ---| "RabbitNil" # Color of Blank Filename
 ---| "RabbitTerm" # Color of extras, eg :term or :Oil
 ---| "RabbitMsg" # Color of messages
+---| "RabbitPopupErr" # Color of the error message box border
+---| "RabbitPopupWarn" # Color of the warning message box border
+---| "RabbitPopupInfo" # Color of the info message box border
 ---| "RabbitInput" # Color of the input prompt background
 
 

@@ -63,6 +63,11 @@ local options = {
 		term = { fg = grab_color("Constant"), italic = true },
 		noname = { fg = grab_color("Function"), italic = true },
 		message = { fg = grab_color("Identifier"), italic = true, bold = true },
+		popup = {
+			error = { fg = grab_color("ErrorMsg"), bg = grab_color("FloatBorder", "bg"), bold = true },
+			warning = { fg = grab_color("Question"), bg = grab_color("FloatBorder", "bg"), bold = true },
+			info = { fg = grab_color("MoreMsg"), bg = grab_color("FloatBorder", "bg"), bold = true },
+		},
 	},
 	window = {
 		box = box.round,

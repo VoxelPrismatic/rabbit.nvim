@@ -269,4 +269,69 @@ function M.menu(title, description, default, finally, entries)
 	})
 end
 
+
+function M.warn(title, msg, color)
+	local rabbit = require("rabbit")
+
+	screen.ctx.in_input = true
+
+	if color == nil then
+		color = "ErrorMsg"
+	end
+
+	local buf = vim.api.nvim_create_buf(false, true)
+	local win = vim.api.nvim_open_win(buf, true, {
+		relative = "win",
+		width = screen.ctx.width - 4,
+		height = 1,
+		row = screen.ctx.height - 3,
+		col = 1,
+		style = "minimal",
+		border = {
+			{screen.ctx.box.top_left, color},
+			{screen.ctx.box.horizontal, color},
+			{screen.ctx.box.top_right, color},
+			{screen.ctx.box.vertical, color},
+			{screen.ctx.box.bottom_right, color},
+			{screen.ctx.box.horizontal, color},
+			{screen.ctx.box.bottom_left, color},
+			{screen.ctx.box.vertical, color}
+		},
+		title = {{
+			screen.ctx.box.horizontal .. " " .. title .. " ",
+			color
+		}}
+	})
+
+	msg = " " .. msg .. (" "):rep(screen.ctx.width)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "", msg, "" })
+
+	vim.api.nvim_win_set_cursor(win, { 2, screen.ctx.width - 5 })
+
+	local args = {
+		buffer = buf,
+		callback = function()
+			vim.api.nvim_win_close(win, true)
+			vim.api.nvim_buf_delete(buf, { force = true })
+		end
+	}
+
+	vim.api.nvim_create_autocmd({
+		"BufLeave",
+		"WinLeave",
+		"InsertEnter",
+	}, args)
+
+
+	vim.api.nvim_create_autocmd("CursorMoved", {
+		buffer = buf,
+		callback = function()
+			vim.api.nvim_clear_autocmds({ event = "CursorMoved", buffer = buf })
+			vim.api.nvim_create_autocmd("CursorMoved", args)
+		end
+	})
+
+	screen.ctx.in_input = false
+end
+
 return M
