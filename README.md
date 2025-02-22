@@ -178,7 +178,10 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 <details>
     <summary><h3>Rabbit.Options.Colors</h3></summary>
 
-![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/5b441d5c-b6a9-4173-a762-f5361d984ee8)
+| rabbit | popup |
+|-|-|
+| ![image](https://github.com/VoxelPrismatic/rabbit.nvim/assets/45671764/5b441d5c-b6a9-4173-a762-f5361d984ee8) | ![image](https://github.com/user-attachments/assets/c87b4d63-7c2e-4d54-87bb-6b156d933b8b) |
+
 
 | key | type | description | default |
 |-|-|-|-|
@@ -189,6 +192,9 @@ If you scroll down on the Rabbit window, you'll see all the keybinds available.
 | term | `string` \| `NvimHlKwargs` | Terminal | `#40c9a2`,<br>*italic* |
 | noname | `string` \| `NvimHlKwargs` | No Name | `#d08e95`,<br>*italic* |
 | message | `string` \| `NvimHlKwargs` | Message | `#8aaacd`,<br>***bold ital*** |
+| <i>popup</i>.error | `string` \| `NvimHlKwargs` | Border color of popup message | `#d87576`,<br>**bold** |
+| <i>popup</i>.warning | `string` \| `NvimHlKwargs` | Border color of popup message | `#b4b433`,<br>**bold** |
+| <i>popup</i>.info | `string` \| `NvimHlKwargs` | Border color of popup message | `#696ac2`,<br>**bold** |
 
 note: default colors listed here are from my color theme. rabbit will automatically
 pull your color theme using several highlight groups, eg `Normal` or `Comment`
