@@ -5,7 +5,7 @@ local screen = require("rabbit.screen")
 ---@field _buf integer Buffer ID
 ---@field _win integer Window ID
 ---@field _ns integer Namespace ID
----@field _listing Rabbit.Input.Prompt.Entry[] List of lines to be rendered
+---@field _listing Rabbit.Input.Menu.Entry[] List of lines to be rendered
 ---@field _description table<string> List of description lines
 local M = {}
 
@@ -114,10 +114,10 @@ end
 
 -- Prompts the user with a list of options (up to nine)
 ---@param title string The question/input prompt
----@param description string Clarifies the question
+---@param description? string Clarifies the question
 ---@param default? string The default value (will immediately call callback if match is found)
 ---@param finally? fun() The callback to call after the user has made their choice (or quit)
----@param entries Rabbit.Input.Prompt.Entry[] List of entries
+---@param entries Rabbit.Input.Menu.Entry[] List of entries
 function M.menu(title, description, default, finally, entries)
 	local rabbit = require("rabbit")
 
@@ -127,6 +127,10 @@ function M.menu(title, description, default, finally, entries)
 
 	if finally == nil then
 		finally = function() end
+	end
+
+	if description == nil then
+		description = ""
 	end
 
 	local desc_lines = {}
@@ -283,6 +287,10 @@ function M.menu(title, description, default, finally, entries)
 end
 
 
+-- Prompts the user with a warning message
+---@param title string The question/input prompt
+---@param msg string The warning message
+---@param color? string The color of the border
 function M.warn(title, msg, color)
 	screen.ctx.in_input = true
 
