@@ -48,7 +48,11 @@ local function quickscore(arr, maxage)
 	local sum = 0
 	for k, _ in pairs(arr or {}) do
 		local v = arr[k] ---@type Rabbit.Plugin.Listing.Persist.Entry
-		if vim.uv.fs_stat(k) == nil then
+		local stat = vim.uv.fs_stat(k)
+		if stat == nil then
+			arr[k] = nil
+			goto continue
+		elseif stat.type ~= "file" and stat.type ~= "link" then
 			arr[k] = nil
 			goto continue
 		end
@@ -167,6 +171,7 @@ function M.func.file_del(ln)
 	end
 	M.listing.persist[cwd][filename] = nil
 	table.remove(M.listing[0], ln)
+	set.save(M.memory, M.listing.persist)
 	require("rabbit").Redraw()
 end
 
