@@ -1,8 +1,8 @@
 ---@class (exact) Rabbit.Config.Window.Mode.Float
 ---@field mode "float"
----@field width integer
----@field height integer
----@field side Rabbit.Config.Window.Float.Spawn
+---@field width number Window width; automatically shrunk to fit window; if <1, it is a percentage
+---@field height number Window height; automatically shrunk to fit window; if <1, it is a percentage
+---@field side Rabbit.Config.Window.Float.Spawn Where to spawn the floating window
 
 ---@alias Rabbit.Config.Window.Float.Spawn # Where to span the floating window
 ---| "nw" # Top left
@@ -17,18 +17,18 @@
 
 ---@class (exact) Rabbit.Config.Window.Mode.Split.Vertical
 ---@field mode "split"
----@field side "left" | "right"
----@field width integer
+---@field side "left" | "right" Where to split
+---@field width integer Window width; automatically shrunk to fit window; if <1, it is a percentage
 
 ---@class (exact) Rabbit.Config.Window.Mode.Split.Horizontal
 ---@field mode "split"
----@field side "top" | "bottom"
----@field height integer
+---@field side "above" | "below" Where to split
+---@field height integer Window height; automatically shrunk to fit window; if <1, it is a percentage
 
 ---@alias Rabbit.Config.Window.Mode.Split Rabbit.Config.Window.Mode.Split.Vertical | Rabbit.Config.Window.Mode.Split.Horizontal
 
 ---@class Rabbit.Config.Window.Mode.Fullscreen
----@field mode "fullscreen"
+---@field mode "fullscreen" This is the same as float:nw with massive width and height
 
 ---@alias Rabbit.Config.Window.Mode Rabbit.Config.Window.Mode.Float | Rabbit.Config.Window.Mode.Split | Rabbit.Config.Window.Mode.Fullscreen
 

@@ -1,0 +1,16 @@
+---@class Rabbit.UI.Rect
+---@field x number X position.
+---@field y number Y position.
+---@field w number Width.
+---@field h number Height.
+---@field T number Y position of top border.
+---@field B number Y position of bottom border.
+---@field L number X position of left border.
+---@field R number X position of right border.
+
+---@class Rabbit.UI.Workspace
+---@field win? integer Window ID
+---@field buf? integer Buffer ID
+---@field ns? integer Highlight Namespace ID
+---@field view? vim.fn.winsaveview.ret Window viewport details
+---@field conf? vim.api.keyset.win_config Window configuration details
