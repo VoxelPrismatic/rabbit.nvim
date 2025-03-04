@@ -1,12 +1,12 @@
 ---@class (exact) Rabbit.Term.Border.Box
----@field ne string Top right corner (┐)
----@field se string Bottom right corner (┘)
----@field nw string Top left corner (┌)
----@field sw string Bottom left corner (└)
----@field v string Vertical line (│)
----@field h string Horizontal line (─)
----@field emph string Emphasis character around title (═)
----@field scroll string Scrollbar position character (┇)
+---@field ne string Top right corner (┐).
+---@field se string Bottom right corner (┘).
+---@field nw string Top left corner (┌).
+---@field sw string Bottom left corner (└).
+---@field v string Vertical line (│).
+---@field h string Horizontal line (─).
+---@field emph string Emphasis character around title (═).
+---@field scroll string Scrollbar position character (┇).
 
 ---@alias Rabbit.Term.Border.String string Specified as "┌┐└┘─│═┇"
 

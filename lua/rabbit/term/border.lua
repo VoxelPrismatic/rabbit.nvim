@@ -128,5 +128,4 @@ function M.normalize(border)
 	return M.custom(border)
 end
 
----@type table<string, Rabbit.Term.Border.Box>
-M.defaults = {}
+return M

@@ -1,0 +1,50 @@
+---@class (exact) Rabbit.Plugin
+---@field act Rabbit.Actions Action callbacks
+---@field evt Rabbit.Events NvimEvent Callbacks
+---@field opts Rabbit.Plugin.Options Plugin specific options (user editable)
+---@field ctx Rabbit.Plugin.Context Callback context. Consider this READ-ONLY; it is set by the parent Rabbit handler
+
+---@class Rabbit.Plugin.Context
+---@field plugin Rabbit.Plugin
+---@field winid integer Window ID
+---@field dir string Working directory, according to `opts.cwd`
+
+---@class Rabbit.Events
+---@field BufAdd fun(evt: NvimEvent.BufAdd)
+---@field BufEnter fun(evt: NvimEvent.BufEnter)
+---@field BufDelete fun(evt: NvimEvent.BufDelete)
+---@field BufLeave fun(evt: NvimEvent.BufLeave)
+---@field BufNew fun(evt: NvimEvent.BufNew)
+---@field WinEnter fun(evt: NvimEvent.WinEnter)
+---@field WinLeave fun(evt: NvimEvent.WinLeave)
+---@field WinNew fun(evt: NvimEvent.WinNew)
+---@field WinClosed fun(evt: NvimEvent.WinClosed)
+---@field WinResized fun(evt: NvimEvent.WinResized)
+---@field ColorScheme fun(evt: NvimEvent.ColorScheme)
+---@field ColorSchemePre fun(evt: NvimEvent.ColorSchemePre)
+---@field BufFilePre fun(evt: NvimEvent.BufFilePre)
+---@field BufFilePost fun(evt: NvimEvent.BufFilePost)
+---@field RabbitInvalid fun(evt: Rabbit.Event.Invalid)
+---@field RabbitFileRename fun(evt: Rabbit.Event.FileRename)
+---@field RabbitEnter fun(evt: Rabbit.Event.Enter)
+---@field [string] fun(evt: NvimEvent)
+
+---@class Rabbit.Plugin.Keymap
+---@field select _Str Select an entry; Open a file or open a collection.
+---@field close _Str Close Rabbit.
+---@field delete _Str Delete an entry; Remove a file or cut a collection.
+---@field collect _Str Create a collection.
+---@field parent _Str Move to the parent collection.
+---@field insert _Str Insert the current file or previously deleted file.
+---@field help _Str Open the keymap legend.
+---@field debug _Str Open the debug dialog.
+---@field switch _Str Open this plugin after Rabbit is open.
+---@field [string] _Str Keybindings
+
+---@class Rabbit.Plugin.Options
+---@field color Color.Nvim Default border color.
+---@field border? Rabbit.Term.Border Default border style. (leave blank to use global border)
+---@field keys Rabbit.Config.Keymap Any keys used to bind to function names in `plugin.func`
+---@field empty_msg string Message shown when listing is empty.
+---@field save_file string Where to save persistent storage, if necessary.
+---@field cwd? string | fun() Current working directory function. (leave blank to use global cwd)
