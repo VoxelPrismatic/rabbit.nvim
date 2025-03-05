@@ -7,6 +7,10 @@ UIL = {}
 
 vim.api.nvim_create_autocmd("BufEnter", {
 	callback = function()
+		if bufid == vim.api.nvim_get_current_buf() then
+			return
+		end
+
 		local w = vim.api.nvim_get_current_win()
 		for _, v in ipairs(CTX.stack) do
 			if v.win == w then
@@ -14,16 +18,7 @@ vim.api.nvim_create_autocmd("BufEnter", {
 			end
 		end
 
-		if bufid == vim.api.nvim_get_current_buf() then
-			return
-		end
-
-		while #CTX.stack > 0 do
-			local v = CTX.stack[1]
-			vim.api.nvim_win_close(v.win, true)
-			vim.api.nvim_buf_delete(v.buf, { force = true })
-			table.remove(CTX.stack, 1)
-		end
+		CTX.clear()
 	end,
 })
 
@@ -36,7 +31,7 @@ function UIL.spawn(plugin)
 	local r = UIL.rect(CTX.user.win, 55)
 	bufid = vim.api.nvim_create_buf(false, true)
 	winid = vim.api.nvim_open_win(bufid, true, r)
-	CTX.append(bufid, winid)
+	local bg = CTX.append(bufid, winid)
 
 	-- Create foreground window
 	r.split = nil
@@ -48,7 +43,8 @@ function UIL.spawn(plugin)
 	r.zindex = r.zindex + 1
 	bufid = vim.api.nvim_create_buf(false, true)
 	winid = vim.api.nvim_open_win(bufid, true, r)
-	CTX.append(bufid, winid)
+	local listing = CTX.append(bufid, winid, bg)
+	CTX.link(listing, bg) -- Treat these as the same layer
 	bufid = -1
 end
 
