@@ -35,12 +35,7 @@ C.colors = {
 -- Window settings
 ---@type Rabbit.Config.Window
 C.window = {
-	box = {
-		corner = "square",
-		weight = "bold",
-		stroke = "solid",
-		scrollbar = { "bold", "dash" },
-	},
+	box = "┏┓╚┛━┃╏",
 
 	spawn = {
 		mode = "float",
@@ -50,18 +45,18 @@ C.window = {
 	},
 
 	titles = {
-		title_text = "Rabbit",
-		title_pos = "nw",
-		plugin_pos = "se",
+		title_text = "║║",
+		title_pos = "ws",
+		plugin_pos = "sw",
 		title_case = "title",
 		plugin_case = "lower",
 		title_emphasis = {
-			left = "━ ",
-			right = " ═══",
+			left = "",
+			right = "",
 		},
 		plugin_emphasis = {
-			left = "═══ ",
-			right = " ━",
+			left = "═ ",
+			right = " ════════",
 		},
 	},
 
