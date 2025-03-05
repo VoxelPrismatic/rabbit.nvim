@@ -1,7 +1,67 @@
 local rect = require("rabbit.term.rect")
 local CTX = require("rabbit.term.ctx")
 local bufid, winid
-local resize_timer
+local last_plugin
+
+local case_func = {
+	upper = string.upper,
+	lower = string.lower,
+	unchanged = function(s)
+		return s
+	end,
+	title = function(s)
+		return s:gsub("(%w)(%w*)", function(a, b)
+			return string.upper(a) .. b
+		end)
+	end,
+}
+
+local function apply_title(sides, mode, str)
+	if type(str) ~= "string" then
+		error("Expected string, got " .. type(str))
+	end
+	local target, align = unpack(({
+		nw = { sides.t, "left" },
+		n = { sides.t, "center" },
+		ne = { sides.t, "right" },
+		en = { sides.r, "left" },
+		e = { sides.r, "center" },
+		es = { sides.r, "right" },
+		se = { sides.b, "right" },
+		s = { sides.b, "center" },
+		sw = { sides.b, "left" },
+		ws = { sides.l, "right" },
+		w = { sides.l, "center" },
+		wn = { sides.l, "left" },
+	})[mode])
+
+	if target == nil then
+		error("Invalid mode: " .. mode)
+	end
+
+	local strls = {}
+	for _, v in ipairs(vim.fn.str2list(str)) do
+		table.insert(strls, vim.fn.list2str({ v }))
+	end
+
+	if align == "left" then
+		for i, v in ipairs(strls) do
+			target[i] = v
+		end
+	elseif align == "center" then
+		local start = math.max(1, math.ceil((#target - #strls + 1) / 2))
+		local fin = math.min(#target, start + #strls - 1)
+		local j = 1
+		for i = start, fin do
+			target[i] = strls[j]
+			j = j + 1
+		end
+	else
+		for i = #target - #strls + 1, #target do
+			target[i] = strls[i - #target + #strls]
+		end
+	end
+end
 
 ---@class Rabbit.UI.Listing
 UIL = {}
@@ -50,6 +110,9 @@ function UIL.spawn(plugin)
 	winid = vim.api.nvim_open_win(bufid, true, r)
 	local bg = CTX.append(bufid, winid)
 
+	-- Draw border
+	UIL.draw_border(bg)
+
 	-- Create foreground window
 	r.split = nil
 	r.relative = "win"
@@ -61,8 +124,61 @@ function UIL.spawn(plugin)
 	bufid = vim.api.nvim_create_buf(false, true)
 	winid = vim.api.nvim_open_win(bufid, true, r)
 	local listing = CTX.append(bufid, winid, bg)
-	CTX.link(listing, bg) -- Treat these as the same layer
+	bg.parent = listing -- Treat these as the same layer
 	bufid = -1
+end
+
+---@param ws Rabbit.UI.Workspace
+function UIL.draw_border(ws)
+	local titles = require("rabbit.config").window.titles
+	local box = require("rabbit.term.border").normalize(require("rabbit.config").window.box)
+
+	local sides = {
+		t = {},
+		b = {},
+		r = {},
+		l = {},
+	}
+
+	for i = 1, ws.conf.width - 2 do
+		sides.t[i] = box.h
+		sides.b[i] = box.h
+	end
+
+	for i = 1, ws.conf.height - 2 do
+		sides.l[i] = box.v
+		sides.r[i] = box.v
+	end
+
+	if titles.title_pos == titles.plugin_pos then
+		local text = titles.title_emphasis.left
+			.. titles.title_text
+			.. titles.title_emphasis.right
+			.. last_plugin
+			.. titles.plugin_emphasis.right
+		apply_title(sides, titles.title_pos, case_func[titles.title_case](text))
+	else
+		apply_title(
+			sides,
+			titles.title_pos,
+			case_func[titles.title_case](titles.title_emphasis.left .. titles.title_text .. titles.title_emphasis.right)
+		)
+		apply_title(
+			sides,
+			titles.plugin_pos,
+			case_func[titles.plugin_case](titles.plugin_emphasis.left .. last_plugin .. titles.plugin_emphasis.right)
+		)
+	end
+
+	local lines = {}
+	table.insert(lines, box.nw .. table.concat(sides.t) .. box.ne)
+
+	for i = 1, ws.conf.height - 2 do
+		table.insert(lines, sides.l[i] .. (" "):rep(ws.conf.width - 2) .. sides.r[i])
+	end
+
+	table.insert(lines, box.sw .. table.concat(sides.b) .. box.se)
+	vim.api.nvim_buf_set_lines(ws.buf, 0, -1, false, lines)
 end
 
 -- Creates the bounding box for the window

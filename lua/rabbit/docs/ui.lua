@@ -16,3 +16,4 @@
 ---@field ns? integer Highlight Namespace ID
 ---@field view? vim.fn.winsaveview.ret Window viewport details
 ---@field conf? vim.api.keyset.win_config Window configuration details
+---@field parent? Rabbit.UI.Workspace

@@ -36,10 +36,9 @@ C.colors = {
 ---@type Rabbit.Config.Window
 C.window = {
 	box = {
-		corner = "round",
-		weight = "thin",
+		corner = "square",
+		weight = "bold",
 		stroke = "solid",
-		emphasis = { "double", "solid" },
 		scrollbar = { "bold", "dash" },
 	},
 
@@ -52,9 +51,18 @@ C.window = {
 
 	titles = {
 		title_text = "Rabbit",
-		title_pos = "n",
-		plugin_pos = "n",
-		emphasis_width = 8,
+		title_pos = "nw",
+		plugin_pos = "se",
+		title_case = "title",
+		plugin_case = "lower",
+		title_emphasis = {
+			left = "━ ",
+			right = " ═══",
+		},
+		plugin_emphasis = {
+			left = "═══ ",
+			right = " ━",
+		},
 	},
 
 	overflow = {

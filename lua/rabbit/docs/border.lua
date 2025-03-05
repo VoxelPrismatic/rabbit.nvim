@@ -5,8 +5,7 @@
 ---@field sw string Bottom left corner (└).
 ---@field v string Vertical line (│).
 ---@field h string Horizontal line (─).
----@field emph string Emphasis character around title (═).
----@field scroll string Scrollbar position character (┇).
+---@field scroll string Scrollbar position character (┇). Not available if the right side is used by the title or plugin name.
 
 ---@alias Rabbit.Term.Border.String string Specified as "┌┐└┘─│═┇"
 
@@ -39,15 +38,13 @@
 ---@field corner Rabbit.Enum.Border.Corner Corner style; Falls back to "square" if weight is NOT "thin."
 ---@field weight Rabbit.Enum.Border.Weight Line weight.
 ---@field stroke Rabbit.Enum.Border.Stroke Stroke style; Falls back to "solid" if weight is "double."
----@field emphasis Rabbit.Term.Border.Custom.Extras | string Emphasis character to put around title; If table, will use horizontal line.
----@field scrollbar Rabbit.Term.Border.Custom.Extras | string Scrollbar position character; If table, will use vertical line.
+---@field scrollbar Rabbit.Term.Border.Custom.Extras | string Scrollbar position character; If table, will use vertical line. Not available if the right side is used by the title or plugin name.
 
 ---@class (exact) Rabbit.Term.Border.Custom.Positional
 ---@field [1] Rabbit.Enum.Border.Corner Corner style; Falls back to "square" if weight is NOT "thin."
 ---@field [2] Rabbit.Enum.Border.Weight Line weight.
 ---@field [3] Rabbit.Enum.Border.Stroke Stroke style; Falls back to "solid" if weight is "double."
----@field [4] Rabbit.Term.Border.Custom.Extras | string Emphasis character to put around title; If table, will use horizontal line.
----@field [5] Rabbit.Term.Border.Custom.Extras | string Scrollbar position character; If table, will use vertical line.
+---@field [4] Rabbit.Term.Border.Custom.Extras | string Scrollbar position character; If table, will use vertical line. Not available if the right side is used by the title or plugin name.
 
 ---@alias Rabbit.Term.Border.Custom Rabbit.Term.Border.Custom.Positional | Rabbit.Term.Border.Custom.Kwargs
 

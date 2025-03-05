@@ -58,18 +58,17 @@ end
 
 -- Expands a border string to a border table
 ---@see Rabbit.Term.Border.Box
----@param border Rabbit.Term.Border.String The border string; Format: ╭╮╰╯─│═┃
+---@param border Rabbit.Term.Border.String The border string; Format: ╭╮╰╯─│┃
 ---@return Rabbit.Term.Border.Box
 function M.expand(border)
-	return {
+	return { ---@type Rabbit.Term.Border.Box
 		nw = border:sub(1, 3),
 		ne = border:sub(4, 6),
 		sw = border:sub(7, 9),
 		se = border:sub(10, 12),
 		h = border:sub(13, 15),
 		v = border:sub(16, 18),
-		emph = border:sub(19, 21),
-		scroll = border:sub(22, 24),
+		scroll = border:sub(19, 21),
 	}
 end
 
@@ -87,24 +86,20 @@ function M.custom(kwargs)
 		weight = kwargs.weight or kwargs[2] or "thin",
 		stroke = kwargs.stroke or kwargs[3] or "solid",
 		corner = kwargs.corner or kwargs[1] or "square",
-		emphasis = kwargs.emphasis or kwargs[4] or { "double", "solid" },
 		scrollbar = kwargs.scrollbar or kwargs[5] or { "bold", "solid" },
 	}
 
-	---@type Rabbit.Term.Border.Custom.Extras.Kwargs
-	kwargs.emphasis = {
-		weight = kwargs.emphasis.weight or kwargs.emphasis[1] or "double",
-		stroke = kwargs.emphasis.stroke or kwargs.emphasis[2] or "solid",
-	}
+	if type(kwargs.scrollbar) == "string" then
+		return M.expand(M.flag(kwargs) .. kwargs.scrollbar)
+	end
 
-	---@type Rabbit.Term.Border.Custom.Extras.Kwargs
 	kwargs.scrollbar = {
 		weight = kwargs.scrollbar.weight or kwargs.scrollbar[1] or "double",
 		stroke = kwargs.scrollbar.stroke or kwargs.scrollbar[2] or "solid",
 	}
 
 	---@diagnostic disable-next-line: param-type-mismatch
-	return M.expand(M.flag(kwargs) .. M.flag(kwargs.emphasis):sub(13, 15) .. M.flag(kwargs.scrollbar):sub(16, 18))
+	return M.expand(M.flag(kwargs) .. M.flag(kwargs.scrollbar):sub(19, 21))
 end
 
 -- Normalizes a border input

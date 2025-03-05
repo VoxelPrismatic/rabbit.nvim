@@ -14,13 +14,14 @@ function CTX.append(bufnr, winnr, parent)
 	vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete" }, {
 		buffer = ws.buf,
 		callback = function()
-			CTX.close(ws.buf, ws.win)
+			CTX.close(ws)
+			if ws.parent ~= nil then
+				CTX.close(ws.parent)
+			end
 		end,
 	})
 
-	if parent ~= nil then
-		CTX.link(parent, ws)
-	end
+	ws.parent = parent
 
 	return ws
 end
@@ -54,29 +55,16 @@ function CTX.clear()
 end
 
 -- Closes the current workspace
----@param bufnr integer
----@param winnr integer
-function CTX.close(bufnr, winnr)
-	_ = pcall(vim.api.nvim_win_close, winnr, true)
-	_ = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+---@param ws Rabbit.UI.Workspace
+function CTX.close(ws)
+	_ = pcall(vim.api.nvim_win_close, ws.win, true)
+	_ = pcall(vim.api.nvim_buf_delete, ws.buf, { force = true })
 	for i, j in ipairs(CTX.stack) do
-		if j.buf == bufnr or j.win == winnr then
+		if j == ws then
 			_ = pcall(table.remove, CTX.stack, i)
 			return
 		end
 	end
-end
-
--- Sets the parent so when the parent closes, this one will too.
----@param parent Rabbit.UI.Workspace
----@param child Rabbit.UI.Workspace
-function CTX.link(parent, child)
-	vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete" }, {
-		buffer = parent.buf,
-		callback = function()
-			CTX.close(child.buf, child.win)
-		end,
-	})
 end
 
 return CTX

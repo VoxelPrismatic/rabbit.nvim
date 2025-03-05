@@ -1,8 +1,8 @@
 ---@class (exact) Rabbit.Config.Window.Mode.Float
 ---@field mode "float"
----@field width number Window width; automatically shrunk to fit window; if <1, it is a percentage
----@field height number Window height; automatically shrunk to fit window; if <1, it is a percentage
----@field side Rabbit.Config.Window.Float.Spawn Where to spawn the floating window
+---@field width number Window width; automatically shrunk to fit window; if <1, it is a percentage.
+---@field height number Window height; automatically shrunk to fit window; if <1, it is a percentage.
+---@field side Rabbit.Config.Window.Float.Spawn Where to spawn the floating window.
 
 ---@alias Rabbit.Config.Window.Float.Spawn # Where to span the floating window
 ---| "nw" # Top left
@@ -35,8 +35,11 @@
 ---@class (exact) Rabbit.Config.Window.Titles
 ---@field title_text string Title text.
 ---@field title_pos Rabbit.Config.Window.Titles.Position Where to place the title.
+---@field title_emphasis Rabbit.Config.Window.Titles.Emphasis Emphasis characters to place around the title; if plugin and title use the same position, they are joined by title.right and end with plugin.right
 ---@field plugin_pos Rabbit.Config.Window.Titles.Position Where to place the plugin name.
----@field emphasis_width integer How many emphasis characters to use. eg 5: ===== Rabbit Plugin =====
+---@field plugin_emphasis Rabbit.Config.Window.Titles.Emphasis Emphasis characters to place around the plugin name
+---@field title_case "title" | "upper" | "lower" | "unchanged"
+---@field plugin_case "title" | "upper" | "lower" | "unchanged" Unused if the plugin and title use the same position.
 ---@see Rabbit.Term.Border
 
 ---@alias Rabbit.Config.Window.Titles.Position # Where to place the title text
@@ -53,6 +56,10 @@
 ---| "e" # Right center. (Vertical text)
 ---| "es" # Right bottom. (Vertical text)
 ---| "nil" # No title.
+
+---@class (exact) Rabbit.Config.Window.Titles.Emphasis
+---@field left string Left-hand (or top-side) emphasis string
+---@field right string Right-hand (or bottom-side) emphasis string
 
 ---@class (exact) Rabbit.Config.Window.Overflow
 ---@field char string String to use when a line overflows. This is not used when trimming dir names with `path_len`.
