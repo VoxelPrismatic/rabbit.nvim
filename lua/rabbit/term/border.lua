@@ -1,4 +1,4 @@
-BOX = {}
+local BOX = {}
 
 local border_flags = {
 	[0b000000] = "┌┐└┘─│", -- Thin, Solid, Square

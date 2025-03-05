@@ -1,4 +1,4 @@
----@class (exact) Rabbit.Plugin
+---@class Rabbit.Plugin
 ---@field act Rabbit.Actions Action callbacks
 ---@field evt Rabbit.Events NvimEvent Callbacks
 ---@field opts Rabbit.Plugin.Options Plugin specific options (user editable)

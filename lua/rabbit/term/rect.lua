@@ -1,4 +1,4 @@
-RECT = {}
+local RECT = {}
 
 -- Creates a bounding box
 -- @param rect Rabbit.UI.Rect

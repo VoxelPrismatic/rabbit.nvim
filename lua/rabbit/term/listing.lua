@@ -1,3 +1,6 @@
+---@class Rabbit.UI.Listing
+local UIL = {}
+
 local rect = require("rabbit.term.rect")
 local CTX = require("rabbit.term.ctx")
 local bufid, winid
@@ -62,9 +65,6 @@ local function apply_title(sides, mode, str)
 		end
 	end
 end
-
----@class Rabbit.UI.Listing
-UIL = {}
 
 vim.api.nvim_create_autocmd("BufEnter", {
 	callback = function()

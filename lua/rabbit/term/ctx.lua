@@ -1,4 +1,4 @@
-CTX = {
+local CTX = {
 	user = { ns = 0 }, ---@type Rabbit.UI.Workspace
 	stack = {}, ---@type Rabbit.UI.Workspace[]
 }
