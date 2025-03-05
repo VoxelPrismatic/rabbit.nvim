@@ -1,6 +1,7 @@
 local rect = require("rabbit.term.rect")
 local CTX = require("rabbit.term.ctx")
 local bufid, winid
+local resize_timer
 
 ---@class Rabbit.UI.Listing
 UIL = {}
@@ -22,10 +23,26 @@ vim.api.nvim_create_autocmd("BufEnter", {
 	end,
 })
 
+vim.api.nvim_create_autocmd("WinResized", {
+	callback = function()
+		if #CTX.stack == 0 then
+			return
+		end
+
+		UIL.spawn(last_plugin)
+	end,
+})
+
 -- Creates a buffer for the given plugin
 ---@param plugin Rabbit.Plugin
 function UIL.spawn(plugin)
+	if #CTX.stack > 0 then
+		vim.api.nvim_set_current_win(CTX.user.win)
+		vim.api.nvim_set_current_buf(CTX.user.buf)
+		CTX.clear()
+	end
 	CTX.user = CTX.workspace()
+	last_plugin = plugin
 
 	-- Create background window
 	local r = UIL.rect(CTX.user.win, 55)
