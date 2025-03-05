@@ -1,8 +1,11 @@
 ---@class Rabbit.UI.Listing
 local UIL = {}
 
-local rect = require("rabbit.term.rect")
+local RECT = require("rabbit.term.rect")
 local CTX = require("rabbit.term.ctx")
+local HL = require("rabbit.term.highlight")
+local BOX = require("rabbit.term.border")
+local CONFIG = require("rabbit.config")
 local bufid, winid
 local last_plugin
 
@@ -19,23 +22,31 @@ local case_func = {
 	end,
 }
 
-local function apply_title(sides, mode, str)
-	if type(str) ~= "string" then
-		error("Expected string, got " .. type(str))
-	end
-	local target, align = unpack(({
-		nw = { sides.t, "left" },
-		n = { sides.t, "center" },
-		ne = { sides.t, "right" },
-		en = { sides.r, "left" },
-		e = { sides.r, "center" },
-		es = { sides.r, "right" },
-		se = { sides.b, "right" },
-		s = { sides.b, "center" },
-		sw = { sides.b, "left" },
-		ws = { sides.l, "right" },
-		w = { sides.l, "center" },
-		wn = { sides.l, "left" },
+-- Draws a title on the given sides
+---@param sides table
+---@param mode string
+---@param prefix string
+---@param str string
+---@param suffix string
+local function apply_title(sides, mode, prefix, str, suffix)
+	sides.hl_t = sides.hl_t or {}
+	sides.hl_b = sides.hl_b or {}
+	sides.hl_l = sides.hl_l or {}
+	sides.hl_r = sides.hl_r or {}
+
+	local target, hl_target, align = unpack(({
+		nw = { sides.t, sides.hl_t, "left" },
+		n = { sides.t, sides.hl_t, "center" },
+		ne = { sides.t, sides.hl_t, "right" },
+		en = { sides.r, sides.hl_r, "left" },
+		e = { sides.r, sides.hl_r, "center" },
+		es = { sides.r, sides.hl_r, "right" },
+		se = { sides.b, sides.hl_b, "right" },
+		s = { sides.b, sides.hl_b, "center" },
+		sw = { sides.b, sides.hl_b, "left" },
+		ws = { sides.l, sides.hl_l, "right" },
+		w = { sides.l, sides.hl_l, "center" },
+		wn = { sides.l, sides.hl_l, "left" },
 	})[mode])
 
 	if target == nil then
@@ -43,13 +54,16 @@ local function apply_title(sides, mode, str)
 	end
 
 	local strls = {}
-	for _, v in ipairs(vim.fn.str2list(str)) do
+	for _, v in ipairs(vim.fn.str2list(prefix .. str .. suffix)) do
 		table.insert(strls, vim.fn.list2str({ v }))
 	end
 
 	if align == "left" then
 		for i, v in ipairs(strls) do
 			target[i] = v
+			if vim.fn.strwidth(prefix) < i and i <= vim.fn.strwidth(prefix .. str) then
+				hl_target[#hl_target + 1] = #table.concat(strls, "", 1, i)
+			end
 		end
 	elseif align == "center" then
 		local start = math.max(1, math.ceil((#target - #strls + 1) / 2))
@@ -57,11 +71,19 @@ local function apply_title(sides, mode, str)
 		local j = 1
 		for i = start, fin do
 			target[i] = strls[j]
+			if vim.fn.strwidth(prefix) < j and j <= vim.fn.strwidth(prefix .. str) then
+				---@diagnostic disable-next-line: param-type-mismatch
+				hl_target[#hl_target + 1] = #table.concat(target, "", 1, i)
+			end
 			j = j + 1
 		end
 	else
 		for i = #target - #strls + 1, #target do
-			target[i] = strls[i - #target + #strls]
+			local j = i - #target + #strls
+			target[i] = strls[j]
+			if vim.fn.strwidth(prefix) < j and j <= vim.fn.strwidth(prefix .. str) then
+				hl_target[#hl_target + 1] = i
+			end
 		end
 	end
 end
@@ -109,9 +131,7 @@ function UIL.spawn(plugin)
 	bufid = vim.api.nvim_create_buf(false, true)
 	winid = vim.api.nvim_open_win(bufid, true, r)
 	local bg = CTX.append(bufid, winid)
-
-	-- Draw border
-	UIL.draw_border(bg)
+	bg.ns = vim.api.nvim_create_namespace("rabbit.bg")
 
 	-- Create foreground window
 	r.split = nil
@@ -124,14 +144,33 @@ function UIL.spawn(plugin)
 	bufid = vim.api.nvim_create_buf(false, true)
 	winid = vim.api.nvim_open_win(bufid, true, r)
 	local listing = CTX.append(bufid, winid, bg)
+	listing.ns = vim.api.nvim_create_namespace("rabbit.listing")
 	bg.parent = listing -- Treat these as the same layer
+
+	vim.api.nvim_buf_set_lines(listing.buf, 0, -1, false, { "1.", "2.", "3." })
+
+	vim.api.nvim_create_autocmd("CursorMoved", {
+		buffer = listing.buf,
+		callback = function()
+			UIL.highlight(bg, listing)
+		end,
+	})
+
+	-- Draw border
+	UIL.draw_border(bg)
+
 	bufid = -1
+end
+
+function UIL.highlight(bg, listing)
+	UIL.draw_border(bg)
 end
 
 ---@param ws Rabbit.UI.Workspace
 function UIL.draw_border(ws)
-	local titles = require("rabbit.config").window.titles
-	local box = require("rabbit.term.border").normalize(require("rabbit.config").window.box)
+	local titles = CONFIG.window.titles
+	local box = BOX.normalize(CONFIG.window.box)
+	local final_height = ws.conf.height - (CONFIG.window.legend and 1 or 0)
 
 	local sides = {
 		t = {},
@@ -145,40 +184,106 @@ function UIL.draw_border(ws)
 		sides.b[i] = box.h
 	end
 
-	for i = 1, ws.conf.height - 2 do
+	local scroll_top = 0
+	local scroll_len = 0
+	if
+		titles.title_pos ~= "es"
+		and titles.plugin_pos ~= "es"
+		and titles.title_pos ~= "e"
+		and titles.plugin_pos ~= "e"
+		and titles.title_pos ~= "en"
+		and titles.plugin_pos ~= "en"
+	then
+		scroll_len = (final_height - 2) / vim.fn.line("$")
+		scroll_top = scroll_len * (vim.fn.line(".") - 1)
+	end
+
+	for i = 1, final_height - 2 do
 		sides.l[i] = box.v
-		sides.r[i] = box.v
+		if scroll_top <= i and i <= scroll_top + scroll_len then
+			sides.r[i] = box.scroll or box.v
+		else
+			sides.r[i] = box.v
+		end
 	end
 
 	if titles.title_pos == titles.plugin_pos then
-		local text = titles.title_emphasis.left
-			.. titles.title_text
-			.. titles.title_emphasis.right
-			.. last_plugin
-			.. titles.plugin_emphasis.right
-		apply_title(sides, titles.title_pos, case_func[titles.title_case](text))
+		apply_title(
+			sides,
+			titles.title_pos,
+			titles.title_emphasis.left,
+			case_func[titles.title_case](titles.title_text),
+			titles.title_emphasis.right .. last_plugin .. titles.plugin_emphasis.right
+		)
+		apply_title(
+			sides,
+			titles.title_pos,
+			titles.title_emphasis.left .. titles.title_text .. titles.title_emphasis.right,
+			case_func[titles.plugin_case](last_plugin),
+			titles.plugin_emphasis.right
+		)
 	else
 		apply_title(
 			sides,
 			titles.title_pos,
-			case_func[titles.title_case](titles.title_emphasis.left .. titles.title_text .. titles.title_emphasis.right)
+			titles.title_emphasis.left,
+			case_func[titles.title_case](titles.title_text),
+			titles.title_emphasis.right
 		)
 		apply_title(
 			sides,
 			titles.plugin_pos,
-			case_func[titles.plugin_case](titles.plugin_emphasis.left .. last_plugin .. titles.plugin_emphasis.right)
+			titles.plugin_emphasis.left,
+			case_func[titles.plugin_case](last_plugin),
+			titles.plugin_emphasis.right
 		)
 	end
 
 	local lines = {}
-	table.insert(lines, box.nw .. table.concat(sides.t) .. box.ne)
+	local st = box.nw .. table.concat(sides.t) .. box.ne
+	table.insert(lines, st)
 
-	for i = 1, ws.conf.height - 2 do
+	for i = 1, final_height - 2 do
 		table.insert(lines, sides.l[i] .. (" "):rep(ws.conf.width - 2) .. sides.r[i])
 	end
 
 	table.insert(lines, box.sw .. table.concat(sides.b) .. box.se)
+
+	if CONFIG.window.legend then
+		table.insert(lines, "")
+	end
+
 	vim.api.nvim_buf_set_lines(ws.buf, 0, -1, false, lines)
+
+	HL.apply()
+	vim.api.nvim_set_hl(0, "rabbit.plugin", HL.gen_group("#d875a7", "fg"))
+
+	for i = 1, ws.conf.height do
+		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.plugin", i - 1, 0, -1)
+	end
+
+	for _, v in ipairs(sides.hl_t) do
+		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.type.title", 0, v + #box.nw - 1, v + #box.nw)
+	end
+
+	for _, v in ipairs(sides.hl_b) do
+		vim.api.nvim_buf_add_highlight(
+			ws.buf,
+			ws.ns,
+			"rabbit.type.title",
+			final_height - 1,
+			v + #box.sw - 1,
+			v + #box.sw
+		)
+	end
+
+	for _, v in ipairs(sides.hl_l) do
+		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.type.title", v, 0, 1)
+	end
+
+	for _, v in ipairs(sides.hl_r) do
+		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.type.title", v, ws.conf.width - 1, 1)
+	end
 end
 
 -- Creates the bounding box for the window
@@ -186,7 +291,7 @@ end
 ---@param z integer
 ---@return vim.api.keyset.win_config
 function UIL.rect(win, z)
-	local spawn = require("rabbit.config").window.spawn
+	local spawn = CONFIG.window.spawn
 
 	local calc_width = spawn.width
 	local calc_height = spawn.height
@@ -243,7 +348,7 @@ function UIL.rect(win, z)
 		end
 	end
 
-	return rect.win(rect.calc(ret, win))
+	return RECT.win(RECT.calc(ret, win))
 end
 
 return UIL

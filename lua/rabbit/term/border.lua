@@ -99,7 +99,7 @@ function BOX.custom(kwargs)
 	}
 
 	---@diagnostic disable-next-line: param-type-mismatch
-	return BOX.expand(BOX.flag(kwargs) .. vim.fn.strcharpart(BOX.flag(kwargs), 6, 1))
+	return BOX.expand(BOX.flag(kwargs) .. vim.fn.strcharpart(BOX.flag(kwargs.scrollbar), 6, 1))
 end
 
 -- Normalizes a border input

@@ -45,18 +45,18 @@ C.window = {
 	},
 
 	titles = {
-		title_text = "║║",
+		title_text = "",
 		title_pos = "ws",
 		plugin_pos = "sw",
-		title_case = "title",
+		title_case = "lower",
 		plugin_case = "lower",
 		title_emphasis = {
-			left = "",
+			left = "║║",
 			right = "",
 		},
 		plugin_emphasis = {
 			left = "═ ",
-			right = " ════════",
+			right = " ════════════",
 		},
 	},
 
@@ -64,6 +64,8 @@ C.window = {
 		char = ":::",
 		path_len = 12,
 	},
+
+	legend = true,
 }
 
 -- Keymap settings

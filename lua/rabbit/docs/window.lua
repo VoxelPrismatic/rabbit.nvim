@@ -70,3 +70,4 @@
 ---@field spawn Rabbit.Config.Window.Mode Window position.
 ---@field titles Rabbit.Config.Window.Titles TItle positioning & whatnot.
 ---@field overflow Rabbit.Config.Window.Overflow How to handle overflow.
+---@field legend boolean Show a quick legend at the bottom. Consumes one line.
