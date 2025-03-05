@@ -9,12 +9,18 @@ CTX = {
 ---@param parent? Rabbit.UI.Workspace Will close this one if the parent is closed
 ---@return Rabbit.UI.Workspace
 function CTX.append(bufnr, winnr, parent)
-	local ws = CTX.workspace(bufnr, winnr, parent)
+	local ws = CTX.workspace(bufnr, winnr)
 	table.insert(CTX.stack, ws)
 	vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete" }, {
 		buffer = ws.buf,
-		callback = function() end,
+		callback = function()
+			CTX.close(ws.buf, ws.win)
+		end,
 	})
+
+	if parent ~= nil then
+		CTX.link(parent, ws)
+	end
 
 	return ws
 end
@@ -22,9 +28,8 @@ end
 -- Creates a workspace object
 ---@param bufnr? integer
 ---@param winnr? integer
----@param parent? Rabbit.UI.Workspace Will close this one if the parent is closed
 ---@return Rabbit.UI.Workspace
-function CTX.workspace(bufnr, winnr, parent)
+function CTX.workspace(bufnr, winnr)
 	local ws = { ---@type Rabbit.UI.Workspace
 		buf = bufnr or vim.api.nvim_get_current_buf(),
 		win = winnr or vim.api.nvim_get_current_win(),
@@ -34,10 +39,6 @@ function CTX.workspace(bufnr, winnr, parent)
 	ws.conf = vim.api.nvim_win_get_config(ws.win)
 	ws.conf.width = ws.conf.width or vim.api.nvim_win_get_width(ws.win)
 	ws.conf.height = ws.conf.height or vim.api.nvim_win_get_height(ws.win)
-
-	if parent ~= nil then
-		CTX.link(parent, ws)
-	end
 
 	return ws
 end

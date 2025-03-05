@@ -82,16 +82,14 @@ function UIL.rect(win, z)
 		ret.split = spawn.side
 		if spawn.side == "left" then
 			ret.w = calc_width
-		elseif spawn.side == "right" then
-			ret.x = CTX.user.conf.width - calc_width
-			ret.w = calc_width
 		elseif spawn.side == "above" then
 			ret.h = calc_height
 		elseif spawn.side == "below" then
 			ret.y = CTX.user.conf.height - calc_height
 			ret.h = calc_height
 		else
-			error("[Rabbit]: Unknown split mode: " .. spawn.mode)
+			ret.x = CTX.user.conf.width - calc_width
+			ret.w = calc_width
 		end
 	end
 
