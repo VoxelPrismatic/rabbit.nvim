@@ -1,29 +1,62 @@
 local rect = require("rabbit.term.rect")
+local CTX = require("rabbit.term.ctx")
+local bufid, winid
 
 ---@class Rabbit.UI.Listing
-UIL = {
-	user = { ns = 0 }, ---@type Rabbit.UI.Workspace
-	this = { ns = vim.api.nvim_create_namespace("rabbit") }, ---@type Rabbit.UI.Workspace
-}
+UIL = {}
+
+vim.api.nvim_create_autocmd("BufEnter", {
+	callback = function()
+		local w = vim.api.nvim_get_current_win()
+		for _, v in ipairs(CTX.stack) do
+			if v.win == w then
+				return
+			end
+		end
+
+		if bufid == vim.api.nvim_get_current_buf() then
+			return
+		end
+
+		while #CTX.stack > 0 do
+			local v = CTX.stack[1]
+			vim.api.nvim_win_close(v.win, true)
+			vim.api.nvim_buf_delete(v.buf, { force = true })
+			table.remove(CTX.stack, 1)
+		end
+	end,
+})
 
 -- Creates a buffer for the given plugin
 ---@param plugin Rabbit.Plugin
 function UIL.spawn(plugin)
-	UIL.user.buf = vim.api.nvim_get_current_buf()
-	UIL.user.win = vim.api.nvim_get_current_win()
-	UIL.user.view = vim.fn.winsaveview()
-	UIL.user.conf = vim.api.nvim_win_get_config(UIL.user.win)
-	UIL.user.conf.width = UIL.user.conf.width or vim.api.nvim_win_get_width(UIL.user.win)
-	UIL.user.conf.height = UIL.user.conf.height or vim.api.nvim_win_get_height(UIL.user.win)
+	CTX.user = CTX.workspace()
 
-	UIL.this.buf = vim.api.nvim_create_buf(false, true)
-	UIL.this.win = vim.api.nvim_open_win(UIL.this.buf, true, UIL.rect(UIL.user.win))
+	-- Create background window
+	local r = UIL.rect(CTX.user.win, 55)
+	bufid = vim.api.nvim_create_buf(false, true)
+	winid = vim.api.nvim_open_win(bufid, true, r)
+	CTX.append(bufid, winid)
+
+	-- Create foreground window
+	r.split = nil
+	r.relative = "win"
+	r.row = 2
+	r.col = 1
+	r.width = r.width - 2
+	r.height = r.height - 4
+	r.zindex = r.zindex + 1
+	bufid = vim.api.nvim_create_buf(false, true)
+	winid = vim.api.nvim_open_win(bufid, true, r)
+	CTX.append(bufid, winid)
+	bufid = -1
 end
 
 -- Creates the bounding box for the window
----@param win number
+---@param win integer
+---@param z integer
 ---@return vim.api.keyset.win_config
-function UIL.rect(win)
+function UIL.rect(win, z)
 	local spawn = require("rabbit.config").window.spawn
 
 	local calc_width = spawn.width
@@ -32,32 +65,34 @@ function UIL.rect(win)
 	if calc_width == nil then
 		calc_width = 64
 	elseif calc_width <= 1 then
-		calc_width = math.floor(UIL.user.conf.width * calc_width)
+		calc_width = math.floor(CTX.user.conf.width * calc_width)
 	end
 
 	if calc_height == nil then
 		calc_height = 24
 	elseif calc_height <= 1 then
-		calc_height = math.floor(UIL.user.conf.height * calc_height)
+		calc_height = math.floor(CTX.user.conf.height * calc_height)
 	end
 
-	local ret = {
+	local ret = { ---@type Rabbit.UI.Rect
 		x = 0,
 		y = 0,
-		w = UIL.user.conf.width,
-		h = UIL.user.conf.height,
+		z = z or 10,
+		w = CTX.user.conf.width,
+		h = CTX.user.conf.height,
 	}
 
 	if spawn.mode == "split" then
+		ret.split = spawn.side
 		if spawn.side == "left" then
 			ret.w = calc_width
 		elseif spawn.side == "right" then
-			ret.x = UIL.user.conf.width - calc_width
+			ret.x = CTX.user.conf.width - calc_width
 			ret.w = calc_width
 		elseif spawn.side == "above" then
 			ret.h = calc_height
 		elseif spawn.side == "below" then
-			ret.y = UIL.user.conf.height - calc_height
+			ret.y = CTX.user.conf.height - calc_height
 			ret.h = calc_height
 		else
 			error("[Rabbit]: Unknown split mode: " .. spawn.mode)
@@ -69,30 +104,19 @@ function UIL.rect(win)
 		ret.h = calc_height
 
 		if spawn.side == "w" or spawn.side == "c" or spawn.side == "e" then
-			ret.y = math.floor((UIL.user.conf.height - calc_height) / 2)
+			ret.y = math.floor((CTX.user.conf.height - calc_height) / 2)
 		elseif spawn.side == "sw" or spawn.side == "s" or spawn.side == "se" then
-			ret.y = UIL.user.conf.height - calc_height
+			ret.y = CTX.user.conf.height - calc_height
 		end
 
 		if spawn.side == "n" or spawn.side == "c" or spawn.side == "s" then
-			ret.x = math.floor((UIL.user.conf.width - calc_width) / 2)
+			ret.x = math.floor((CTX.user.conf.width - calc_width) / 2)
 		elseif spawn.side == "ne" or spawn.side == "e" or spawn.side == "se" then
-			ret.x = UIL.user.conf.width - calc_width
+			ret.x = CTX.user.conf.width - calc_width
 		end
 	end
 
-	ret = rect.calc(ret, win)
-
-	return { ---@type vim.api.keyset.win_config
-		row = spawn.mode ~= "split" and ret.y or nil,
-		col = spawn.mode ~= "split" and ret.x or nil,
-		width = (spawn.side ~= "top" and spawn.side ~= "bottom") and ret.w or nil,
-		height = (spawn.side ~= "left" and spawn.side ~= "right") and ret.h or nil,
-		relative = spawn.mode ~= "split" and "win" or nil,
-		split = spawn.mode == "split" and spawn.side or nil,
-		style = "minimal",
-		zindex = 10,
-	}
+	return rect.win(rect.calc(ret, win))
 end
 
 return UIL

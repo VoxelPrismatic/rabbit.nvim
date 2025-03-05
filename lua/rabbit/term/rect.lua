@@ -39,4 +39,20 @@ function RECT.calc(rect, win)
 	return rect
 end
 
+-- Creates a win_config
+---@param rect Rabbit.UI.Rect
+---@return vim.api.keyset.win_config
+function RECT.win(rect)
+	return { ---@type vim.api.keyset.win_config
+		row = rect.y,
+		col = rect.x,
+		width = rect.w,
+		height = rect.h,
+		relative = rect.split == nil and "win" or nil,
+		split = rect.split,
+		style = "minimal",
+		zindex = rect.z,
+	}
+end
+
 return RECT

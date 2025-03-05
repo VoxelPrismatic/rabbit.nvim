@@ -3,10 +3,12 @@
 ---@field y number Y position.
 ---@field w number Width.
 ---@field h number Height.
----@field T number Y position of top border.
----@field B number Y position of bottom border.
----@field L number X position of left border.
----@field R number X position of right border.
+---@field T? number Y position of top border.
+---@field B? number Y position of bottom border.
+---@field L? number X position of left border.
+---@field R? number X position of right border.
+---@field split? string
+---@field z? number Z-index
 
 ---@class Rabbit.UI.Workspace
 ---@field win? integer Window ID
