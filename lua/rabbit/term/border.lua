@@ -1,4 +1,4 @@
-M = {}
+BOX = {}
 
 local border_flags = {
 	[0b000000] = "┌┐└┘─│", -- Thin, Solid, Square
@@ -16,11 +16,11 @@ local border_flags = {
 	[0b110000] = "╭╮╰╯╌╎", -- Thin, Double, Round
 }
 
--- Creates a border style flag for quick lookup
+-- Returns the corresponding border based on a few parameters
 ---@see Rabbit.Term.Border.Custom.Kwargs
 ---@param kwargs Rabbit.Term.Border.Custom.Kwargs
 ---@return string The corresponding border string
-function M.flag(kwargs)
+function BOX.flag(kwargs)
 	local f = 0
 	if kwargs.weight == "thin" then
 		-- Pass
@@ -60,15 +60,15 @@ end
 ---@see Rabbit.Term.Border.Box
 ---@param border Rabbit.Term.Border.String The border string; Format: ╭╮╰╯─│┃
 ---@return Rabbit.Term.Border.Box
-function M.expand(border)
+function BOX.expand(border)
 	return { ---@type Rabbit.Term.Border.Box
-		nw = border:sub(1, 3),
-		ne = border:sub(4, 6),
-		sw = border:sub(7, 9),
-		se = border:sub(10, 12),
-		h = border:sub(13, 15),
-		v = border:sub(16, 18),
-		scroll = border:sub(19, 21),
+		nw = vim.fn.strcharpart(border, 0, 1),
+		ne = vim.fn.strcharpart(border, 1, 1),
+		sw = vim.fn.strcharpart(border, 2, 1),
+		se = vim.fn.strcharpart(border, 3, 1),
+		h = vim.fn.strcharpart(border, 4, 1),
+		v = vim.fn.strcharpart(border, 5, 1),
+		scroll = vim.fn.strcharpart(border, 6, 1),
 	}
 end
 
@@ -76,7 +76,7 @@ end
 ---@see Rabbit.Term.Border.Custom
 ---@param kwargs Rabbit.Term.Border.Custom
 ---@return Rabbit.Term.Border.Box
-function M.custom(kwargs)
+function BOX.custom(kwargs)
 	if type(kwargs) ~= "table" then
 		error("Expected table, got " .. type(kwargs))
 	end
@@ -90,7 +90,7 @@ function M.custom(kwargs)
 	}
 
 	if type(kwargs.scrollbar) == "string" then
-		return M.expand(M.flag(kwargs) .. kwargs.scrollbar)
+		return BOX.expand(BOX.flag(kwargs) .. kwargs.scrollbar)
 	end
 
 	kwargs.scrollbar = {
@@ -99,16 +99,16 @@ function M.custom(kwargs)
 	}
 
 	---@diagnostic disable-next-line: param-type-mismatch
-	return M.expand(M.flag(kwargs) .. M.flag(kwargs.scrollbar):sub(19, 21))
+	return BOX.expand(BOX.flag(kwargs) .. vim.fn.strcharpart(BOX.flag(kwargs), 6, 1))
 end
 
 -- Normalizes a border input
 ---@see Rabbit.Term.Border
 ---@param border Rabbit.Term.Border
 ---@return Rabbit.Term.Border.Box
-function M.normalize(border)
+function BOX.normalize(border)
 	if type(border) == "string" then
-		return M.expand(border)
+		return BOX.expand(border)
 	end
 
 	if type(border) ~= "table" then
@@ -120,7 +120,7 @@ function M.normalize(border)
 	end
 
 	---@diagnostic disable-next-line: param-type-mismatch
-	return M.custom(border)
+	return BOX.custom(border)
 end
 
-return M
+return BOX
