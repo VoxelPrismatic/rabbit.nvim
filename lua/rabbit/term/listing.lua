@@ -11,7 +11,7 @@ local case_func = {
 	end,
 	title = function(s)
 		return s:gsub("(%w)(%w*)", function(a, b)
-			return string.upper(a) .. b
+			return string.upper(a) .. string.lower(b)
 		end)
 	end,
 }
