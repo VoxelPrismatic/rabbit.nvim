@@ -8,12 +8,14 @@ Various APIs for creating UIs for user input
             <pre lang="lua">local CTX = require("rabbit.term.ctx")</pre>
             <ul>
                 <li>
-                    <code>CTX.<b>append</b>(<i>bufnr</i>, <i>winnr</i>, <i>parent</i>)</code>
-                    Appends a buffer and window to the context. Also binds the <code>WinClosed</code> and <code>BufDelete</code> events.
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>CTX.<b>append</b>(<i>bufnr</i>, <i>winnr</i>, <i>parent</i>)</code><br>
+                            Appends a buffer and window to the context. Also binds the <code>WinClosed</code> and <code>BufDelete</code> events.
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b><br>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -36,28 +38,29 @@ Various APIs for creating UIs for user input
                                         <td>Parent workspace; When the parent is deleted, this workspace will be deleted too</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                        <li>
-                            <details>
-                                <summary>Returns</summary>
+                            </li>
+                            <li>
+                                <b>Returns</b>
                                 <table>
                                     <tr>
                                         <td><a href="../docs/ui.lua#L13">Rabbit.UI.Workspace</a></td>
                                         <td>The newly created workspace</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
                 <li>
-                    <code>CTX.<b>workspace</b>(<i>bufnr</i>, <i>winnr</i>)</code>
-                    Creates a workspace but does not append it to the context.
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>CTX.<b>workspace</b>(<i>bufnr</i>, <i>winnr</i>)</code><br>
+                            Creates a workspace but does not append it to the context.
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b><br>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -75,32 +78,42 @@ Various APIs for creating UIs for user input
                                         <td>Window ID</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                        <li>
-                            <details>
-                                <summary>Returns</summary>
+                            </li>
+                            <li>
+                                <b>Returns</b>
                                 <table>
                                     <tr>
                                         <td><a href="../docs/ui.lua#L13">Rabbit.UI.Workspace</a></td>
                                         <td>The newly created workspace</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
                 <li>
-                    <code>CTX.<b>clear</b>()</code>
-                    Clears the context; closes all windows and buffers
+                    <details>
+                        <summary>
+                            <code>CTX.<b>clear</b>()</code><br>
+                            Clears the context; closes all windows and buffers
+                        </summary>
+                        <ul>
+                            <li><i>Takes no parameters</i></li>
+                            <li><i>Doesn't return anything</i></li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
                 <li>
-                    <code>CTX.<b>close</b>(<i>bufnr</i>, <i>winnr</i>)</code>
-                    Closes a window and buffer
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>CTX.<b>close</b>(<i>bufnr</i>, <i>winnr</i>)</code><br>
+                            Closes a window and buffer
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -118,17 +131,21 @@ Various APIs for creating UIs for user input
                                         <td>Window ID</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                            <li><i>Doesn't return anything</i></li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
                 <li>
-                    <code>CTX.<b>link</b>(<i>parent</i>, <i>child</i>)</code>
-                    Links a child workspace to a parent workspace so when the parent is closed, the child is closed, too.
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>CTX.<b>link</b>(<i>parent</i>, <i>child</i>)</code><br>
+                            Links a child workspace to a parent workspace so when the parent is closed, the child is closed, too.
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -146,9 +163,11 @@ Various APIs for creating UIs for user input
                                         <td>Child workspace</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                            <li><i>Doesn't return anything</i></li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
             </ul>
         </details>
@@ -160,12 +179,14 @@ Various APIs for creating UIs for user input
             <pre lang="lua">local UIL = require("rabbit.term.listing")</pre>
             <ul>
                 <li>
-                    <code>UIL.<b>rect</b>(<i>win</i>, <i>z</i>)</code>
-                    Creates a win_config based on width, hight, position, and split options, as specified in the user's config.
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>UIL.<b>rect</b>(<i>win</i>, <i>z</i>)</code><br>
+                            Creates a win_config based on width, hight, position, and split options, as specified in the user's config.
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -183,22 +204,18 @@ Various APIs for creating UIs for user input
                                         <td>Z-index</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                        <li>
-                            <details>
-                                <summary>Returns</summary>
+                            </li>
+                            <li>
+                                <b>Returns</b>
                                 <table>
                                     <tr>
                                         <td>vim.api.keyset.win_config</td>
                                         <td>Window config to be passed to <code>vim.api.nvim_open_win</code></td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                        <li>
-                            <details>
-                                <summary>Error handling</summary>
+                            </li>
+                            <li>
+                                <b>Error handling</b>
                                 <ol>
                                     <li>If the user's <code>opts.spawn.mode</code> is NOT "split" or "float", it will fall back to "fullscreen"</li>
                                     <li>When the user's <code>opts.spawn.mode</code> is "split", if the split side is not valid, it will fall back to "right"</li>
@@ -206,17 +223,20 @@ Various APIs for creating UIs for user input
                                     <li>Default width is 64</li>
                                     <li>Default height is 24</li>
                                 </ol>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
                 <li>
-                    <code>UIL.<b>spawn</b>(<i>plugin</i>)</code>
-                    Spawns a new listing window
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>UIL.<b>spawn</b>(<i>plugin</i>)</code><br>
+                            Spawns a new listing window
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -229,9 +249,11 @@ Various APIs for creating UIs for user input
                                         <td>Plugin name to open a listing for</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                            <li><i>Doesn't return anything</i></li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
             </ul>
         </details>
@@ -243,12 +265,14 @@ Various APIs for creating UIs for user input
             <pre lang="lua">local RECT = require("rabbit.term.rect")</pre>
             <ul>
                 <li>
-                    <code>RECT.<b>calc</b>(<i>rect</i>, <i>win</i>)</code>
-                    Creates a rect and trims to fit inside the window
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>RECT.<b>calc</b>(<i>rect</i>, <i>win</i>)</code><br>
+                            Creates a rect and trims to fit inside the window
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -266,28 +290,29 @@ Various APIs for creating UIs for user input
                                         <td>Window ID to make sure the rect is in bounds. If not, it will be trimmed to fit.</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                        <li>
-                            <details>
-                                <summary>Returns</summary>
+                            </li>
+                            <li>
+                                <b>Returns</b>
                                 <table>
                                     <tr>
                                         <td><a href="../docs/ui.lua#L1">Rabbit.UI.Rect</a></td>
                                         <td>Trimmed rect</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
                 <li>
-                    <code>RECT.<b>win</b>(<i>rect</i>)</code>
-                    Generates the win_config to be passed to <code>vim.api.nvim_open_win</code>
-                    <ul>
-                        <li>
-                            <details>
-                                <summary>Parameters</summary>
+                    <details>
+                        <summary>
+                            <code>RECT.<b>win</b>(<i>rect</i>)</code><br>
+                            Generates the win_config to be passed to <code>vim.api.nvim_open_win</code>
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
                                 <table>
                                     <tr>
                                         <th>param</th>
@@ -300,20 +325,19 @@ Various APIs for creating UIs for user input
                                         <td>Final bounding rect, with X, Y, width, height, and z-index</td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                        <li>
-                            <details>
-                                <summary>Returns</summary>
+                            </li>
+                            <li>
+                                <b>Returns</b>
                                 <table>
                                     <tr>
                                         <td>vim.api.keyset.win_config</td>
                                         <td>Window config to be passed to <code>vim.api.nvim_open_win</code></td>
                                     </tr>
                                 </table>
-                            </details>
-                        </li>
-                    </ul>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
                 </li>
             </ul>
         </details>
