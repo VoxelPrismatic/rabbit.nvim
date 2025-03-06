@@ -1,6 +1,9 @@
 ---@class Rabbit.UI.Listing
 local UIL = {
-	_plugin = "" -- Last plugin called
+	-- Last plugin called
+	---@type Rabbit.Plugin
+	---@diagnostic disable-next-line: missing-fields
+	_plugin = {},
 }
 
 local RECT = require("rabbit.term.rect")
@@ -114,7 +117,7 @@ vim.api.nvim_create_autocmd("WinResized", {
 			return
 		end
 
-		UIL.spawn(UIL.plugin)
+		UIL.spawn(UIL._plugin)
 	end,
 })
 
@@ -127,7 +130,10 @@ function UIL.spawn(plugin)
 		CTX.clear()
 	end
 	CTX.user = CTX.workspace()
-	UIL.plugin = plugin
+	UIL._plugin = require("rabbit").plugins[plugin]
+	if UIL._plugin == nil then
+		error("Invalid plugin: " .. plugin)
+	end
 
 	-- Create background window
 	local r = UIL.rect(CTX.user.win, 55)
@@ -167,8 +173,6 @@ function UIL.spawn(plugin)
 	vim.keymap.set({ "n", "i", "v", "x" }, "<Right>", "", { buffer = listing.buf })
 
 	bufid = -1
-
-	UIL.list({ "-1", "2.", "4" })
 end
 
 ---@param entries Rabbit.Listing.Entry[]
@@ -184,22 +188,6 @@ end
 function UIL.apply_actions(ws)
 	local i = vim.fn.line(".")
 	local e = UIL._entries[i]
-	local actions = {} ---@type table<string, string | table<string>>
-	for k, v in pairs(UIL._plugin.keys or CONFIG.keys) do
-		actions[k] = v
-	end
-
-	for k, v in pairs(actions)
-		if type(v) == "string" then
-			v = {v}
-		end
-
-		local fn = (e.actions and e.actions[k]) or (UIL._plugin.actions and UIL._plugin.actions[k]) or ACT[k]
-		local cb = function() fn(i, e, UIL._entries) end
-		for _, c in pairs(v) do
-			vim.keymap.set("n", c, cb, { buffer = ws.buf })
-		end
-	end
 end
 
 ---@param ws Rabbit.UI.Workspace
@@ -250,13 +238,13 @@ function UIL.draw_border(ws)
 			titles.title_pos,
 			titles.title_emphasis.left,
 			case_func[titles.title_case](titles.title_text),
-			titles.title_emphasis.right .. UIL.plugin .. titles.plugin_emphasis.right
+			titles.title_emphasis.right .. UIL._plugin .. titles.plugin_emphasis.right
 		)
 		apply_title(
 			sides,
 			titles.title_pos,
 			titles.title_emphasis.left .. titles.title_text .. titles.title_emphasis.right,
-			case_func[titles.plugin_case](UIL.plugin),
+			case_func[titles.plugin_case](UIL._plugin.opts.name),
 			titles.plugin_emphasis.right
 		)
 	else
@@ -271,7 +259,7 @@ function UIL.draw_border(ws)
 			sides,
 			titles.plugin_pos,
 			titles.plugin_emphasis.left,
-			case_func[titles.plugin_case](UIL.plugin),
+			case_func[titles.plugin_case](UIL._plugin.opts.name),
 			titles.plugin_emphasis.right
 		)
 	end

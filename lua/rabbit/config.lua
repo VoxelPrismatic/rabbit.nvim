@@ -82,12 +82,25 @@ C.keys = {
 	open = { "<leader>r" },
 }
 
+-- Plugin settings
+---@class Rabbit.Config.Plugin
+C.plugins = {
+	---@diagnostic disable-next-line: missing-fields
+	history = {}, ---@type Rabbit._.History.Options
+}
+
 function C.cwd()
 	return vim.fn.getcwd()
 end
 
 -- Set up Rabbit
 ---@param opts Rabbit.Config
-function C.setup(opts) end
+function C.setup(opts)
+	for k, v in pairs(C) do
+		if type(v) == "table" then
+			C[k] = vim.tbl_deep_extend("force", v, opts[k] or {})
+		end
+	end
+end
 
 return C
