@@ -1,7 +1,7 @@
 ---@class Rabbit.Listing.Entry
 ---@field type "file" | "action" The type of listing entry.
 ---@field color Color.Term If action, set text color
----@field label string What the entry is called
+---@field label string What the entry is called. If a file, supply the FULL filename.
 ---@field tail string Right-aligned text after the label
 ---@field actions? Rabbit.Actions What to do when a key is pressed. If unset, all actions will be available
 
@@ -20,7 +20,7 @@
 
 ---@class Rabbit.Actions.Entry
 ---@field keys? string[] Activate callback when one of these keys are pressed
----@field callback? fun() Callback
+---@field callback? Rabbit.Action Callback
 ---@field shown? boolean Whether to show this key in the quick legend at the bottom
 ---@field title? string Human readable name
 
@@ -37,3 +37,5 @@
 ---@field debug _Str Open the debug dialog.
 ---@field open _Str Open Rabbit.
 ---@field [string] _Str Keybindings
+
+---@alias Rabbit.Action fun(idx: integer, entry: Rabbit.Listing.Entry, listing: Rabbit.Listing.Entry[])

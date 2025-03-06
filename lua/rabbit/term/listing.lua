@@ -1,13 +1,16 @@
 ---@class Rabbit.UI.Listing
-local UIL = {}
+local UIL = {
+	_plugin = "" -- Last plugin called
+}
 
 local RECT = require("rabbit.term.rect")
 local CTX = require("rabbit.term.ctx")
 local HL = require("rabbit.term.highlight")
 local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
+local SET = require("rabbit.util.set")
+local ACT = require("rabbit.actions")
 local bufid, winid
-local last_plugin
 
 local case_func = {
 	upper = string.upper,
@@ -111,7 +114,7 @@ vim.api.nvim_create_autocmd("WinResized", {
 			return
 		end
 
-		UIL.spawn(last_plugin)
+		UIL.spawn(UIL.plugin)
 	end,
 })
 
@@ -124,7 +127,7 @@ function UIL.spawn(plugin)
 		CTX.clear()
 	end
 	CTX.user = CTX.workspace()
-	last_plugin = plugin
+	UIL.plugin = plugin
 
 	-- Create background window
 	local r = UIL.rect(CTX.user.win, 55)
@@ -132,6 +135,7 @@ function UIL.spawn(plugin)
 	winid = vim.api.nvim_open_win(bufid, true, r)
 	local bg = CTX.append(bufid, winid)
 	bg.ns = vim.api.nvim_create_namespace("rabbit.bg")
+	UIL._bg = bg
 
 	-- Create foreground window
 	r.split = nil
@@ -145,25 +149,57 @@ function UIL.spawn(plugin)
 	winid = vim.api.nvim_open_win(bufid, true, r)
 	local listing = CTX.append(bufid, winid, bg)
 	listing.ns = vim.api.nvim_create_namespace("rabbit.listing")
+	UIL._fg = listing
 	bg.parent = listing -- Treat these as the same layer
+	vim.wo[listing.win].cursorline = true
 
-	vim.api.nvim_buf_set_lines(listing.buf, 0, -1, false, { "1.", "2.", "3." })
+	local function redraw()
+		UIL.draw_border(bg)
+		UIL.apply_actions(listing)
+	end
 
 	vim.api.nvim_create_autocmd("CursorMoved", {
 		buffer = listing.buf,
-		callback = function()
-			UIL.highlight(bg, listing)
-		end,
+		callback = redraw,
 	})
 
-	-- Draw border
-	UIL.draw_border(bg)
+	vim.keymap.set({ "n", "i", "v", "x" }, "<Left>", "", { buffer = listing.buf })
+	vim.keymap.set({ "n", "i", "v", "x" }, "<Right>", "", { buffer = listing.buf })
 
 	bufid = -1
+
+	UIL.list({ "-1", "2.", "4" })
 end
 
-function UIL.highlight(bg, listing)
-	UIL.draw_border(bg)
+---@param entries Rabbit.Listing.Entry[]
+function UIL.list(entries)
+	UIL._entries = entries
+
+	vim.api.nvim_buf_set_lines(UIL._fg.buf, 0, -1, false, entries)
+
+	UIL.draw_border(UIL._bg)
+	UIL.apply_actions(UIL._fg)
+end
+
+function UIL.apply_actions(ws)
+	local i = vim.fn.line(".")
+	local e = UIL._entries[i]
+	local actions = {} ---@type table<string, string | table<string>>
+	for k, v in pairs(UIL._plugin.keys or CONFIG.keys) do
+		actions[k] = v
+	end
+
+	for k, v in pairs(actions)
+		if type(v) == "string" then
+			v = {v}
+		end
+
+		local fn = (e.actions and e.actions[k]) or (UIL._plugin.actions and UIL._plugin.actions[k]) or ACT[k]
+		local cb = function() fn(i, e, UIL._entries) end
+		for _, c in pairs(v) do
+			vim.keymap.set("n", c, cb, { buffer = ws.buf })
+		end
+	end
 end
 
 ---@param ws Rabbit.UI.Workspace
@@ -196,6 +232,7 @@ function UIL.draw_border(ws)
 	then
 		scroll_len = (final_height - 2) / vim.fn.line("$")
 		scroll_top = scroll_len * (vim.fn.line(".") - 1)
+		scroll_len = math.max(1, scroll_len)
 	end
 
 	for i = 1, final_height - 2 do
@@ -213,13 +250,13 @@ function UIL.draw_border(ws)
 			titles.title_pos,
 			titles.title_emphasis.left,
 			case_func[titles.title_case](titles.title_text),
-			titles.title_emphasis.right .. last_plugin .. titles.plugin_emphasis.right
+			titles.title_emphasis.right .. UIL.plugin .. titles.plugin_emphasis.right
 		)
 		apply_title(
 			sides,
 			titles.title_pos,
 			titles.title_emphasis.left .. titles.title_text .. titles.title_emphasis.right,
-			case_func[titles.plugin_case](last_plugin),
+			case_func[titles.plugin_case](UIL.plugin),
 			titles.plugin_emphasis.right
 		)
 	else
@@ -234,7 +271,7 @@ function UIL.draw_border(ws)
 			sides,
 			titles.plugin_pos,
 			titles.plugin_emphasis.left,
-			case_func[titles.plugin_case](last_plugin),
+			case_func[titles.plugin_case](UIL.plugin),
 			titles.plugin_emphasis.right
 		)
 	end

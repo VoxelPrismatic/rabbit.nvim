@@ -35,7 +35,7 @@ C.colors = {
 -- Window settings
 ---@type Rabbit.Config.Window
 C.window = {
-	box = "┏┓╚┛━┃╏",
+	box = "┏┓╚┛━┃║",
 
 	spawn = {
 		mode = "float",
