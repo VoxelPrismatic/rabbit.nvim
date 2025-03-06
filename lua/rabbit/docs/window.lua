@@ -62,8 +62,10 @@
 ---@field right string Right-hand (or bottom-side) emphasis string
 
 ---@class (exact) Rabbit.Config.Window.Overflow
----@field char string String to use when a line overflows. This is not used when trimming dir names with `path_len`.
----@field path_len integer Maximum directory name length before trimming with ellipses.
+---@field distance_char string String to use when a line overflows.
+---@field dirname_trim integer Maximum directory name length before trimming with `dirname_char`.
+---@field dirname_char string Character to use when trimming dir names.
+---@field distance_trim integer Maximum distance between files before trimming with `distance_char`.
 
 ---@class (exact) Rabbit.Config.Window
 ---@field box Rabbit.Term.Border Border box style.

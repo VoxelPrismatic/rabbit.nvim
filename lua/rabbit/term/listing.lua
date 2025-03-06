@@ -4,11 +4,13 @@ local UIL = {
 	---@type Rabbit.Plugin
 	---@diagnostic disable-next-line: missing-fields
 	_plugin = {},
+	_entries = {},
 }
 
 local RECT = require("rabbit.term.rect")
 local CTX = require("rabbit.term.ctx")
 local HL = require("rabbit.term.highlight")
+local MEM = require("rabbit.util.mem")
 local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
@@ -161,7 +163,8 @@ function UIL.spawn(plugin)
 
 	local function redraw()
 		UIL.draw_border(bg)
-		UIL.apply_actions(listing)
+		UIL.apply_actions(bg, listing)
+		-- vim.api.nvim_win_set_cursor(listing.win, { vim.fn.line("."), 0 })
 	end
 
 	vim.api.nvim_create_autocmd("CursorMoved", {
@@ -169,25 +172,181 @@ function UIL.spawn(plugin)
 		callback = redraw,
 	})
 
-	vim.keymap.set({ "n", "i", "v", "x" }, "<Left>", "", { buffer = listing.buf })
-	vim.keymap.set({ "n", "i", "v", "x" }, "<Right>", "", { buffer = listing.buf })
-
 	bufid = -1
+
+	UIL._plugin.list()
 end
 
 ---@param entries Rabbit.Listing.Entry[]
 function UIL.list(entries)
 	UIL._entries = entries
 
-	vim.api.nvim_buf_set_lines(UIL._fg.buf, 0, -1, false, entries)
+	vim.api.nvim_buf_clear_namespace(UIL._fg.buf, UIL._fg.ns, 0, -1)
+
+	local j
+
+	for i, entry in ipairs(entries) do
+		j = i
+		local dirpart = {}
+		local filepart = {}
+		local headpart = {}
+		local tailpart = {}
+
+		if entry.type == "file" then
+			local rel_path = MEM.rel_path({
+				source = vim.api.nvim_buf_get_name(CTX.user.buf),
+				target = entry.label,
+				width = UIL._fg.conf.width,
+				max_parts = CONFIG.window.overflow.distance_trim,
+				cutoff = CONFIG.window.overflow.dirname_trim,
+				overflow = CONFIG.window.overflow.distance_char,
+				trim = CONFIG.window.overflow.dirname_char,
+			})
+			filepart = { text = rel_path.name, hl = { "rabbit.types.file" }, align = "left" }
+			dirpart = { text = rel_path.dir, hl = { "rabbit.types.dir" }, align = "left" }
+			vim.print(">>", rel_path, entry.label, "<<")
+			-- return
+		else
+			filepart = {
+				text = entry.label,
+				hl = { "rabbit.types.collection", "rabbit.paint." .. entry.color },
+				align = "left",
+			}
+		end
+
+		if type(entry.head) == "string" then
+			headpart = { text = entry.head .. " ", hl = "rabbit.types.head", align = "left" }
+		elseif type(entry.head) == "table" then
+			headpart = entry.head --[[@as Rabbit.Term.HlLine]]
+		end
+
+		if type(entry.tail) == "string" then
+			tailpart = { text = entry.tail .. " ", hl = "rabbit.types.tail", align = "right" }
+		elseif type(entry.tail) == "table" then
+			tailpart = entry.tail --[[@as Rabbit.Term.HlLine]]
+		end
+
+		vim.print(headpart, dirpart, filepart, tailpart)
+
+		HL.nvim_buf_set_line(UIL._fg.buf, i - 1, false, UIL._fg.ns, UIL._fg.conf.width, {
+			{
+				text = " " .. ("0"):rep(#tostring(#entries) - #tostring(i)) .. i .. ". ",
+				hl = "rabbit.types.index",
+				align = "left",
+			},
+			headpart,
+			dirpart,
+			filepart,
+			tailpart,
+		})
+	end
+
+	vim.api.nvim_buf_set_lines(UIL._fg.buf, j, -1, false, {})
 
 	UIL.draw_border(UIL._bg)
-	UIL.apply_actions(UIL._fg)
+	UIL.apply_actions(UIL._bg, UIL._fg)
 end
 
-function UIL.apply_actions(ws)
+function UIL.apply_actions(bg, fg)
 	local i = vim.fn.line(".")
-	local e = UIL._entries[i]
+	local e = UIL._entries[i] ---@type Rabbit.Listing.Entry
+
+	if e == nil then
+		return -- This shouldn't happen
+	end
+
+	local legend = {}
+	local legend_parts = {}
+	local all_actions = {}
+
+	e.actions = e.actions or {}
+
+	for key, _ in pairs(e.actions) do
+		SET.add(all_actions, key)
+	end
+
+	for key, _ in pairs(UIL._plugin.act) do
+		SET.add(all_actions, key)
+	end
+
+	for key, _ in pairs(UIL._plugin.opts.keys) do
+		SET.add(all_actions, key)
+	end
+
+	for key, _ in pairs(ACT) do
+		SET.add(all_actions, key)
+	end
+
+	for key, _ in pairs(CONFIG.keys) do
+		SET.add(all_actions, key)
+	end
+
+	for _, key in ipairs(all_actions) do
+		local action = e.actions[key]
+		if action == false then
+			goto continue
+		elseif action == true or action == nil then
+			action = {}
+		elseif type(action) ~= "table" then
+			error("Invalid action for " .. key .. ": Expected table, got " .. type(action))
+		end
+
+		action.keys = action.keys or UIL._plugin.opts.keys[key] or CONFIG.keys[key]
+		if action.keys == nil then
+			goto continue
+		end
+
+		if type(action.keys) == "string" then
+			---@diagnostic disable-next-line: assign-type-mismatch
+			action.keys = { action.keys }
+		end
+
+		action.callback = action.callback or UIL._plugin.act[key] or ACT[key]
+		if action.callback == nil then
+			goto continue
+		end
+
+		action.title = action.title or key
+
+		action.priority = action.priority or 0
+
+		table.insert(legend, action)
+
+		for _, k in ipairs(action.keys) do
+			if type(k) == "string" then
+				vim.keymap.set("n", k, function()
+					vim.print("Callback!")
+					action.callback(i, e, UIL._entries)
+				end, { buffer = fg.buf })
+			else
+				error("Invalid key: " .. vim.inspect(k))
+			end
+		end
+		::continue::
+	end
+
+	table.sort(legend, function(a, b)
+		return a.priority > b.priority
+	end)
+
+	for _, action in ipairs(legend) do
+		table.insert(legend_parts, {
+			text = action.title,
+			hl = "rabbit.legend.action",
+		})
+
+		table.insert(legend_parts, {
+			text = "=",
+			hl = "rabbit.legend.separator",
+		})
+
+		table.insert(legend_parts, {
+			text = action.keys[1] .. " ",
+			hl = "rabbit.legend.key",
+		})
+	end
+
+	HL.nvim_buf_set_line(bg.buf, bg.conf.height - 1, false, bg.ns, bg.conf.width, legend_parts)
 end
 
 ---@param ws Rabbit.UI.Workspace
@@ -280,22 +439,22 @@ function UIL.draw_border(ws)
 
 	vim.api.nvim_buf_set_lines(ws.buf, 0, -1, false, lines)
 
+	vim.api.nvim_set_hl(0, "rabbit.plugin", HL.gen_group(UIL._plugin.opts.color, "fg"))
 	HL.apply()
-	vim.api.nvim_set_hl(0, "rabbit.plugin", HL.gen_group("#d875a7", "fg"))
 
 	for i = 1, ws.conf.height do
 		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.plugin", i - 1, 0, -1)
 	end
 
 	for _, v in ipairs(sides.hl_t) do
-		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.type.title", 0, v + #box.nw - 1, v + #box.nw)
+		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.types.title", 0, v + #box.nw - 1, v + #box.nw)
 	end
 
 	for _, v in ipairs(sides.hl_b) do
 		vim.api.nvim_buf_add_highlight(
 			ws.buf,
 			ws.ns,
-			"rabbit.type.title",
+			"rabbit.types.title",
 			final_height - 1,
 			v + #box.sw - 1,
 			v + #box.sw
@@ -303,11 +462,11 @@ function UIL.draw_border(ws)
 	end
 
 	for _, v in ipairs(sides.hl_l) do
-		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.type.title", v, 0, 1)
+		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.types.title", v, 0, 1)
 	end
 
 	for _, v in ipairs(sides.hl_r) do
-		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.type.title", v, ws.conf.width - 1, 1)
+		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.types.title", v, ws.conf.width - 1, 1)
 	end
 end
 

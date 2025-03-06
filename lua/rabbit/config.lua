@@ -13,6 +13,8 @@ C.colors = {
 		file = { fg = ":Normal" },
 		term = { fg = ":Constant", italic = true },
 		noname = { fg = ":Function", italic = true },
+		tail = { fg = ":Comment", italic = true },
+		collection = { fg = ":Constant", bold = true, italic = true },
 	},
 
 	paint = {
@@ -29,6 +31,12 @@ C.colors = {
 		error = { fg = ":ErrorMsg", bg = ":FloatBorder", bold = true },
 		warning = { fg = ":Question", bg = ":FloatBorder", bold = true },
 		info = { fg = ":MoreMsg", bg = ":FloatBorder", bold = true },
+	},
+
+	legend = {
+		action = { fg = ":rabbit.plugin", bold = true },
+		separator = { fg = ":Comment" },
+		key = { fg = ":Normal" },
 	},
 }
 
@@ -61,8 +69,10 @@ C.window = {
 	},
 
 	overflow = {
-		char = ":::",
-		path_len = 12,
+		distance_char = ":::",
+		dirname_trim = 12,
+		dirname_char = "…",
+		distance_trim = 3,
 	},
 
 	legend = true,
@@ -71,7 +81,7 @@ C.window = {
 -- Keymap settings
 ---@type Rabbit.Config.Keymap
 C.keys = {
-	select = { "g", "<CR>" },
+	select = { "<CR>", "g" },
 	close = { "q", "<Esc>", "<leader>" },
 	delete = { "x", "d", "<Del>" },
 	collect = { "A", "c" },

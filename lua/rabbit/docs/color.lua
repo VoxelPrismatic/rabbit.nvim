@@ -1,12 +1,13 @@
 ---@alias Color string
 
 ---@alias Color.Term
----| "red"
----| "green"
----| "yellow"
----| "blue"
----| "pink"
----| "purple"
+---| "rose"
+---| "love"
+---| "gold"
+---| "tree"
+---| "foam"
+---| "iris"
+---| "pine"
 
 ---@alias Color.Nvim string | NvimHlKwargs
 

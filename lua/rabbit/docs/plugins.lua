@@ -1,15 +1,21 @@
 ---@class Rabbit.Plugin
----@field act Rabbit.Plugin.Actions Action callbacks
+---@field act Rabbit.Listing.Actions Action callbacks
 ---@field evt Rabbit.Plugin.Events NvimEvent Callbacks
 ---@field opts Rabbit.Plugin.Options Plugin specific options (user editable)
 ---@field ctx Rabbit.Plugin.Context Callback context. Consider this READ-ONLY; it is set by the parent Rabbit handler
 ---@field save string | false Where to save persistent storage, if necessary.
 ---@field setup? fun(opts: Rabbit.Plugin.Options) Initialize the plugin
+---@field list? fun() Create a listing
 
 ---@class Rabbit.Plugin.Context
 ---@field plugin? Rabbit.Plugin
 ---@field winid? integer Window ID
----@field dir? string Working directory, according to `opts.cwd`
+---@field dir? Rabbit.Plugin.Context.Directory Working directory, according to `opts.cwd`
+
+---@class Rabbit.Plugin.Context.Directory
+---@field value any Current scoped directory
+---@field scope "global" | "plugin" Indicates where the scope was evaluated
+---@field raw string | fun() The generating function
 
 ---@class Rabbit.Plugin.Events
 ---@field BufAdd? fun(evt: NvimEvent.BufAdd, ctx: Rabbit.Plugin.Context)

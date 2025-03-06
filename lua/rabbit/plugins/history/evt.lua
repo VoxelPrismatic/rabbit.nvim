@@ -11,12 +11,16 @@ function EVT.BufEnter(evt, ctx)
 
 	SET.add(LIST.init(ctx.winid).history, evt.buf)
 	SET.add(LIST.order, ctx.winid)
+	LIST.action = ctx.winid
 end
 
 function EVT.BufDelete(evt, ctx)
-	local r = LIST.init(ctx.winid)
-	if SET.sub(r.history, evt.buf) then
-		SET.add(r.closed, evt.file)
+	LIST.init(ctx.winid)
+
+	for _, r in pairs(LIST.win) do
+		if SET.sub(r.history, evt.buf) then
+			SET.add(r.closed, evt.file)
+		end
 	end
 end
 

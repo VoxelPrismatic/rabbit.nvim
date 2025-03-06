@@ -2,11 +2,12 @@
 ---@field type "file" | "action" The type of listing entry.
 ---@field color Color.Term If action, set text color
 ---@field label string What the entry is called. If a file, supply the FULL filename.
----@field tail string Right-aligned text after the label
----@field actions? Rabbit.Actions What to do when a key is pressed. If unset, all actions will be available
+---@field tail string | Rabbit.Term.HlLine Right-aligned text after the label
+---@field head string | Rabbit.Term.HlLine Left-aligned text before the label
+---@field actions? Rabbit.Listing.Actions What to do when a key is pressed. If unset, all actions will be available
 
----@class Rabbit.Actions
----@field [Rabbit.Actions.Preset] Rabbit.Actions.Entry | false Actions applicable to this Listing entry
+---@class Rabbit.Listing.Actions
+---@field [Rabbit.Actions.Preset] Rabbit.Actions.Entry | boolean Actions applicable to this Listing entry
 
 ---@alias Rabbit.Actions.Preset # It is highly recommended to use these keys so the user can set up keybinds in their config.
 ---| "select" # Select an entry; Open a file or open a collection.
@@ -19,10 +20,11 @@
 ---| "debug" # Open the debug dialog.
 
 ---@class Rabbit.Actions.Entry
----@field keys? string[] Activate callback when one of these keys are pressed
+---@field keys? string | string[] Activate callback when one of these keys are pressed
 ---@field callback? Rabbit.Action Callback
 ---@field shown? boolean Whether to show this key in the quick legend at the bottom
 ---@field title? string Human readable name
+---@field priority? integer Priority of this action. This signifies the order in which they are shown
 
 ---@alias _Str string | string[]
 
@@ -39,3 +41,6 @@
 ---@field [string] _Str Keybindings
 
 ---@alias Rabbit.Action fun(idx: integer, entry: Rabbit.Listing.Entry, listing: Rabbit.Listing.Entry[])
+
+---@class Rabbit.Plugin.Actions
+---@field [string] Rabbit.Action
