@@ -28,4 +28,15 @@ function EVT.WinClosed(_, ctx)
 	LIST.init(ctx.winid).killed = true
 end
 
+function EVT.WinEnter(evt, ctx)
+	vim.print(evt)
+	if OPTS.ignore_unlisted and vim.bo[evt.buf].buflisted == false then
+		return
+	end
+
+	SET.add(LIST.init(ctx.winid).history, evt.buf)
+	SET.add(LIST.order, ctx.winid)
+	LIST.action = ctx.winid
+end
+
 return EVT

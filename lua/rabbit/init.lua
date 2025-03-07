@@ -45,13 +45,12 @@ end
 -- Propagates events to all plugins
 ---@param evt NvimEvent
 function RABBIT.propagate(evt)
+	local winid = vim.api.nvim_get_current_win()
 	for _, ctx in pairs(TERM.CTX.stack) do
-		if evt.buf == ctx.buf then
+		if evt.buf == ctx.buf or winid == ctx.win then
 			return
 		end
 	end
-
-	local winid = vim.api.nvim_get_current_win()
 
 	local ctx = { ---@type Rabbit.Plugin.Context
 		winid = winid,

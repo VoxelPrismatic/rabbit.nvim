@@ -1,9 +1,10 @@
 local LIST = require("rabbit.plugins.history.listing")
 local UIL = require("rabbit.term.listing")
+local CTX = require("rabbit.term.ctx")
 
 ---@class Rabbit._.History: Rabbit.Plugin
 local PLUG = {
-	---@type Rabbit.Listing.Actions
+	---@type Rabbit.Plugin.Actions
 	act = require("rabbit.plugins.history.act"),
 
 	---@type Rabbit.Plugin.Events
@@ -24,7 +25,9 @@ end
 
 -- Create a listing
 function PLUG.list()
+	LIST.action = CTX.user.win
 	UIL.list(LIST.generate())
+	_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { 3, 0 })
 end
 
 return PLUG

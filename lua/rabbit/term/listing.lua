@@ -183,7 +183,8 @@ function UIL.list(entries)
 
 	vim.api.nvim_buf_clear_namespace(UIL._fg.buf, UIL._fg.ns, 0, -1)
 
-	local j
+	local j = 0
+	local k = 0
 
 	for i, entry in ipairs(entries) do
 		j = i
@@ -227,10 +228,17 @@ function UIL.list(entries)
 		end
 
 		vim.print(headpart, dirpart, filepart, tailpart)
+		local idx
+		if entry.idx ~= false then
+			k = k + 1
+			idx = ("0"):rep(#tostring(#entries) - #tostring(k)) .. i .. "."
+		else
+			idx = (" "):rep(#tostring(#entries) + 1)
+		end
 
 		HL.nvim_buf_set_line(UIL._fg.buf, i - 1, false, UIL._fg.ns, UIL._fg.conf.width, {
 			{
-				text = " " .. ("0"):rep(#tostring(#entries) - #tostring(i)) .. i .. ". ",
+				text = " " .. idx .. " ",
 				hl = "rabbit.types.index",
 				align = "left",
 			},
@@ -312,10 +320,11 @@ function UIL.apply_actions(bg, fg)
 
 		table.insert(legend, action)
 
-		for _, k in ipairs(action.keys) do
+		for _, k in
+			ipairs(action.keys --[[@as table<string>]])
+		do
 			if type(k) == "string" then
 				vim.keymap.set("n", k, function()
-					vim.print("Callback!")
 					action.callback(i, e, UIL._entries)
 				end, { buffer = fg.buf })
 			else
@@ -336,7 +345,7 @@ function UIL.apply_actions(bg, fg)
 		})
 
 		table.insert(legend_parts, {
-			text = "=",
+			text = ":",
 			hl = "rabbit.legend.separator",
 		})
 
@@ -535,4 +544,9 @@ function UIL.rect(win, z)
 	return RECT.win(RECT.calc(ret, win))
 end
 
+function UIL.close()
+	vim.api.nvim_win_close(UIL._bg.win, true)
+	vim.api.nvim_set_current_win(CTX.user.win)
+	vim.api.nvim_set_current_buf(CTX.user.buf)
+end
 return UIL

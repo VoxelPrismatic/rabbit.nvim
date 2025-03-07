@@ -1,5 +1,4 @@
-local SET = require("rabbit.util.set")
-local UIL = require("rabbit.term.listing")
+local CTX = require("rabbit.term.ctx")
 
 ---@class Rabbit._.History.Listing
 local LIST = {
@@ -25,18 +24,17 @@ function LIST.init(winnr)
 			history = {},
 			closed = {},
 		}
-	else
-		LIST.win[winnr].killed = false
 	end
 
 	return LIST.win[winnr]
 end
 
 ---@class Rabbit._.History.Window
----@field killed boolean Whether or not the window was closed
----@field name string Custom name for the window
----@field history integer[] List of buffers in the window
----@field closed string[] List of buffers that have been closed
+---@field killed boolean Whether or not the window was closed.
+---@field name string Custom name for the window.
+---@field history integer[] List of buffers in the window.
+---@field closed string[] List of buffers that have been closed.
+---@field system? boolean Whether or not this window was created by Rabbit itself.
 
 -- Creates a listing
 ---@return Rabbit.Listing.Entry[]
@@ -46,55 +44,91 @@ function LIST.generate()
 	if LIST.action == nil then
 		for _, v in ipairs(LIST.order) do
 			local w = LIST.win[v]
+			if w.system == nil then
+				w.system = false
+				for _, winnr in ipairs(CTX.stack) do
+					if winnr.win == v then
+						w.system = true
+						break
+					end
+				end
+			end
 
-			---@type Rabbit.Listing.Entry
-			local e = {
+			if w.system == true then
+				goto continue
+			end
+			w.killed = not vim.api.nvim_win_is_valid(v)
+
+			table.insert(ls, {
 				type = "action",
 				label = w.name,
 				color = w.killed and "rose" or "iris",
 				tail = "" .. v,
-				head = "",
+				system = true,
 				actions = {
-					delete = not w.killed,
 					parent = false,
+					delete = w.killed,
 				},
-			}
+				ctx = {
+					new_win = v,
+				},
+			})
 
-			table.insert(ls, e)
+			::continue::
 		end
 	else
-		local win
+		local winnr = math.abs(LIST.action)
+		local win = LIST.win[winnr]
 		local files
 		table.insert(ls, {
 			type = "action",
 			label = "All Windows",
 			color = "iris",
+			system = true,
+			tail = win.name,
+			idx = false,
 			actions = {
 				delete = false,
 			},
+			ctx = {
+				new_win = nil,
+			},
 		})
+
 		if LIST.action < 0 then
-			win = LIST.win[-LIST.action]
 			files = win.closed
 			table.insert(ls, {
 				type = "action",
-				label = "Opened buffers",
+				label = "Opened Buffers",
 				color = "iris",
+				system = true,
+				idx = false,
 				actions = {
 					delete = false,
+				},
+				ctx = {
+					new_win = -LIST.action,
 				},
 			})
 		else
-			win = LIST.win[LIST.action]
 			files = win.history
 			table.insert(ls, {
 				type = "action",
-				label = "Closed buffers",
+				label = "Closed Buffers",
 				color = "love",
+				system = true,
+				idx = false,
 				actions = {
 					delete = false,
 				},
+				ctx = {
+					new_win = -LIST.action,
+				},
 			})
+		end
+
+		if math.abs(LIST.action) == CTX.user.win then
+			table.remove(files, 1)
 		end
 
 		for i, filename in ipairs(files) do
@@ -109,10 +143,14 @@ function LIST.generate()
 
 			table.insert(ls, {
 				type = "file",
+				tail = type(files[i]) == "number" and tostring(files[i]) or "",
 				label = filename,
-				color = "iris",
 				actions = {
 					delete = win.killed,
+				},
+				ctx = {
+					bufnr = files[i],
+					winnr = winnr,
 				},
 			})
 			::continue::

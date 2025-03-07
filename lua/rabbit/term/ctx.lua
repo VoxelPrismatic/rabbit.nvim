@@ -1,6 +1,12 @@
+local SET = require("rabbit.util.set")
+
 local CTX = {
 	user = { ns = 0 }, ---@type Rabbit.UI.Workspace
 	stack = {}, ---@type Rabbit.UI.Workspace[]
+	used = {
+		win = {},
+		buf = {},
+	},
 }
 
 -- Adds a workspace to the stack, and binds the WinClosed and BufDelete events
@@ -40,6 +46,9 @@ function CTX.workspace(bufnr, winnr)
 	ws.conf = vim.api.nvim_win_get_config(ws.win)
 	ws.conf.width = ws.conf.width or vim.api.nvim_win_get_width(ws.win)
 	ws.conf.height = ws.conf.height or vim.api.nvim_win_get_height(ws.win)
+
+	SET.add(CTX.used.buf, bufnr)
+	SET.add(CTX.used.win, winnr)
 
 	return ws
 end
