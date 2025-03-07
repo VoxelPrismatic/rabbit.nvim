@@ -46,11 +46,6 @@ end
 ---@param evt NvimEvent
 function RABBIT.propagate(evt)
 	local winid = vim.api.nvim_get_current_win()
-	for _, ctx in pairs(TERM.CTX.stack) do
-		if evt.buf == ctx.buf or winid == ctx.win then
-			return
-		end
-	end
 
 	local ctx = { ---@type Rabbit.Plugin.Context
 		winid = winid,

@@ -9,12 +9,17 @@ C.colors = {
 	types = {
 		title = { fg = ":Normal", bold = true },
 		index = { fg = ":Comment", italic = true },
-		dir = { fg = ":NonText" },
-		file = { fg = ":Normal" },
-		term = { fg = ":Constant", italic = true },
-		noname = { fg = ":Function", italic = true },
 		tail = { fg = ":Comment", italic = true },
+		head = { fg = ":NonText", bold = true },
 		collection = { fg = ":Constant", bold = true, italic = true },
+	},
+
+	files = {
+		file = { fg = ":Normal" },
+		path = { fg = ":NonText" },
+		term = { fg = ":Constant", bold = true },
+		void = { fg = ":Function", italic = true },
+		closed = { fg = ":DiagnosticVirtualTextError" },
 	},
 
 	paint = {

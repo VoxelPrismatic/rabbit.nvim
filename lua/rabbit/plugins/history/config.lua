@@ -1,5 +1,5 @@
 ---@class Rabbit._.History.Options: Rabbit.Plugin.Options
-local CONF = {
+local PLUGIN_CONFIG = {
 	-- Name of the plugin.
 	---@type string
 	name = "history",
@@ -20,4 +20,6 @@ local CONF = {
 	ignore_unlisted = true,
 }
 
-return CONF
+function PLUGIN_CONFIG.wrap_msg() end
+
+return PLUGIN_CONFIG

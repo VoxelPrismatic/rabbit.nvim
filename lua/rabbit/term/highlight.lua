@@ -53,7 +53,14 @@ function HL.nvim_buf_set_line(buf, line, strict, ns, width, lines)
 			hl = {},
 		},
 	}
-	for _, v in ipairs(lines) do
+
+	while #lines > 0 do
+		local v = table.remove(lines, 1)
+
+		for i, v2 in ipairs(v) do
+			table.insert(lines, i, v2)
+		end
+
 		if v.text == nil then
 			goto continue
 		end

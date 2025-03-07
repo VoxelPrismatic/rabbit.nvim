@@ -1,13 +1,15 @@
 ---@class Rabbit.Listing.Entry
 ---@field type? "file" | "action" The type of listing entry.
 ---@field color? Color.Term If action, set text color
----@field label? string What the entry is called. If a file, supply the FULL filename.
+---@field label? string | Rabbit.Term.HlLine What the entry is called. If a file, supply the FULL filename.
 ---@field tail? string | Rabbit.Term.HlLine Right-aligned text after the label.
 ---@field head? string | Rabbit.Term.HlLine Left-aligned text before the label.
 ---@field actions? Rabbit.Listing.Actions What to do when a key is pressed. If unset, all actions will be available.
 ---@field system? boolean Useful for user input so you can distinguish between user entries and plugin-provided entries
 ---@field ctx? table Any other details you need.
 ---@field idx? boolean Whether or not to count this towards the index
+---@field highlight? string | string[] Additional highlight group
+---@field hl_replace? boolean Replace the default highlights instead of appending
 
 ---@class Rabbit.Listing.Actions
 ---@field [Rabbit.Actions.Preset] Rabbit.Actions.Entry | boolean Actions applicable to this Listing entry

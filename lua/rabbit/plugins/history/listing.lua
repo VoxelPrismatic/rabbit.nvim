@@ -1,9 +1,16 @@
 local CTX = require("rabbit.term.ctx")
+local MEM = require("rabbit.util.mem")
+local SET = require("rabbit.util.set")
 
 ---@class Rabbit._.History.Listing
 local LIST = {
 	---@type table<integer, Rabbit._.History.Window>
 	win = {},
+
+	global = {},
+
+	---@type table<integer, string>
+	buffers = {},
 
 	-- How windows are ordered in the list
 	---@type integer[]
@@ -11,7 +18,7 @@ local LIST = {
 
 	-- Current window in listing
 	---@type integer | nil
-	action = nil,
+	winnr = nil,
 }
 
 -- Initializes a window entry if one doesn't exist yet
@@ -33,7 +40,6 @@ end
 ---@field killed boolean Whether or not the window was closed.
 ---@field name string Custom name for the window.
 ---@field history integer[] List of buffers in the window.
----@field closed string[] List of buffers that have been closed.
 ---@field system? boolean Whether or not this window was created by Rabbit itself.
 
 -- Makes sure that system windows aren't listed
@@ -65,119 +71,128 @@ end
 -- Creates a listing
 ---@return Rabbit.Listing.Entry[]
 function LIST.generate()
-	local ls = {}
+	local entries = {} ---@type Rabbit.Listing.Entry[]
+	local files = {} ---@type string[]
+	local target_winnr = LIST.winnr or CTX.user.win
+	local winobj
 
-	if LIST.action == nil then
-		for _, v in ipairs(LIST.order) do
-			local w = LIST.win[v]
-			LIST.cache_win(v, w)
+	if LIST.winnr == nil then
+		for _, winid in ipairs(LIST.order) do
+			winobj = LIST.init(winid)
+			LIST.cache_win(winid, winobj)
 
-			if w.system == true then
+			if winobj.system == true then
 				goto continue
 			end
 
-			w.killed = not vim.api.nvim_win_is_valid(v)
+			winobj.killed = not vim.api.nvim_win_is_valid(winid)
 
-			table.insert(ls, {
+			SET.insert(entries, {
 				type = "action",
-				label = w.name,
-				color = w.killed and "rose" or "iris",
-				tail = "" .. v,
+				label = winobj.name,
+				color = winobj.killed and "rose" or "iris",
+				tail = winobj.killed and "~" or tostring(winid),
 				system = true,
 				actions = {
 					parent = false,
-					delete = w.killed,
+					delete = winobj.killed,
 				},
 				ctx = {
-					new_win = v,
+					winnr = winid,
 				},
 			})
 
 			::continue::
 		end
+
+		files = LIST.global
+		winobj = nil
 	else
-		local winnr = math.abs(LIST.action) or 1000
-		local win = LIST.init(winnr)
-		local files
-		table.insert(ls, {
+		winobj = LIST.init(LIST.winnr)
+		files = winobj.history
+		SET.insert(entries, {
 			type = "action",
 			label = "All Windows",
 			color = "iris",
 			system = true,
-			tail = win.name,
+			tail = winobj.name,
 			idx = false,
 			actions = {
 				delete = false,
 			},
 			ctx = {
-				new_win = nil,
+				winnr = nil,
 			},
 		})
-
-		if LIST.action < 0 then
-			files = win.closed
-			table.insert(ls, {
+		if winobj.killed then
+			target_winnr = CTX.user.win
+			SET.insert(entries, {
 				type = "action",
-				label = "Opened Buffers",
-				color = "tree",
+				label = "Copy History",
+				color = "gold",
 				system = true,
+				tail = LIST.win[CTX.user.win].name,
 				idx = false,
 				actions = {
 					delete = false,
 				},
 				ctx = {
-					new_win = -LIST.action,
+					winnr = CTX.user.win,
+					copy = true,
 				},
 			})
-		else
-			files = win.history
-			table.insert(ls, {
-				type = "action",
-				label = "Closed Buffers",
-				color = "love",
-				system = true,
-				idx = false,
-				actions = {
-					delete = false,
-				},
-				ctx = {
-					new_win = -LIST.action,
-				},
-			})
-		end
-
-		for i, filename in ipairs(files) do
-			if i == 1 and LIST.action == CTX.user.win then
-				goto continue
-			elseif type(filename) == "number" then
-				if not vim.api.nvim_buf_is_valid(filename) then
-					table.remove(files, i)
-					goto continue
-				end
-
-				filename = vim.api.nvim_buf_get_name(filename)
-			elseif vim.uv.fs_stat(filename) == nil then
-				table.remove(files, i)
-				goto continue
-			end
-
-			table.insert(ls, {
-				type = "file",
-				tail = type(files[i]) == "number" and tostring(files[i]) or "",
-				label = filename,
-				actions = {
-					delete = win.killed,
-				},
-				ctx = {
-					bufnr = files[i],
-					winnr = winnr,
-				},
-			})
-			::continue::
 		end
 	end
 
-	return ls
+	for i, bufnr in ipairs(files) do
+		if i == 1 and LIST.winnr == CTX.user.win then
+			goto continue
+		end
+
+		local filename = LIST.buffers[bufnr]
+
+		if filename == nil then
+			goto continue -- File has been reopened and we should skip this
+		end
+
+		local ctx = {
+			winnr = target_winnr,
+			file = filename,
+			bufnr = bufnr,
+			valid = vim.api.nvim_buf_is_valid(bufnr),
+		}
+
+		local label = filename ---@type Rabbit.Term.HlLine | string
+		if not ctx.valid then
+			if vim.uv.fs_stat(filename) == nil or filename == "" then
+				goto continue
+			else
+				local rel_path = MEM.rel_path_defaults(filename)
+				if rel_path.name == "" then
+					goto continue
+				end
+
+				label = { ---@type Rabbit.Term.HlLine[]
+					{ text = rel_path.dir, hl = { "rabbit.files.path" } },
+					{ text = rel_path.name, hl = { "rabbit.files.closed" } },
+				}
+			end
+		end
+
+		SET.insert(entries, {
+			type = "file",
+			tail = ctx.valid and tostring(bufnr) or "~",
+			label = label,
+			actions = {
+				delete = not ctx.valid or (winobj ~= nil and winobj.killed or false),
+			},
+			ctx = ctx,
+		})
+
+		::continue::
+	end
+
+	return entries
 end
 
 return LIST

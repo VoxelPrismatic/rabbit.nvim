@@ -34,6 +34,7 @@ local function relative_filepath(source, target)
 	for _ = 1, #source_paths - common_len do
 		table.insert(relative_components, "..")
 	end
+
 	-- Add the remaining components from target after the common prefix
 	for i = common_len + 1, #target_components do
 		table.insert(relative_components, target_components[i])
@@ -45,89 +46,70 @@ end
 ---@class Rabbit.Mem.RelPath.Kwargs
 ---@field source string Which file you're coming from.
 ---@field target string Which file you're going to.
----@field max_parts integer The maximum number of folders to display.
----@field cutoff integer The maximum number of characters to display in a folder name.
----@field trim string The character to use for directory name trimming. (use with cutoff)
+---@field distance_trim integer The maximum number of folders to display.
+---@field dirname_trim integer The maximum number of characters to display in a folder name.
+---@field dirname_char string The character to use for directory name trimming. (use with cutoff)
+---@field distance_char string The character to use for overflow. (use with max_parts)
 ---@field width integer The maximum width of the window.
----@field overflow string The character to use for overflow. (use with max_parts)
 
 -- Return the relative path between two paths.
 ---@param kwargs Rabbit.Mem.RelPath.Kwargs
 ---@return { dir: string, name: string }
 function MEM.rel_path(kwargs)
-	local separator = vim.fn.has("win") and "\\" or "/"
 	local source = vim.fn.fnamemodify(kwargs.source, ":p")
 	local target = vim.fn.fnamemodify(kwargs.target, ":p")
 
 	local relative = relative_filepath(source, target)
-	vim.print(relative)
 
-	if vim.uv.fs_stat(source) == nil then
-		source = vim.fn.getcwd() .. separator .. "somethingidk"
-	end
-
-	-- Split by folder
-	local source_parts = vim.split(source, separator)
-	local target_parts = vim.split(target, separator)
-
-	-- Get common path
-	local common = 0
-	for i = 1, math.min(#source_parts, #target_parts) do
-		if source_parts[i] ~= target_parts[i] then
-			break
+	if #relative > kwargs.distance_trim + 2 then
+		while #relative > kwargs.distance_trim + 1 or relative[1] == ".." do
+			table.remove(relative, 1)
 		end
-		common = common + 1
-	end
-
-	-- Construct relative path
-	local cutoff = kwargs.cutoff or 12
-	local filename = target_parts[#target_parts]
-	local distance = #source_parts - common - 1
-	local relative = ("../"):rep(distance)
-	local fall = (kwargs.overflow or ":::") .. "/"
-
-	if distance == 0 and #source_parts == #target_parts then
-		return { dir = "", name = filename }
-	elseif distance < (kwargs.max_parts or 3) then
-		relative = ("."):rep(distance + 1) .. "/"
-	elseif common + 1 == #source_parts - #target_parts then
-		relative = fall
-	end
-
-	for i = common + 1, #target_parts - 1 do
-		local p = target_parts[i]
-		if #p > cutoff then
-			p = p:sub(1, cutoff - 1) .. (kwargs.trim or "…")
+		table.insert(relative, 1, kwargs.distance_char or ":::")
+	elseif relative[1] == ".." then
+		while #relative >= 2 and relative[2] == ".." do
+			table.remove(relative, 2)
+			relative[1] = relative[1] .. "."
 		end
-		relative = relative .. p .. "/"
+	else
+		table.insert(relative, 1, ".")
 	end
 
-	-- Manage overflow
-	local max_w = kwargs.width - 8 - #fall
-	if (#relative + #filename) > max_w then
-		while relative:sub(1, #"../") == "../" do
-			relative = relative:sub(#"../" + 1)
-		end
-
-		while (#relative + #filename) > max_w do
-			local q = vim.split(relative, "/")
-			table.remove(q, 1)
-			relative = table.concat(q, "/")
-		end
-
-		relative = fall .. relative
-	end
-	local r, count = string.gsub(relative, "%.%./", "")
-	if count >= (kwargs.max_parts or 3) then
-		relative = fall .. r
-	elseif count > 1 then
-		relative = ("."):rep(count + 1) .. "/" .. r
-	end
-
-	return {
-		dir = relative ~= "/" and relative or "",
-		name = filename,
+	local ret = {
+		dir = "",
+		name = "",
 	}
+
+	for i, v in ipairs(relative) do
+		if i == #relative then
+			ret.name = v
+		else
+			if #v > kwargs.dirname_trim then
+				v = v:sub(1, kwargs.dirname_trim - 1) .. kwargs.dirname_char
+			end
+			ret.dir = ret.dir .. v .. "/"
+		end
+	end
+
+	return ret
+end
+
+-- Like rel_path, but fills in all the defaults. (rel_path is separate for easy copy/paste)
+---@param target string
+---@return { dir: string, name: string }
+function MEM.rel_path_defaults(target)
+	local CTX = require("rabbit.term.ctx")
+	local CONFIG = require("rabbit.config")
+	local UIL = require("rabbit.term.listing")
+	return MEM.rel_path({
+		source = vim.api.nvim_buf_get_name(CTX.user.buf),
+		target = tostring(target),
+		width = UIL._fg.conf.width,
+		distance_trim = CONFIG.window.overflow.distance_trim,
+		dirname_trim = CONFIG.window.overflow.dirname_trim,
+		distance_char = CONFIG.window.overflow.distance_char,
+		dirname_char = CONFIG.window.overflow.dirname_char,
+	})
 end
 
 return MEM

@@ -5,6 +5,7 @@ local UIL = {
 	---@diagnostic disable-next-line: missing-fields
 	_plugin = {},
 	_entries = {},
+	_keys = {},
 }
 
 local RECT = require("rabbit.term.rect")
@@ -191,7 +192,7 @@ end
 function UIL.list(entries)
 	UIL._entries = entries
 
-	vim.api.nvim_buf_clear_namespace(UIL._fg.buf, UIL._fg.ns, 0, -1)
+	_ = pcall(vim.api.nvim_buf_clear_namespace, UIL._fg.buf, UIL._fg.ns, 0, -1)
 
 	local j = 0
 	local k = 0
@@ -202,38 +203,90 @@ function UIL.list(entries)
 		local filepart = {}
 		local headpart = {}
 		local tailpart = {}
+		local highlights = {}
 
-		if entry.type == "file" and entry.label == "" then
-			filepart = { text = "#nil", hl = { "rabbit.types.noname" }, align = "left" }
+		if type(entry.highlight) == "string" then
+			highlights = { entry.highlight }
+		elseif type(entry.highlight) == "table" then
+			highlights = entry.highlight --[[@as table<string>]]
+		end
+
+		---@param hl string[]
+		---@return string[]
+		local function do_hl(hl)
+			if entry.hl_replace then
+				return #highlights > 0 and highlights or hl
+			else
+				for _, v in ipairs(highlights) do
+					table.insert(hl, v)
+				end
+				return hl
+			end
+		end
+
+		if type(entry.label) == "table" then
+			filepart = entry.label --[[@as Rabbit.Term.HlLine]]
+		elseif entry.type == "file" and tostring(entry.label):find("term://") == 1 then
+			dirpart = {
+				text = "$ ",
+				hl = do_hl({ "rabbit.files.term" }),
+				align = "left",
+			}
+			filepart = {
+				text = tostring(entry.label):gsub("^term://.*%d+:", ""),
+				hl = do_hl({ "rabbit.files.file" }),
+				align = "left",
+			}
+			entry.tail = tostring(entry.label):gsub(".*(%d+):", "%1")
+		elseif entry.type == "file" and tostring(entry.label):find("://") ~= nil then
+			dirpart = {
+				{
+					text = tostring(entry.label):gsub("://.*$", ""),
+					hl = do_hl({ "rabbit.files.term" }),
+					align = "left",
+				},
+				{
+					text = ":",
+					hl = { "rabbit.legend.separator" },
+					align = "left",
+				},
+			}
+			filepart = {
+				text = tostring(entry.label):gsub(".*://", ""),
+				hl = do_hl({ "rabbit.files.file" }),
+				align = "left",
+			}
+		elseif entry.type == "file" and entry.label == "" then
+			filepart = { text = "#nil", hl = do_hl({ "rabbit.files.void" }), align = "left" }
 		elseif entry.type == "file" then
-			local rel_path = MEM.rel_path({
-				source = vim.api.nvim_buf_get_name(CTX.user.buf),
-				target = entry.label,
-				width = UIL._fg.conf.width,
-				max_parts = CONFIG.window.overflow.distance_trim,
-				cutoff = CONFIG.window.overflow.dirname_trim,
-				overflow = CONFIG.window.overflow.distance_char,
-				trim = CONFIG.window.overflow.dirname_char,
-			})
-			filepart = { text = rel_path.name, hl = { "rabbit.types.file" }, align = "left" }
-			dirpart = { text = rel_path.dir, hl = { "rabbit.types.dir" }, align = "left" }
+			local rel_path = MEM.rel_path_defaults(tostring(entry.label))
+			filepart = { text = rel_path.name, hl = do_hl({ "rabbit.files.file" }), align = "left" }
+			dirpart = { text = rel_path.dir, hl = do_hl({ "rabbit.files.path" }), align = "left" }
 			-- return
 		else
 			filepart = {
 				text = entry.label,
-				hl = { "rabbit.types.collection", "rabbit.paint." .. entry.color },
+				hl = do_hl({ "rabbit.types.collection", #entry.color > 0 and "rabbit.paint." .. entry.color or "" }),
 				align = "left",
 			}
 		end
 
 		if type(entry.head) == "string" then
-			headpart = { text = entry.head .. " ", hl = "rabbit.types.head", align = "left" }
+			headpart = {
+				text = entry.head .. " ",
+				hl = { "rabbit.types.head" },
+				align = "left",
+			}
 		elseif type(entry.head) == "table" then
 			headpart = entry.head --[[@as Rabbit.Term.HlLine]]
 		end
 
 		if type(entry.tail) == "string" then
-			tailpart = { text = entry.tail .. " ", hl = "rabbit.types.tail", align = "right" }
+			tailpart = {
+				text = entry.tail .. " ",
+				hl = { "rabbit.types.tail" },
+				align = "right",
+			}
 		elseif type(entry.tail) == "table" then
 			tailpart = entry.tail --[[@as Rabbit.Term.HlLine]]
 		end
@@ -243,7 +296,7 @@ function UIL.list(entries)
 			k = k + 1
 			idx = ("0"):rep(#tostring(#entries) - #tostring(k)) .. k .. "."
 		else
-			idx = (" "):rep(#tostring(#entries) + 1)
+			idx = (" "):rep(#tostring(#entries) - 1) .. "——"
 		end
 
 		HL.nvim_buf_set_line(UIL._fg.buf, i - 1, false, UIL._fg.ns, UIL._fg.conf.width, {
@@ -280,6 +333,10 @@ function UIL.apply_actions(bg, fg)
 	local all_actions = {}
 
 	e.actions = e.actions or {}
+
+	for _, key in ipairs(UIL._keys) do
+		vim.keymap.del("n", key, { buffer = UIL._fg.buf })
+	end
 
 	for key, _ in pairs(e.actions) do
 		SET.add(all_actions, key)

@@ -42,4 +42,12 @@ function SET.add(arr, e)
 	table.insert(arr, 1, e)
 end
 
+---@generic T
+---@param table_ T[]
+---@param elem T
+---@param idx? integer
+function SET.insert(table_, elem, idx)
+	table.insert(table_, idx or #table_ + 1, elem)
+end
+
 return SET

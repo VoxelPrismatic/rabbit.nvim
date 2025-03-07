@@ -14,10 +14,16 @@
 ---@class (exact) Rabbit.Config.Colors.Types
 ---@field title Color.Nvim Title text color
 ---@field index Color.Nvim Entry index color, eg "1. "
----@field dir Color.Nvim Directory part color, eg "/home/priz/Desktop/"
+---@field tail Color.Nvim Default tail color, eg buffer number or terminal PID
+---@field head Color.Nvim Default head color, whatever prefixes the entry label
+---@field collection Color.Nvim Default collection color
+
+---@class (exact) Rabbit.Config.Colors.Files
+---@field path Color.Nvim Directory part color, eg "/home/user/Desktop/"
 ---@field file Color.Nvim File name color, eg "init.vim"
 ---@field term Color.Nvim Terminal shell color, eg "bash" or "zsh"
----@field noname Color.Nvim Buffer with no name
+---@field void Color.Nvim Buffer with no name
+---@field closed Color.Nvim Buffer that has been closed
 
 ---@class (exact) Rabbit.Config.Colors.Paint
 ---@field rose Color.Nvim Pink
@@ -35,5 +41,6 @@
 
 ---@class (exact) Rabbit.Config.Colors
 ---@field types Rabbit.Config.Colors.Types Highlight different parts of each entry.
+---@field files Rabbit.Config.Colors.Files Colors for different types of files
 ---@field paint Rabbit.Config.Colors.Paint Colors to use for your collections. Will pull from rose-pine or the background colors from highlight groups when possible
 ---@field popup Rabbit.Config.Colors.Popup Colors for popup boxes.
