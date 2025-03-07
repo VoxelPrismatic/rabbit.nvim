@@ -35,6 +35,9 @@ end
 ---@param arr T[]
 ---@param e T
 function SET.add(arr, e)
+	if e == nil then
+		return -- This shouldn't happen
+	end
 	SET.sub(arr, e)
 	table.insert(arr, 1, e)
 end

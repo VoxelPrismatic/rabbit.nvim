@@ -26,6 +26,7 @@ end
 -- Create a listing
 function PLUG.list()
 	LIST.action = CTX.user.win
+	LIST.cache_system()
 	UIL.list(LIST.generate())
 	_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { 3, 0 })
 end

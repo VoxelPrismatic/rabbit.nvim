@@ -124,15 +124,24 @@ vim.api.nvim_create_autocmd("WinResized", {
 })
 
 -- Creates a buffer for the given plugin
----@param plugin Rabbit.Plugin
+---@param plugin string | Rabbit.Plugin
 function UIL.spawn(plugin)
 	if #CTX.stack > 0 then
 		vim.api.nvim_set_current_win(CTX.user.win)
 		vim.api.nvim_set_current_buf(CTX.user.buf)
 		CTX.clear()
 	end
+
 	CTX.user = CTX.workspace()
-	UIL._plugin = require("rabbit").plugins[plugin]
+
+	if type(plugin) == "string" then
+		UIL._plugin = require("rabbit").plugins[plugin]
+	elseif type(plugin) == "table" then
+		UIL._plugin = plugin
+	else
+		error("Invalid plugin. Expected string or table, got " .. type(plugin))
+	end
+
 	if UIL._plugin == nil then
 		error("Invalid plugin: " .. plugin)
 	end
@@ -178,6 +187,7 @@ function UIL.spawn(plugin)
 end
 
 ---@param entries Rabbit.Listing.Entry[]
+---@return Rabbit.Listing.Entry[]
 function UIL.list(entries)
 	UIL._entries = entries
 
@@ -193,7 +203,9 @@ function UIL.list(entries)
 		local headpart = {}
 		local tailpart = {}
 
-		if entry.type == "file" then
+		if entry.type == "file" and entry.label == "" then
+			filepart = { text = "#nil", hl = { "rabbit.types.noname" }, align = "left" }
+		elseif entry.type == "file" then
 			local rel_path = MEM.rel_path({
 				source = vim.api.nvim_buf_get_name(CTX.user.buf),
 				target = entry.label,
@@ -205,7 +217,6 @@ function UIL.list(entries)
 			})
 			filepart = { text = rel_path.name, hl = { "rabbit.types.file" }, align = "left" }
 			dirpart = { text = rel_path.dir, hl = { "rabbit.types.dir" }, align = "left" }
-			vim.print(">>", rel_path, entry.label, "<<")
 			-- return
 		else
 			filepart = {
@@ -227,11 +238,10 @@ function UIL.list(entries)
 			tailpart = entry.tail --[[@as Rabbit.Term.HlLine]]
 		end
 
-		vim.print(headpart, dirpart, filepart, tailpart)
 		local idx
 		if entry.idx ~= false then
 			k = k + 1
-			idx = ("0"):rep(#tostring(#entries) - #tostring(k)) .. i .. "."
+			idx = ("0"):rep(#tostring(#entries) - #tostring(k)) .. k .. "."
 		else
 			idx = (" "):rep(#tostring(#entries) + 1)
 		end
@@ -253,6 +263,8 @@ function UIL.list(entries)
 
 	UIL.draw_border(UIL._bg)
 	UIL.apply_actions(UIL._bg, UIL._fg)
+
+	return entries
 end
 
 function UIL.apply_actions(bg, fg)

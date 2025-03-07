@@ -5,8 +5,21 @@ local LIST = require("rabbit.plugins.history.listing")
 
 function ACT.select(_, entry, _)
 	if entry.type == "action" then
+		local old_action = LIST.action
 		LIST.action = entry.ctx.new_win
-		UIL.list(LIST.generate())
+		local entries = UIL.list(LIST.generate())
+
+		if LIST.action == nil then
+			for i, v in pairs(entries) do
+				if v.ctx.new_win == old_action then
+					vim.api.nvim_win_set_cursor(UIL._fg.win, { i, 0 })
+					return
+				end
+			end
+		elseif old_action == nil then
+			_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { 3, 0 })
+		end
+
 		return
 	end
 

@@ -9,7 +9,9 @@ function EVT.BufEnter(evt, ctx)
 		return
 	end
 
-	SET.add(LIST.init(ctx.winid).history, evt.buf)
+	local winobj = LIST.init(ctx.winid)
+	SET.add(winobj.history, evt.buf)
+	SET.sub(winobj.closed, evt.file)
 	SET.add(LIST.order, ctx.winid)
 	LIST.action = ctx.winid
 end
@@ -24,19 +26,8 @@ function EVT.BufDelete(evt, ctx)
 	end
 end
 
-function EVT.WinClosed(_, ctx)
-	LIST.init(ctx.winid).killed = true
-end
-
 function EVT.WinEnter(evt, ctx)
-	vim.print(evt)
-	if OPTS.ignore_unlisted and vim.bo[evt.buf].buflisted == false then
-		return
-	end
-
-	SET.add(LIST.init(ctx.winid).history, evt.buf)
-	SET.add(LIST.order, ctx.winid)
-	LIST.action = ctx.winid
+	EVT.BufEnter(evt --[[@as NvimEvent.BufEnter]], ctx)
 end
 
 return EVT
