@@ -3,7 +3,6 @@ local ACT = {}
 local SET = require("rabbit.util.set")
 local UIL = require("rabbit.term.listing")
 local LIST = require("rabbit.plugins.history.listing")
-local PLUG_CONFIG = require("rabbit.plugins.history.config")
 
 function ACT.select(_, entry, _)
 	if entry.type == "file" then
@@ -44,7 +43,7 @@ function ACT.select(_, entry, _)
 			end
 		end
 	else
-		_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { 2, 0 })
+		_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { LIST.win[LIST.winnr].killed and 2 or 3, 0 })
 	end
 end
 
@@ -57,6 +56,18 @@ function ACT.delete(_, entry, _)
 	end
 
 	UIL.list(LIST.generate())
+end
+
+function ACT.parent(_, _, _)
+	LIST.winnr = nil
+	UIL.list(LIST.generate())
+end
+
+function ACT.rename(idx, entry, entries)
+	require("rabbit.term.rename").rename(entry, function(new_name, e)
+		LIST.win[e.ctx.winnr].name = new_name
+		UIL.list(LIST.generate())
+	end)
 end
 
 return ACT

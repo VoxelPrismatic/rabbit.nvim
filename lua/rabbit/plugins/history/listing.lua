@@ -119,6 +119,7 @@ function LIST.generate()
 			idx = false,
 			actions = {
 				delete = false,
+				rename = false,
 			},
 			ctx = {
 				winnr = nil,
@@ -135,6 +136,7 @@ function LIST.generate()
 				idx = false,
 				actions = {
 					delete = false,
+					rename = false,
 				},
 				ctx = {
 					winnr = CTX.user.win,
@@ -144,11 +146,26 @@ function LIST.generate()
 		end
 	end
 
-	for i, bufnr in ipairs(files) do
-		if i == 1 and LIST.winnr == CTX.user.win then
-			goto continue
+	local skip_first = LIST.winnr == CTX.user.win
+	if skip_first and #files == 1 then
+		if #files == 1 then
+			SET.insert(entries, {
+				type = "action",
+				label = "There's nowhere to jump to!",
+				color = "rose",
+				system = "true",
+				idx = false,
+				actions = {
+					delete = false,
+					select = false,
+					rename = false,
+				},
+			})
 		end
+		return entries
+	end
 
+	for i, bufnr in ipairs(files) do
 		local filename = LIST.buffers[bufnr]
 
 		if filename == nil then
@@ -183,9 +200,13 @@ function LIST.generate()
 			type = "file",
 			tail = ctx.valid and tostring(bufnr) or "~",
 			label = label,
+			idx = not (skip_first and i == 1),
 			actions = {
 				delete = not ctx.valid or (winobj ~= nil and winobj.killed or false),
+				parent = LIST.winnr ~= nil,
+				rename = false,
 			},
+			highlight = (skip_first and i == 1) and { "rabbit.types.index" } or nil,
 			ctx = ctx,
 		})
 

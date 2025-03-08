@@ -23,6 +23,7 @@
 ---| "insert" # Insert the current file or previously deleted file.
 ---| "help" # Open the keymap legend.
 ---| "debug" # Open the debug dialog.
+---| "rename" # Rename an entry.
 
 ---@class Rabbit.Actions.Entry
 ---@field keys? string | string[] Activate callback when one of these keys are pressed

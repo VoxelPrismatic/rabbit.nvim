@@ -8,9 +8,6 @@ local PLUGIN_CONFIG = {
 	---@type Color.Nvim
 	color = "#d875a7",
 
-	-- Message shown when listing is empty.
-	---@type string
-	empty_msg = "There's nowhere to jump to! Get started by opening another buffer",
 	keys = {
 		switch = "o",
 	},

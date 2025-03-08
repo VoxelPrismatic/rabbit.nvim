@@ -6,6 +6,8 @@ local UIL = {
 	_plugin = {},
 	_entries = {},
 	_keys = {},
+	_winid = 0,
+	_bufid = 0,
 }
 
 local RECT = require("rabbit.term.rect")
@@ -16,7 +18,6 @@ local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
 local ACT = require("rabbit.actions")
-local bufid, winid
 
 local case_func = {
 	upper = string.upper,
@@ -99,7 +100,7 @@ end
 
 vim.api.nvim_create_autocmd("BufEnter", {
 	callback = function()
-		if bufid == vim.api.nvim_get_current_buf() then
+		if UIL._bufid == vim.api.nvim_get_current_buf() then
 			return
 		end
 
@@ -149,9 +150,9 @@ function UIL.spawn(plugin)
 
 	-- Create background window
 	local r = UIL.rect(CTX.user.win, 55)
-	bufid = vim.api.nvim_create_buf(false, true)
-	winid = vim.api.nvim_open_win(bufid, true, r)
-	local bg = CTX.append(bufid, winid)
+	UIL._bufid = vim.api.nvim_create_buf(false, true)
+	UIL._winid = vim.api.nvim_open_win(UIL._bufid, true, r)
+	local bg = CTX.append(UIL._bufid, UIL._winid)
 	bg.ns = vim.api.nvim_create_namespace("rabbit.bg")
 	UIL._bg = bg
 
@@ -163,9 +164,9 @@ function UIL.spawn(plugin)
 	r.width = r.width - 2
 	r.height = r.height - 4
 	r.zindex = r.zindex + 1
-	bufid = vim.api.nvim_create_buf(false, true)
-	winid = vim.api.nvim_open_win(bufid, true, r)
-	local listing = CTX.append(bufid, winid, bg)
+	UIL._bufid = vim.api.nvim_create_buf(false, true)
+	UIL._winid = vim.api.nvim_open_win(UIL._bufid, true, r)
+	local listing = CTX.append(UIL._bufid, UIL._winid, bg)
 	listing.ns = vim.api.nvim_create_namespace("rabbit.listing")
 	UIL._fg = listing
 	bg.parent = listing -- Treat these as the same layer
@@ -182,7 +183,7 @@ function UIL.spawn(plugin)
 		callback = redraw,
 	})
 
-	bufid = -1
+	UIL._bufid = -1
 
 	UIL._plugin.list()
 end
@@ -190,6 +191,7 @@ end
 ---@param entries Rabbit.Listing.Entry[]
 ---@return Rabbit.Listing.Entry[]
 function UIL.list(entries)
+	vim.bo[UIL._fg.buf].modifiable = true
 	UIL._entries = entries
 
 	_ = pcall(vim.api.nvim_buf_clear_namespace, UIL._fg.buf, UIL._fg.ns, 0, -1)
@@ -317,6 +319,7 @@ function UIL.list(entries)
 	UIL.draw_border(UIL._bg)
 	UIL.apply_actions(UIL._bg, UIL._fg)
 
+	vim.bo[UIL._fg.buf].modifiable = false
 	return entries
 end
 
@@ -335,7 +338,7 @@ function UIL.apply_actions(bg, fg)
 	e.actions = e.actions or {}
 
 	for _, key in ipairs(UIL._keys) do
-		vim.keymap.del("n", key, { buffer = UIL._fg.buf })
+		_ = pcall(vim.keymap.del, "n", key, { buffer = UIL._fg.buf })
 	end
 
 	for key, _ in pairs(e.actions) do
@@ -393,6 +396,7 @@ function UIL.apply_actions(bg, fg)
 			ipairs(action.keys --[[@as table<string>]])
 		do
 			if type(k) == "string" then
+				SET.add(UIL._keys, k)
 				vim.keymap.set("n", k, function()
 					action.callback(i, e, UIL._entries)
 				end, { buffer = fg.buf })

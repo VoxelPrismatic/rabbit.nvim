@@ -93,6 +93,7 @@ C.keys = {
 	parent = { "-", "<BS>" },
 	insert = { "a", "i" },
 	help = { "?", "h" },
+	rename = { "i" },
 	["debug"] = { "D" },
 	open = { "<leader>r" },
 }

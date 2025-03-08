@@ -1,7 +1,6 @@
 local LIST = require("rabbit.plugins.history.listing")
 local UIL = require("rabbit.term.listing")
 local CTX = require("rabbit.term.ctx")
-local SET = require("rabbit.util.set")
 
 ---@class Rabbit._.History: Rabbit.Plugin
 local PLUG = {
@@ -27,13 +26,14 @@ end
 -- Create a listing
 function PLUG.list()
 	LIST.winnr = CTX.user.win
-	if #LIST.win[LIST.winnr] < 2 then
+	if #LIST.init(LIST.winnr).history < 2 then
 		LIST.winnr = nil
 	end
 
 	LIST.cache_system()
 	UIL.list(LIST.generate())
-	_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { 2, 0 })
+	local idx = (LIST.winnr == nil or LIST.win[LIST.winnr].killed) and 2 or 3
+	_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { idx, 0 })
 end
 
 return PLUG

@@ -47,6 +47,7 @@
 ---@field help? _Str Open the keymap legend.
 ---@field debug? _Str Open the debug dialog.
 ---@field switch _Str Open this plugin after Rabbit is open.
+---@field rename _Str Rename an entry.
 ---@field [string] _Str Keybindings
 
 ---@class Rabbit.Plugin.Options
@@ -54,5 +55,4 @@
 ---@field color Color.Nvim Default border color.
 ---@field border? Rabbit.Term.Border Default border style. (leave blank to use global border)
 ---@field keys Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
----@field empty_msg string Message shown when listing is empty.
 ---@field cwd? string | fun() Current working directory function. (leave blank to use global cwd)

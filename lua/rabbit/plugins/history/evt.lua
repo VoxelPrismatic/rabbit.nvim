@@ -40,7 +40,9 @@ function EVT.BufWipeout(evt, ctx)
 	for i, e in ipairs(UIL.list(LIST.generate())) do
 		if e.ctx.bufnr ~= nil then
 			if e.ctx.file == evt.file then
+				vim.bo[UIL._fg.buf].modifiable = true
 				vim.api.nvim_buf_set_lines(UIL._fg.buf, i - 1, i, false, { "" })
+				vim.bo[UIL._fg.buf].modifiable = false
 				break
 			end
 		end
