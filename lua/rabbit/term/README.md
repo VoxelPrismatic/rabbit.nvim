@@ -11,7 +11,7 @@ Various APIs for creating UIs for user input
                 <li>
                     <details>
                         <summary>
-                            <code>CTX.<b>append</b>(<i>bufnr</i>, <i>winnr</i>, <i>parent</i>)</code>
+                            <code>CTX.<b>append</b>(<i>bufnr</i>, <i>winnr</i>, <i>parent?</i>)</code>
                             → <a href="../docs/ui.lua#L13">Rabbit.UI.Workspace</a>
                             <br>
                             Appends a buffer and window to the context. Also binds the <code>WinClosed</code> and <code>BufDelete</code> events.
@@ -22,7 +22,7 @@ Various APIs for creating UIs for user input
                                 <table>
                                     <tr>
                                         <th>param</th>
-                                        <th>type</th>
+                  <th>type</th>
                                         <th>details</th>
                                     </tr>
                                     <tr>
@@ -36,7 +36,7 @@ Various APIs for creating UIs for user input
                                         <td>Window ID</td>
                                     </tr>
                                     <tr>
-                                        <td>parent</td>
+                                        <td>parent <sub>?</sub></td>
                                         <td><a href="../docs/ui.lua#L13">Rabbit.UI.Workspace</a></td>
                                         <td>Parent workspace; When the parent is deleted, this workspace will be deleted too</td>
                                     </tr>
@@ -225,13 +225,23 @@ Various APIs for creating UIs for user input
                                         <th>details</th>
                                     </tr>
                                     <tr>
-                                        <td>plugin</td>
+                                        <td rowspan="2">plugin</td>
                                         <td>string</td>
                                         <td>Plugin name to open a listing for</td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="../docs/plugins.lua#L1">Rabbit.Plugin</a></td>
+                                        <td>Plugin object to open a listing for</td>
                                     </tr>
                                 </table>
                             </li>
                             <li><i>Doesn't return anything</i></li>
+                            <li>
+                                <b>Notes</b>
+                                <ul>
+                                    <li>Immediately calls the `plugin.<b>list</b>` function</li>
+                                </ul>
+                            </li>
                         </ul>
                         <br><br>
                     </details>
@@ -263,6 +273,114 @@ Various APIs for creating UIs for user input
                         <br><br>
                     </details>
                 </li>
+                <li>
+                    <details>
+                        <summary>
+                            <code>UIL.<b>list</b>(<i>entries</i>)</code>
+                            → <a href="../docs/term.lua#L1">Rabbit.Listing.Entry</a>[]
+                            <br>
+                            Lists entries
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
+                                <table>
+                                    <tr>
+                                        <th>param</th>
+                                        <th>type</th>
+                                        <th>details</th>
+                                    </tr>
+                                    <tr>
+                                        <td>entries</td>
+                                        <td><a href="../docs/term.lua#L1">Rabbit.Listing.Entry</a>[]</td>
+                                        <td>Entries to list</td>
+                                    </tr>
+                                </table>
+                            </li>
+                            <li>
+                                <b>Returns</b>
+                                <table>
+                                    <td><a href="../docs/term.lua#L1">Rabbit.Listing.Entry</a></td>
+                                    <td>
+                                        Entries listed. It returns this so you can save the entries and
+                                        list them in a single line, eg `local entries = UIL.list(plugin.list())`
+                                    </td>
+                                </table>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <code>UIL.<b>close</b>()</code>
+                            <br>
+                            Closes the listing and returns the user to the previously opened window and buffer
+                        </summary>
+                        <ul>
+                            <li><i>Takes no parameters</i></li>
+                            <li><i>Doesn't return anything</i></li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <code>UIL.<b>workspace</b>()</code>
+                            → <a href="../docs/ui.lua#L13">Rabbit.UI.Workspace</a>[2]
+                            <br>
+                            Returns the existing foreground and background workspaces, should you want
+                            to manipulate them directly
+                        </summary>
+                        <ul>
+                            <li><i>Takes no parameters</i></li>
+                            <li>
+                                <b>Returns</b>
+                                <table>
+                                    <tr>
+                                        <th>idx</th>
+                                        <th>type</th>
+                                        <th>description</th>
+                                    </tr>
+                                    <tr>
+                                        <td>1</td>
+                                        <td><a href="../docs/ui.lua#L13">Rabbit.UI.Workspace</a></td>
+                                        <td>Background workspace, consisting of the border and legend</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td><a href="../docs/ui.lua#L13">Rabbit.UI.Workspace</a></td>
+                                        <td>Foreground workspace, consisting of the listing</td>
+                                    </tr>
+                                </table>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <code>UIL.<b>apply_actions</b>()</code><br>
+                            Applies the curreny entry's actions to the foreground buffer, and writes
+                            the legend at the bottom of the background buffer
+                        </summary>
+                        <ul>
+                            <li><i>Takes no parameters</i></li>
+                            <li><i>Doesn't return anything</i></li>
+                            <li>
+                                <b>Notes</b>
+                                <ul>
+                                    <li>This also unsets any previously set actions</li>
+                                    <li>Currently, only keymaps in normal mode are supported</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
             </ul>
         </details>
     </li>
@@ -289,7 +407,7 @@ Various APIs for creating UIs for user input
                                         <th>type</th>
                                         <th>details</th>
                                     </tr>
-                                    <tr>
+                                 <tr>
                                         <td>rect</td>
                                         <td><a href="../docs/ui.lua#L1">Rabbit.UI.Rect</a></td>
                                         <td>Initial bounding rect, with X, Y, width and height</td>
@@ -579,5 +697,177 @@ Various APIs for creating UIs for user input
             </ul>
         </details>
     </li>
+    <li>
+        <details>
+            <summary><h2>Highlight API</h2></summary>
+            Manages highlight groups and the like
+            <pre lang="lua">local HL = require("rabbit.term.highlight")</pre>
+            <ul>
+                <li>
+                    <details>
+                        <summary>
+                            <code>HL.<b>gen_group</b>(<i>color</i>, <i>key?</i>)</code>
+                            → <a href="https://github.com/neovim/neovim/blob/master/runtime/lua/vim/_meta/api_keysets.lua#L145">vim.api.keyset.highlight</a>
+                            <br>
+                            Creates a highlight group
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
+                                <table>
+                                    <tr>
+                                        <th>param</th>
+                                        <th>type</th>
+                                        <th>details</th>
+                                    </tr>
+                                    <tr>
+                                        <td rowspan="2">color</td>
+                                        <td>string</td>
+                                        <td>Hex color or built-in color</td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="https://github.com/neovim/neovim/blob/master/runtime/lua/vim/_meta/api_keysets.lua#L145">vim.api.keyset.highlight</td>
+                                        <td>
+                                            Highlight group. Any values starting with `:` will have the corresponding value pulled from that
+                                            highlight group. eg `{ fg = ":Normal" }` will use the foreground color of the `Normal` highlight group.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>key <sub>?</sub></td>
+                                        <td>string</td>
+                                        <td>Eg `fg` or `bg`. Highlight key should <i>color</i> be a string</td>
+                                    </tr>
+                                </table>
+                            </li>
+                            <li>
+                                <b>Returns</b>
+                                <table>
+                                    <tr>
+                                        <td><a href="https://github.com/neovim/neovim/blob/master/runtime/lua/vim/_meta/api_keysets.lua#L145">vim.api.keyset.highlight</a></td>
+                                        <td>Highlight group</td>
+                                    </tr>
+                                </table>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <code>HL.<b>apply</b>()</code><br>
+                            Applies all highlight groups according to the user's configuration
+                        </summary>
+                        <ul>
+                            <li><i>Takes no parameters</i></li>
+                            <li><i>Doesn't return anything</i></li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>
+                            <code>HL.<b>nvim_buf_set_line</b>(<i>buf</i>, <i>line</i>, <i>strict</i>, <i>ns</i>, <i>width</i>, <i>lines</i>)</code><br>
+                            Prints a line and applies the corresponding highlight groups. Also handles text alignment.
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
+                                <table>
+                                    <tr>
+                                        <th>param</th>
+                                        <th>type</th>
+                                        <th>details</th>
+                                    </tr>
+                                    <tr>
+                                        <td>buf</td>
+                                        <td>integer</td>
+                                        <td>Buffer number</td>
+                                    </tr>
+                                    <tr>
+                                        <td>line</td>
+                                        <td>integer</td>
+                                        <td>Line number</td>
+                                    </tr>
+                                    <tr>
+                                        <td>strict</td>
+                                        <td>boolean</td>
+                                        <td>Whether to use strict indexing</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ns</td>
+                                        <td>integer</td>
+                                        <td>Highlight namespace</td>
+                                    </tr>
+                                    <tr>
+                                        <td>width</td>
+                                        <td>integer</td>
+                                        <td>Width of the line. Useful for right or center alignment</td>
+                                    </tr>
+                                    <tr>
+                                        <td>lines</td>
+                                        <td><a href="./highlight.lua#L121">Rabbit.Term.HlLine</a></td>
+                                        <td>Line to print</td>
+                                    </tr>
+                                </table>
+                            </li>
+                            <li><i>Doesn't return anything</i></li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
+            </ul>
+        </details>
+    </li>
+    <li>
+        <details>
+            <summary><h2>Rename API</h2></summary>
+            Helps with renaming entries seamlessly
+            <pre lang="lua">local REN = require("rabbit.term.rename")</pre>
+            <ul>
+                <li>
+                    <details>
+                        <summary>
+                            <code>REN.<b>rename</b>(<i>entry</i>, <i>callback</i>)</code><br>
+                            Provides an input window to rename the entry
+                        </summary>
+                        <ul>
+                            <li>
+                                <b>Parameters</b>
+                                <table>
+                                    <tr>
+                                        <th>param</th>
+                                        <th>type</th>
+                                        <th>details</th>
+                                    </tr>
+                                    <tr>
+                                        <td>entry</td>
+                                        <td><a href="../docs/term.lua#L1">Rabbit.Term.Entry</a></td>
+                                        <td>Entry to rename</td>
+                                    </tr>
+                                    <tr>
+                                        <td>callback</td>
+                                        <td>function</td>
+                                        <td>Function to call when the user finishes renaming the entry</td>
+                                    </tr>
+                                </table>
+                            </li>
+                            <li><i>Doesn't return anything</i></li>
+                            <li>
+                                <b>Notes</b>
+                                <ul>
+                                    <li>The callback is automatically called whenever the user leaves Insert mode</li>
+                                    <li>The callback is automatically called whenever the user creates a new line (eg presses `&lt;CR>`)</li>
+                                    <li>The input window is automatically created and destroyed</li>
+                                    <li>The callback is expected to perform all data validation</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <br><br>
+                    </details>
+                </li>
+            </ul>
+        </details>
 
 </ul>

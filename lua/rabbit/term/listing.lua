@@ -174,7 +174,7 @@ function UIL.spawn(plugin)
 
 	local function redraw()
 		UIL.draw_border(bg)
-		UIL.apply_actions(bg, listing)
+		UIL.apply_actions()
 		-- vim.api.nvim_win_set_cursor(listing.win, { vim.fn.line("."), 0 })
 	end
 
@@ -188,6 +188,7 @@ function UIL.spawn(plugin)
 	UIL._plugin.list()
 end
 
+-- Actually lists the entries. Also calls `apply_actions` at the end
 ---@param entries Rabbit.Listing.Entry[]
 ---@return Rabbit.Listing.Entry[]
 function UIL.list(entries)
@@ -261,7 +262,7 @@ function UIL.list(entries)
 		elseif entry.type == "file" and entry.label == "" then
 			filepart = { text = "#nil", hl = do_hl({ "rabbit.files.void" }), align = "left" }
 		elseif entry.type == "file" then
-			local rel_path = MEM.rel_path_defaults(tostring(entry.label))
+			local rel_path = MEM.rel_path(tostring(entry.label))
 			filepart = { text = rel_path.name, hl = do_hl({ "rabbit.files.file" }), align = "left" }
 			dirpart = { text = rel_path.dir, hl = do_hl({ "rabbit.files.path" }), align = "left" }
 			-- return
@@ -317,13 +318,16 @@ function UIL.list(entries)
 	vim.api.nvim_buf_set_lines(UIL._fg.buf, j, -1, false, {})
 
 	UIL.draw_border(UIL._bg)
-	UIL.apply_actions(UIL._bg, UIL._fg)
+	UIL.apply_actions()
 
 	vim.bo[UIL._fg.buf].modifiable = false
 	return entries
 end
 
-function UIL.apply_actions(bg, fg)
+-- Applies keymaps and draws the legend at the bottom of the listing
+function UIL.apply_actions()
+	local bg = UIL._bg
+	local fg = UIL._fg
 	local i = vim.fn.line(".")
 	local e = UIL._entries[i] ---@type Rabbit.Listing.Entry
 
@@ -431,6 +435,7 @@ function UIL.apply_actions(bg, fg)
 	HL.nvim_buf_set_line(bg.buf, bg.conf.height - 1, false, bg.ns, bg.conf.width, legend_parts)
 end
 
+-- Draws the border around the listing
 ---@param ws Rabbit.UI.Workspace
 function UIL.draw_border(ws)
 	local titles = CONFIG.window.titles
@@ -617,9 +622,17 @@ function UIL.rect(win, z)
 	return RECT.win(RECT.calc(ret, win))
 end
 
+-- Closes the window
 function UIL.close()
 	vim.api.nvim_win_close(UIL._bg.win, true)
 	vim.api.nvim_set_current_win(CTX.user.win)
 	vim.api.nvim_set_current_buf(CTX.user.buf)
 end
+
+-- Returns the current workspace
+---@return Rabbit.UI.Workspace, Rabbit.UI.Workspace
+function UIL.workspace()
+	return UIL._bg, UIL._fg
+end
+
 return UIL

@@ -184,7 +184,7 @@ function LIST.generate()
 			if vim.uv.fs_stat(filename) == nil or filename == "" then
 				goto continue
 			else
-				local rel_path = MEM.rel_path_defaults(filename)
+				local rel_path = MEM.rel_path(filename)
 				if rel_path.name == "" then
 					goto continue
 				end

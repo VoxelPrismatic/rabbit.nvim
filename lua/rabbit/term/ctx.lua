@@ -17,17 +17,18 @@ local CTX = {
 function CTX.append(bufnr, winnr, parent)
 	local ws = CTX.workspace(bufnr, winnr)
 	table.insert(CTX.stack, ws)
-	vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete" }, {
-		buffer = ws.buf,
-		callback = function()
-			CTX.close(ws)
-			if ws.parent ~= nil then
-				CTX.close(ws.parent)
-			end
-		end,
-	})
-
-	ws.parent = parent
+	if parent ~= nil then
+		ws.parent = parent
+		vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete" }, {
+			buffer = ws.parent.buf,
+			callback = function()
+				CTX.close(ws)
+				if ws.parent ~= nil then
+					CTX.close(ws)
+				end
+			end,
+		})
+	end
 
 	return ws
 end

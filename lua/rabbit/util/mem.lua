@@ -55,7 +55,7 @@ end
 -- Return the relative path between two paths.
 ---@param kwargs Rabbit.Mem.RelPath.Kwargs
 ---@return { dir: string, name: string }
-function MEM.rel_path(kwargs)
+local function rel_path(kwargs)
 	local source = vim.fn.fnamemodify(kwargs.source, ":p")
 	local target = vim.fn.fnamemodify(kwargs.target, ":p")
 
@@ -97,11 +97,11 @@ end
 -- Like rel_path, but fills in all the defaults. (rel_path is separate for easy copy/paste)
 ---@param target string
 ---@return { dir: string, name: string }
-function MEM.rel_path_defaults(target)
+function MEM.rel_path(target)
 	local CTX = require("rabbit.term.ctx")
 	local CONFIG = require("rabbit.config")
 	local UIL = require("rabbit.term.listing")
-	return MEM.rel_path({
+	return rel_path({
 		source = vim.api.nvim_buf_get_name(CTX.user.buf),
 		target = tostring(target),
 		width = UIL._fg.conf.width,
