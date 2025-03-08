@@ -43,6 +43,17 @@ function ACT.select(_, entry, _)
 			end
 		end
 	else
+		if vim.api.nvim_win_is_valid(LIST.winnr) then
+			UIL.close()
+			local winnr = LIST.winnr or 0
+			vim.api.nvim_set_current_win(winnr)
+			UIL.spawn(UIL._plugin)
+			UIL.spawn(UIL._plugin)
+			LIST.winnr = winnr
+			UIL.list(LIST.generate())
+
+			return
+		end
 		_ = pcall(vim.api.nvim_win_set_cursor, UIL._fg.win, { LIST.win[LIST.winnr].killed and 2 or 3, 0 })
 	end
 end
@@ -63,8 +74,12 @@ function ACT.parent(_, _, _)
 	UIL.list(LIST.generate())
 end
 
-function ACT.rename(idx, entry, entries)
+function ACT.rename(_, entry, _)
 	require("rabbit.term.rename").rename(entry, function(new_name, e)
+		new_name = new_name:gsub("^%s*(.-)%s*$", "%1")
+		if #new_name == 0 then
+			new_name = tostring(e.ctx.winnr)
+		end
 		LIST.win[e.ctx.winnr].name = new_name
 		UIL.list(LIST.generate())
 	end)

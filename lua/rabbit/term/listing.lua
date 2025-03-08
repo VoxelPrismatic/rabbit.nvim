@@ -159,10 +159,10 @@ function UIL.spawn(plugin)
 	-- Create foreground window
 	r.split = nil
 	r.relative = "win"
-	r.row = 2
+	r.row = 1
 	r.col = 1
 	r.width = r.width - 2
-	r.height = r.height - 4
+	r.height = r.height - 3
 	r.zindex = r.zindex + 1
 	UIL._bufid = vim.api.nvim_create_buf(false, true)
 	UIL._winid = vim.api.nvim_open_win(UIL._bufid, true, r)
@@ -413,7 +413,7 @@ function UIL.apply_actions(bg, fg)
 
 	for _, action in ipairs(legend) do
 		table.insert(legend_parts, {
-			text = action.title,
+			text = " " .. action.title,
 			hl = "rabbit.legend.action",
 		})
 
@@ -423,7 +423,7 @@ function UIL.apply_actions(bg, fg)
 		})
 
 		table.insert(legend_parts, {
-			text = action.keys[1] .. " ",
+			text = action.keys[1],
 			hl = "rabbit.legend.key",
 		})
 	end
