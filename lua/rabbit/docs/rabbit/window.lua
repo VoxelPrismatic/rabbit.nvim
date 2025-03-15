@@ -70,7 +70,8 @@
 ---@class (exact) Rabbit.Config.Window
 ---@field box Rabbit.Term.Border Border box style.
 ---@field spawn Rabbit.Config.Window.Mode Window position.
----@field titles Rabbit.Config.Window.Titles TItle positioning & whatnot.
+---@field titles Rabbit.Config.Window.Titles | Rabbit.Term.Border.Side[] Title positioning & whatnot.
 ---@field overflow Rabbit.Config.Window.Overflow How to handle overflow.
 ---@field legend boolean Show a quick legend at the bottom. Consumes one line.
 ---@field nrs boolean Whether or not to show bufids, winids, term pids, etc
+---@field preview boolean Whether or not to display a preview of the buffer about to be opened

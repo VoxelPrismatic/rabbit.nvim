@@ -15,13 +15,38 @@ function HL.gen_group(color, key)
 
 	for k, v in pairs(color) do
 		if type(v) == "string" and v:sub(1, 1) == ":" then
-			color[k] = vim.fn.synIDattr(vim.fn.hlID(v:sub(2)), k)
+			if v:find("#") ~= nil then
+				local real_k = v:gsub("^:.*#(%w+)$", "%1")
+				local real_hl = v:gsub("^:(.*)#%w+$", "%1")
+				color[k] = vim.fn.synIDattr(vim.fn.hlID(real_hl), real_k)
+			else
+				color[k] = vim.fn.synIDattr(vim.fn.hlID(v:sub(2)), k)
+			end
 		end
 	end
 
 	return color
 end
 
+-- Applies a table of highlight groups to the namespace
+---@param ns integer Namespace
+---@param hls { [string]: string | NvimHlKwargs }
+function HL.set_group(ns, hls)
+	if type(hls) ~= "table" then
+		error("Expected table, got " .. type(hls))
+	end
+
+	for k, v in pairs(hls) do
+		if type(v) == "string" then
+			v = { fg = v }
+		elseif type(v) ~= "table" then
+			error("Expected NvimHlKwargs, got " .. type(v))
+		end
+		vim.api.nvim_set_hl(ns, k, HL.gen_group(v))
+	end
+end
+
+-- Applies config colors
 function HL.apply()
 	local colors = require("rabbit.config").colors
 	for pre, hl in pairs(colors) do

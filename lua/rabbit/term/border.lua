@@ -1,19 +1,19 @@
 local BOX = {}
 
 local border_flags = {
-	[0b000000] = "┌┐└┘─│", -- Thin, Solid, Square
-	[0b000001] = "┏┓┗┛━┃", -- Bold, Solid, Square
-	[0b000010] = "╔╗╚╝═╦", -- Double, Solid, Square
-	[0b000100] = "┌┐└┘┄┆", -- Thin, Dash, Square
-	[0b000101] = "┏┓┗┛┅┇", -- Bold, Dash, Square
-	[0b001000] = "┌┐└┘┈┊", -- Thin, Dot, Square
-	[0b001001] = "┏┓┗┛┉┋", -- Bold, Dot, Square
-	[0b010000] = "┌┐└┘╌╎", -- Thin, Double, Square
-	[0b010001] = "┏┓┗┛╍╏", -- Bold, Double, Square
-	[0b100000] = "╭╮╰╯─│", -- Thin, Solid, Round
-	[0b100100] = "╭╮╰╯┄┆", -- Thin, Dash, Round
-	[0b101000] = "╭╮╰╯┈┊", -- Thin, Dot, Round
-	[0b110000] = "╭╮╰╯╌╎", -- Thin, Double, Round
+	[tonumber("000000", 2)] = "┌┐└┘─│", -- Thin, Solid, Square
+	[tonumber("000001", 2)] = "┏┓┗┛━┃", -- Bold, Solid, Square
+	[tonumber("000010", 2)] = "╔╗╚╝═╦", -- Double, Solid, Square
+	[tonumber("000100", 2)] = "┌┐└┘┄┆", -- Thin, Dash, Square
+	[tonumber("000101", 2)] = "┏┓┗┛┅┇", -- Bold, Dash, Square
+	[tonumber("001000", 2)] = "┌┐└┘┈┊", -- Thin, Dot, Square
+	[tonumber("001001", 2)] = "┏┓┗┛┉┋", -- Bold, Dot, Square
+	[tonumber("010000", 2)] = "┌┐└┘╌╎", -- Thin, Double, Square
+	[tonumber("010001", 2)] = "┏┓┗┛╍╏", -- Bold, Double, Square
+	[tonumber("100000", 2)] = "╭╮╰╯─│", -- Thin, Solid, Round
+	[tonumber("100100", 2)] = "╭╮╰╯┄┆", -- Thin, Dash, Round
+	[tonumber("101000", 2)] = "╭╮╰╯┈┊", -- Thin, Dot, Round
+	[tonumber("110000", 2)] = "╭╮╰╯╌╎", -- Thin, Double, Round
 }
 
 -- Returns the corresponding border based on a few parameters
@@ -25,10 +25,10 @@ function BOX.flag(kwargs)
 	if kwargs.weight == "thin" then
 		-- Pass
 	elseif kwargs.weight == "bold" then
-		f = f + 0b000001
+		f = f + tonumber("000001", 2)
 		kwargs.corner = "square"
 	elseif kwargs.weight == "double" then
-		f = f + 0b000010
+		f = f + tonumber("000010", 2)
 		kwargs.corner = "square"
 		kwargs.stroke = "solid"
 	end
@@ -36,17 +36,17 @@ function BOX.flag(kwargs)
 	if kwargs.stroke == "solid" then
 		-- Pass
 	elseif kwargs.stroke == "dash" then
-		f = f + 0b000100
+		f = f + tonumber("000100", 2)
 	elseif kwargs.stroke == "dot" then
-		f = f + 0b001000
+		f = f + tonumber("001000", 2)
 	elseif kwargs.stroke == "double" then
-		f = f + 0b010000
+		f = f + tonumber("010000", 2)
 	end
 
 	if kwargs.corner == "square" then
 		-- Pass
 	elseif kwargs.corner == "round" then
-		f = f + 0b100000
+		f = f + tonumber("100000", 2)
 	end
 
 	local s = border_flags[f]
@@ -121,6 +121,99 @@ function BOX.normalize(border)
 
 	---@diagnostic disable-next-line: param-type-mismatch
 	return BOX.custom(border)
+end
+
+-- Makes sides for a border
+---@param w integer Border width
+---@param h integer Border height
+---@param box Rabbit.Term.Border.Box
+---@param ... Rabbit.Term.Border.Side
+---@return Rabbit.Term.Border.Applied
+function BOX.make_sides(w, h, box, ...)
+	local sides = {
+		t = { txt = {}, hl = {} },
+		b = { txt = {}, hl = {} },
+		r = { txt = {}, hl = {} },
+		l = { txt = {}, hl = {} },
+	}
+
+	local targets = {
+		nw = { sides.t, "left" },
+		n = { sides.t, "center" },
+		ne = { sides.t, "right" },
+		en = { sides.r, "left" },
+		e = { sides.r, "center" },
+		es = { sides.r, "right" },
+		se = { sides.b, "right" },
+		s = { sides.b, "center" },
+		sw = { sides.b, "left" },
+		ws = { sides.l, "right" },
+		w = { sides.l, "center" },
+		wn = { sides.l, "left" },
+	}
+
+	box = BOX.normalize(box)
+
+	for i = 1, w - 2 do
+		sides.t.txt[i] = box.h
+		sides.b.txt[i] = box.h
+	end
+
+	for i = 1, h - 2 do
+		sides.l.txt[i] = box.v
+		sides.r.txt[i] = box.v
+	end
+
+	for _, side in ipairs({ ... }) do
+		vim.print(side)
+		if type(side) ~= "table" then
+			error("Expected table, got " .. type(side))
+		elseif side.align == "nil" then
+			goto continue
+		end
+
+		local target, align = unpack(targets[side.align])
+		if target == nil then
+			error("Invalid alignment: " .. side.align)
+		elseif type(side.make) == "function" then
+			side.pre, side.text, side.suf = side.make(#target.txt, side.text)
+		end
+
+		side.pre = tostring(side.pre or "")
+		side.text = tostring(side.text or "")
+		side.suf = tostring(side.suf or "")
+
+		local strls = {}
+		for _, v in ipairs(vim.fn.str2list(side.pre .. side.text .. side.suf)) do
+			table.insert(strls, vim.fn.list2str({ v }))
+		end
+
+		local pre_end = vim.fn.strdisplaywidth(side.pre)
+		local text_end = vim.fn.strdisplaywidth(side.pre .. side.text)
+		local start, end_ = 0, 0
+
+		if align == "left" then
+			start, end_ = 1, #strls
+		elseif align == "center" then
+			start = math.max(1, math.ceil((#target.txt - #strls + 1) / 2))
+			end_ = math.min(#target.txt, start + #strls - 1)
+		else
+			start = #target.txt - #strls + 1
+			end_ = #target.txt
+		end
+
+		for i = start, end_ do
+			local j = i - start + 1
+			target.txt[i] = strls[j]
+			if pre_end < j and j <= text_end then
+				table.insert(target.hl, #table.concat(target.txt, "", 1, i))
+			end
+		end
+
+		::continue::
+	end
+
+	return sides
 end
 
 return BOX

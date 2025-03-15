@@ -58,18 +58,19 @@ C.window = {
 	},
 
 	titles = {
-		title_text = "",
-		title_pos = "ws",
-		plugin_pos = "sw",
-		title_case = "lower",
-		plugin_case = "lower",
-		title_emphasis = {
-			left = "║║",
-			right = "",
+		{
+			align = "sw",
+			make = function(sz, _)
+				local name = require("rabbit.term.listing")._plugin.name:lower()
+				local suf = " " .. ("═"):rep(math.floor(sz / 2) - #name - 2)
+				return "═ ", name, suf
+			end,
 		},
-		plugin_emphasis = {
-			left = "═ ",
-			right = " ════════════",
+		{
+			align = "ws",
+			make = function(sz, _)
+				return "", "", ("║"):rep(math.floor(sz / 4))
+			end,
 		},
 	},
 
@@ -81,7 +82,8 @@ C.window = {
 	},
 
 	legend = true,
-	nrs = false,
+	nrs = true,
+	preview = true,
 }
 
 -- Keymap settings
