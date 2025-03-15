@@ -1,10 +1,11 @@
 ---@class Rabbit.UI.Listing
-local UIL = {
+local UI = {
 	-- Last plugin called
 	---@type Rabbit.Plugin
 	---@diagnostic disable-next-line: missing-fields
-	_plugin = {},
-	_entries = {},
+	_plugin = {}, ---@type Rabbit.Plugin
+	_entries = {}, ---@type Rabbit.Entry[]
+	_parent = nil, ---@type Rabbit.Entry.Collection
 	_keys = {},
 	_winid = 0,
 	_bufid = 0,
@@ -18,6 +19,15 @@ local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
 local ACT = require("rabbit.actions")
+
+---@param key string | string[]
+---@return string[]
+local function _K(key)
+	if key == nil then
+		return {}
+	end
+	return type(key) ~= "table" and { tostring(key) } or key --[[@as table<string>]]
+end
 
 local case_func = {
 	upper = string.upper,
@@ -100,7 +110,7 @@ end
 
 vim.api.nvim_create_autocmd("BufEnter", {
 	callback = function()
-		if UIL._bufid == vim.api.nvim_get_current_buf() then
+		if UI._bufid == vim.api.nvim_get_current_buf() then
 			return
 		end
 
@@ -121,13 +131,13 @@ vim.api.nvim_create_autocmd("WinResized", {
 			return
 		end
 
-		UIL.spawn(UIL._plugin)
+		UI.spawn(UI._plugin)
 	end,
 })
 
 -- Creates a buffer for the given plugin
 ---@param plugin string | Rabbit.Plugin
-function UIL.spawn(plugin)
+function UI.spawn(plugin)
 	if #CTX.stack > 0 then
 		vim.api.nvim_set_current_win(CTX.user.win)
 		vim.api.nvim_set_current_buf(CTX.user.buf)
@@ -137,24 +147,24 @@ function UIL.spawn(plugin)
 	CTX.user = CTX.workspace()
 
 	if type(plugin) == "string" then
-		UIL._plugin = require("rabbit").plugins[plugin]
+		UI._plugin = require("rabbit").plugins[plugin]
 	elseif type(plugin) == "table" then
-		UIL._plugin = plugin
+		UI._plugin = plugin
 	else
 		error("Invalid plugin. Expected string or table, got " .. type(plugin))
 	end
 
-	if UIL._plugin == nil then
+	if UI._plugin == nil then
 		error("Invalid plugin: " .. plugin)
 	end
 
 	-- Create background window
-	local r = UIL.rect(CTX.user.win, 55)
-	UIL._bufid = vim.api.nvim_create_buf(false, true)
-	UIL._winid = vim.api.nvim_open_win(UIL._bufid, true, r)
-	local bg = CTX.append(UIL._bufid, UIL._winid)
+	local r = UI.rect(CTX.user.win, 55)
+	UI._bufid = vim.api.nvim_create_buf(false, true)
+	UI._winid = vim.api.nvim_open_win(UI._bufid, true, r)
+	local bg = CTX.append(UI._bufid, UI._winid)
 	bg.ns = vim.api.nvim_create_namespace("rabbit.bg")
-	UIL._bg = bg
+	UI._bg = bg
 
 	-- Create foreground window
 	r.split = nil
@@ -164,17 +174,17 @@ function UIL.spawn(plugin)
 	r.width = r.width - 2
 	r.height = r.height - 3
 	r.zindex = r.zindex + 1
-	UIL._bufid = vim.api.nvim_create_buf(false, true)
-	UIL._winid = vim.api.nvim_open_win(UIL._bufid, true, r)
-	local listing = CTX.append(UIL._bufid, UIL._winid, bg)
+	UI._bufid = vim.api.nvim_create_buf(false, true)
+	UI._winid = vim.api.nvim_open_win(UI._bufid, true, r)
+	local listing = CTX.append(UI._bufid, UI._winid, bg)
 	listing.ns = vim.api.nvim_create_namespace("rabbit.listing")
-	UIL._fg = listing
+	UI._fg = listing
 	bg.parent = listing -- Treat these as the same layer
 	vim.wo[listing.win].cursorline = true
 
 	local function redraw()
-		UIL.draw_border(bg)
-		UIL.apply_actions()
+		UI.draw_border(bg)
+		UI.apply_actions()
 		-- vim.api.nvim_win_set_cursor(listing.win, { vim.fn.line("."), 0 })
 	end
 
@@ -183,69 +193,149 @@ function UIL.spawn(plugin)
 		callback = redraw,
 	})
 
-	UIL._bufid = -1
+	UI._bufid = -1
 
-	UIL._plugin.list()
+	local cwd = { ---@type Rabbit.Plugin.Context.Directory
+		value = nil,
+		scope = "fallback",
+		raw = vim.fn.getcwd,
+	}
+
+	if UI._plugin.opts.cwd then
+		cwd.raw = UI._plugin.opts.cwd
+		cwd.scope = "plugin"
+	elseif CONFIG.cwd then
+		cwd.raw = CONFIG.cwd
+		cwd.scope = "global"
+	end
+
+	if type(cwd.raw) == "function" then
+		cwd.value = cwd.raw()
+	end
+
+	UI._plugin._env = {
+		plugin = UI._plugin,
+		winid = CTX.user.win,
+		cwd = cwd,
+	}
+
+	UI.handle_callback(UI._plugin.list())
 end
 
 -- Actually lists the entries. Also calls `apply_actions` at the end
----@param entries Rabbit.Listing.Entry[]
----@return Rabbit.Listing.Entry[]
-function UIL.list(entries)
-	vim.bo[UIL._fg.buf].modifiable = true
-	UIL._entries = entries
+---@param collection Rabbit.Entry.Collection
+---@return Rabbit.Entry[]
+function UI.list(collection)
+	vim.bo[UI._fg.buf].modifiable = true
+	if collection.actions.children == true then
+		collection.actions.children = UI._plugin.actions.children
+	elseif collection.actions.children == false then
+		error("Invalid children")
+	end
 
-	_ = pcall(vim.api.nvim_buf_clear_namespace, UIL._fg.buf, UIL._fg.ns, 0, -1)
+	UI._entries = collection.actions.children(collection)
+
+	_ = pcall(vim.api.nvim_buf_clear_namespace, UI._fg.buf, UI._fg.ns, 0, -1)
 
 	local j = 0
-	local k = 0
+	local r = 0
 
-	for i, entry in ipairs(entries) do
+	local auto_default = nil
+	local man_default = nil
+
+	local idx_len = #tostring(#UI._entries)
+
+	for i, entry in ipairs(UI._entries) do
 		j = i
-		local dirpart = {}
-		local filepart = {}
-		local headpart = {}
-		local tailpart = {}
-		local highlights = {}
 
-		if type(entry.highlight) == "string" then
-			highlights = { entry.highlight }
-		elseif type(entry.highlight) == "table" then
-			highlights = entry.highlight --[[@as table<string>]]
-		end
-
-		---@param hl string[]
-		---@return string[]
-		local function do_hl(hl)
-			if entry.hl_replace then
-				return #highlights > 0 and highlights or hl
-			else
-				for _, v in ipairs(highlights) do
-					table.insert(hl, v)
-				end
-				return hl
+		for k, v in ipairs(entry.actions) do
+			if v == false or v == nil then
+				entry.actions[k] = nil
+			elseif v == true then
+				entry.actions[k] = {
+					action = k,
+					callback = UI._plugin.actions[v] or ACT[v],
+				}
+			elseif type(v) == "function" then
+				entry.actions[k] = {
+					action = k,
+					callback = v,
+				}
+			elseif type(v) ~= "table" then
+				error("Invalid action for " .. k .. ": Expected table, function, or boolean; got " .. type(v))
 			end
 		end
 
-		if type(entry.label) == "table" then
-			filepart = entry.label --[[@as Rabbit.Term.HlLine]]
-		elseif entry.type == "file" and tostring(entry.label):find("term://") == 1 then
-			dirpart = {
-				text = "$ ",
-				hl = do_hl({ "rabbit.files.term" }),
+		local idx
+		if entry.idx ~= false then
+			r = r + 1
+			auto_default = auto_default or j
+			man_default = entry.default and (man_default or j) or man_default
+			idx = ("0"):rep(idx_len - #tostring(r)) .. r .. "."
+		else
+			idx = (" "):rep(idx_len - 1) .. "——"
+		end
+
+		HL.nvim_buf_set_line(UI._fg.buf, i - 1, false, UI._fg.ns, UI._fg.conf.width, {
+			{
+				text = " " .. idx .. " ",
+				hl = "rabbit.types.index",
 				align = "left",
-			}
-			filepart = {
-				text = tostring(entry.label):gsub("^term://.*%d+:", ""),
-				hl = do_hl({ "rabbit.files.file" }),
-				align = "left",
-			}
-			entry.tail = tostring(entry.label):gsub(".*(%d+):", "%1")
-		elseif entry.type == "file" and tostring(entry.label):find("://") ~= nil then
-			dirpart = {
+			},
+			UI.highlight(entry),
+		})
+	end
+
+	vim.api.nvim_buf_set_lines(UI._fg.buf, j, -1, false, {})
+	vim.api.nvim_win_set_cursor(UI._fg.win, { man_default or auto_default or 1, 0 })
+
+	UI.draw_border(UI._bg)
+	UI.apply_actions()
+
+	vim.bo[UI._fg.buf].modifiable = false
+	return UI._entries
+end
+
+-- Creates the highlights for a particular entry
+---@param entry Rabbit.Entry
+---@return Rabbit.Term.HlLine
+function UI.highlight(entry)
+	if entry.type == "file" then
+		---@diagnostic disable-next-line: missing-fields
+		entry = entry --[[@as Rabbit.Entry.File]]
+		entry.closed = not vim.api.nvim_buf_is_valid(entry.bufid)
+		if tostring(entry.path):find("term://") == 1 then
+			return {
 				{
-					text = tostring(entry.label):gsub("://.*$", ""),
-					hl = do_hl({ "rabbit.files.term" }),
+					text = tostring(entry.path):gsub("^.*/(%w+)$", "%1"),
+					hl = { "rabbit.files.term" },
+					align = "left",
+				},
+				{
+					text = " $ ",
+					hl = { "rabbit.legend.separator" },
+					align = "left",
+				},
+				{
+					text = vim.b[entry.bufid].term_title,
+					hl = {
+						["rabbit.files.closed"] = entry.closed,
+						["rabbit.types.index"] = entry.idx == false,
+						"rabbit.files.file",
+					},
+					align = "left",
+				},
+				CONFIG.window.nrs and {
+					text = tostring(entry.path):gsub(".*(%d+):.*$", "%1"),
+					hl = { "rabbit.types.tail" },
+					align = "right",
+				} or {},
+			}
+		elseif tostring(entry.path):find("://") ~= nil then
+			return {
+				{
+					text = tostring(entry.path):gsub("://.*$", ""),
+					hl = { "rabbit.files.term" },
 					align = "left",
 				},
 				{
@@ -253,85 +343,88 @@ function UIL.list(entries)
 					hl = { "rabbit.legend.separator" },
 					align = "left",
 				},
+				{
+					text = tostring(entry.path):gsub(".*://", ""),
+					hl = {
+						["rabbit.files.closed"] = entry.closed,
+						["rabbit.types.index"] = entry.idx == false,
+						"rabbit.files.file",
+					},
+					align = "left",
+				},
+				CONFIG.window.nrs and {
+					text = tostring(entry.bufid),
+					hl = { "rabbit.types.tail" },
+					align = "right",
+				} or {},
 			}
-			filepart = {
-				text = tostring(entry.label):gsub(".*://", ""),
-				hl = do_hl({ "rabbit.files.file" }),
-				align = "left",
-			}
-		elseif entry.type == "file" and entry.label == "" then
-			filepart = { text = "#nil", hl = do_hl({ "rabbit.files.void" }), align = "left" }
-		elseif entry.type == "file" then
-			local rel_path = MEM.rel_path(tostring(entry.label))
-			filepart = { text = rel_path.name, hl = do_hl({ "rabbit.files.file" }), align = "left" }
-			dirpart = { text = rel_path.dir, hl = do_hl({ "rabbit.files.path" }), align = "left" }
-			-- return
-		else
-			filepart = {
-				text = entry.label,
-				hl = do_hl({ "rabbit.types.collection", #entry.color > 0 and "rabbit.paint." .. entry.color or "" }),
-				align = "left",
+		elseif entry.path == "" then
+			return {
+				{
+					text = "#nil ",
+					hl = { "rabbit.files.void" },
+					align = "left",
+				},
+				{
+					text = tostring(entry.bufid),
+					hl = {
+						["rabbit.files.closed"] = entry.closed,
+						["rabbit.types.index"] = entry.idx == false,
+						"rabbit.files.file",
+					},
+					align = "left",
+				},
 			}
 		end
 
-		if type(entry.head) == "string" then
-			headpart = {
-				text = entry.head .. " ",
-				hl = { "rabbit.types.head" },
-				align = "left",
-			}
-		elseif type(entry.head) == "table" then
-			headpart = entry.head --[[@as Rabbit.Term.HlLine]]
-		end
-
-		if type(entry.tail) == "string" then
-			tailpart = {
-				text = entry.tail .. " ",
-				hl = { "rabbit.types.tail" },
-				align = "right",
-			}
-		elseif type(entry.tail) == "table" then
-			tailpart = entry.tail --[[@as Rabbit.Term.HlLine]]
-		end
-
-		local idx
-		if entry.idx ~= false then
-			k = k + 1
-			idx = ("0"):rep(#tostring(#entries) - #tostring(k)) .. k .. "."
-		else
-			idx = (" "):rep(#tostring(#entries) - 1) .. "——"
-		end
-
-		HL.nvim_buf_set_line(UIL._fg.buf, i - 1, false, UIL._fg.ns, UIL._fg.conf.width, {
+		local rel_path = MEM.rel_path(tostring(entry.path))
+		return {
+			{ text = rel_path.dir, hl = { "rabbit.files.path" }, align = "left" },
 			{
-				text = " " .. idx .. " ",
-				hl = "rabbit.types.index",
+				text = rel_path.name,
+				hl = {
+					["rabbit.files.closed"] = entry.closed,
+					["rabbit.types.index"] = entry.idx == false,
+					"rabbit.files.file",
+				},
 				align = "left",
 			},
-			headpart,
-			dirpart,
-			filepart,
-			tailpart,
-		})
+			CONFIG.window.nrs and {
+				text = tostring(entry.bufid),
+				hl = { "rabbit.types.tail" },
+				align = "right",
+			} or {},
+		}
+	elseif entry.type == "collection" then
+		entry = entry --[[@as Rabbit.Entry.Collection]]
+		return {
+			type(entry.label) == "string" and { text = entry.label, hl = { "rabbit.paint.iris" }, align = "left" }
+				or entry.label
+				or {},
+			type(entry.tail) == "string" and { text = entry.tail, hl = { "rabbit.types.tail" }, align = "right" }
+				or entry.tail
+				or {},
+		}
 	end
-
-	vim.api.nvim_buf_set_lines(UIL._fg.buf, j, -1, false, {})
-
-	UIL.draw_border(UIL._bg)
-	UIL.apply_actions()
-
-	vim.bo[UIL._fg.buf].modifiable = false
-	return entries
+	error("Not implemented for type: " .. entry.type)
 end
 
 -- Applies keymaps and draws the legend at the bottom of the listing
-function UIL.apply_actions()
-	local bg = UIL._bg
-	local fg = UIL._fg
+function UI.apply_actions()
+	local bg = UI._bg
+	local fg = UI._fg
 	local i = vim.fn.line(".")
-	local e = UIL._entries[i] ---@type Rabbit.Listing.Entry
+	local e = UI._entries[i] ---@type Rabbit.Entry
 
 	if e == nil then
+		local keys = _K(CONFIG.keys.close)
+		if #keys < 1 then
+			keys = { "q", "<Esc>" }
+		end
+		for _, k in ipairs(keys) do
+			_ = pcall(vim.keymap.del, "n", k, { buffer = UI._fg.buf })
+		end
+
 		return -- This shouldn't happen
 	end
 
@@ -341,19 +434,19 @@ function UIL.apply_actions()
 
 	e.actions = e.actions or {}
 
-	for _, key in ipairs(UIL._keys) do
-		_ = pcall(vim.keymap.del, "n", key, { buffer = UIL._fg.buf })
+	for _, key in ipairs(UI._keys) do
+		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf })
 	end
 
 	for key, _ in pairs(e.actions) do
 		SET.add(all_actions, key)
 	end
 
-	for key, _ in pairs(UIL._plugin.act) do
+	for key, _ in pairs(UI._plugin.actions) do
 		SET.add(all_actions, key)
 	end
 
-	for key, _ in pairs(UIL._plugin.opts.keys) do
+	for key, _ in pairs(UI._plugin.opts.keys) do
 		SET.add(all_actions, key)
 	end
 
@@ -371,21 +464,20 @@ function UIL.apply_actions()
 			goto continue
 		elseif action == true or action == nil then
 			action = {}
+		elseif type(action) == "function" then
+			action = {
+				callback = action,
+			}
 		elseif type(action) ~= "table" then
 			error("Invalid action for " .. key .. ": Expected table, got " .. type(action))
 		end
 
-		action.keys = action.keys or UIL._plugin.opts.keys[key] or CONFIG.keys[key]
-		if action.keys == nil then
+		action.keys = _K(action.keys or UI._plugin.opts.keys[key] or CONFIG.keys[key])
+		if #action.keys == 0 then
 			goto continue
 		end
 
-		if type(action.keys) == "string" then
-			---@diagnostic disable-next-line: assign-type-mismatch
-			action.keys = { action.keys }
-		end
-
-		action.callback = action.callback or UIL._plugin.act[key] or ACT[key]
+		action.callback = action.callback or UI._plugin.actions[key] or ACT[key]
 		if action.callback == nil then
 			goto continue
 		end
@@ -400,9 +492,16 @@ function UIL.apply_actions()
 			ipairs(action.keys --[[@as table<string>]])
 		do
 			if type(k) == "string" then
-				SET.add(UIL._keys, k)
+				SET.add(UI._keys, k)
 				vim.keymap.set("n", k, function()
-					action.callback(i, e, UIL._entries)
+					e._env = {
+						idx = i,
+						entry = e,
+						siblings = UI._entries,
+						parent = UI._parent,
+						cwd = UI._plugin._env.cwd.value,
+					}
+					UI.handle_callback(action.callback(e))
 				end, { buffer = fg.buf })
 			else
 				error("Invalid key: " .. vim.inspect(k))
@@ -435,9 +534,26 @@ function UIL.apply_actions()
 	HL.nvim_buf_set_line(bg.buf, bg.conf.height - 1, false, bg.ns, bg.conf.width, legend_parts)
 end
 
+function UI.handle_callback(data)
+	if data == nil then
+		return CTX.clear()
+	end
+
+	if data.class == "entry" then
+		data = data --[[@as Rabbit.Entry]]
+		if data.type == "collection" then
+			data = data --[[@as Rabbit.Entry.Collection]]
+			UI._parent = data
+			return UI.list(UI._parent)
+		end
+	end
+
+	error("Callback data not implemented: " .. vim.inspect(data))
+end
+
 -- Draws the border around the listing
 ---@param ws Rabbit.UI.Workspace
-function UIL.draw_border(ws)
+function UI.draw_border(ws)
 	local titles = CONFIG.window.titles
 	local box = BOX.normalize(CONFIG.window.box)
 	local final_height = ws.conf.height - (CONFIG.window.legend and 1 or 0)
@@ -484,13 +600,13 @@ function UIL.draw_border(ws)
 			titles.title_pos,
 			titles.title_emphasis.left,
 			case_func[titles.title_case](titles.title_text),
-			titles.title_emphasis.right .. UIL._plugin .. titles.plugin_emphasis.right
+			titles.title_emphasis.right .. UI._plugin .. titles.plugin_emphasis.right
 		)
 		apply_title(
 			sides,
 			titles.title_pos,
 			titles.title_emphasis.left .. titles.title_text .. titles.title_emphasis.right,
-			case_func[titles.plugin_case](UIL._plugin.opts.name),
+			case_func[titles.plugin_case](UI._plugin.name),
 			titles.plugin_emphasis.right
 		)
 	else
@@ -505,7 +621,7 @@ function UIL.draw_border(ws)
 			sides,
 			titles.plugin_pos,
 			titles.plugin_emphasis.left,
-			case_func[titles.plugin_case](UIL._plugin.opts.name),
+			case_func[titles.plugin_case](UI._plugin.name),
 			titles.plugin_emphasis.right
 		)
 	end
@@ -526,7 +642,7 @@ function UIL.draw_border(ws)
 
 	vim.api.nvim_buf_set_lines(ws.buf, 0, -1, false, lines)
 
-	vim.api.nvim_set_hl(0, "rabbit.plugin", HL.gen_group(UIL._plugin.opts.color, "fg"))
+	vim.api.nvim_set_hl(0, "rabbit.plugin", HL.gen_group(UI._plugin.opts.color, "fg"))
 	HL.apply()
 
 	for i = 1, ws.conf.height do
@@ -561,7 +677,7 @@ end
 ---@param win integer
 ---@param z integer
 ---@return vim.api.keyset.win_config
-function UIL.rect(win, z)
+function UI.rect(win, z)
 	local spawn = CONFIG.window.spawn
 
 	local calc_width = spawn.width
@@ -623,16 +739,16 @@ function UIL.rect(win, z)
 end
 
 -- Closes the window
-function UIL.close()
-	vim.api.nvim_win_close(UIL._bg.win, true)
+function UI.close()
+	vim.api.nvim_win_close(UI._bg.win, true)
 	vim.api.nvim_set_current_win(CTX.user.win)
 	vim.api.nvim_set_current_buf(CTX.user.buf)
 end
 
 -- Returns the current workspace
 ---@return Rabbit.UI.Workspace, Rabbit.UI.Workspace
-function UIL.workspace()
-	return UIL._bg, UIL._fg
+function UI.workspace()
+	return UI._bg, UI._fg
 end
 
-return UIL
+return UI

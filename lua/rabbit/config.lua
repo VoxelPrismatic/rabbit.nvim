@@ -81,11 +81,13 @@ C.window = {
 	},
 
 	legend = true,
+	nrs = false,
 }
 
 -- Keymap settings
----@type Rabbit.Config.Keymap
+---@type Rabbit.Plugin.Keymap
 C.keys = {
+	switch = { "<leader>r" },
 	select = { "<CR>", "g" },
 	close = { "q", "<Esc>", "<leader>" },
 	delete = { "x", "d", "<Del>" },
@@ -95,14 +97,13 @@ C.keys = {
 	help = { "?", "h" },
 	rename = { "i" },
 	["debug"] = { "D" },
-	open = { "<leader>r" },
 }
 
 -- Plugin settings
 ---@class Rabbit.Config.Plugin
 C.plugins = {
 	---@diagnostic disable-next-line: missing-fields
-	history = {}, ---@type Rabbit._.History.Options
+	trail = {}, ---@type Rabbit*Trail.Options
 }
 
 function C.cwd()
@@ -115,6 +116,23 @@ function C.setup(opts)
 	for k, v in pairs(C) do
 		if type(v) == "table" then
 			C[k] = vim.tbl_deep_extend("force", v, opts[k] or {})
+		end
+	end
+
+	for k, v in pairs(C.keys) do
+		if type(v) == "string" then
+			C.keys[k] = { v }
+		end
+	end
+
+	for _, p in ipairs(C.plugins) do
+		p = p ---@type Rabbit.Plugin.Options
+		if p ~= nil and p.keys ~= nil then
+			for k, v in pairs(p.keys) do
+				if type(v) == "string" then
+					p.keys[k] = { v }
+				end
+			end
 		end
 	end
 end

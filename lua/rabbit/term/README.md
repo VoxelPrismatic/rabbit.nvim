@@ -22,7 +22,7 @@ Various APIs for creating UIs for user input
                                 <table>
                                     <tr>
                                         <th>param</th>
-                  <th>type</th>
+                                        <th>type</th>
                                         <th>details</th>
                                     </tr>
                                     <tr>
@@ -869,5 +869,5 @@ Various APIs for creating UIs for user input
                 </li>
             </ul>
         </details>
-
+    </li>
 </ul>

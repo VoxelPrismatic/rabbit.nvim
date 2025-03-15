@@ -71,6 +71,11 @@ function HL.nvim_buf_set_line(buf, line, strict, ns, width, lines)
 			---@type string[]
 			---@diagnostic disable-next-line: assign-type-mismatch
 			local hls = type(v.hl) == "string" and { v.hl } or v.hl
+			for k, enable in pairs(hls) do
+				if type(k) == "string" and enable then
+					table.insert(hls, k)
+				end
+			end
 
 			for _, hl in ipairs(hls) do
 				table.insert(target.hl, {
@@ -119,6 +124,6 @@ end
 
 ---@class Rabbit.Term.HlLine
 ---@field text string The text to display
----@field hl? string | string[] The highlight group
+---@field hl? string | string[] | { [string]: boolean } The highlight group
 ---@field align? "left" | "right" | "center" The alignment of the text
 return HL

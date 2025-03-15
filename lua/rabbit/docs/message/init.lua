@@ -1,0 +1,2 @@
+---@class Rabbit.Message
+---@field class "message"

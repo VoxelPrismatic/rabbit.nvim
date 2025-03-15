@@ -1,10 +1,29 @@
+local CTX = require("rabbit.term.ctx")
+
 ---@type Rabbit.Plugin.Actions
 local ACT = {}
 
-function ACT.select(_, entry, _)
-	if entry.type == "file" then
-		require("rabbit.term.ctx").clear()
-		vim.cmd("e '" .. entry.label .. "'")
+function ACT.select(entry)
+	if entry.class == "entry" then
+		entry = entry --[[@as Rabbit.Entry]]
+		if entry.type == "file" then
+			entry = entry --[[@as Rabbit.Entry.File]]
+			CTX.clear()
+			if entry.target_winid ~= nil then
+				vim.api.nvim_set_current_win(entry.target_winid)
+			else
+				vim.api.nvim_set_current_win(CTX.user.win)
+			end
+
+			if entry.closed then
+				vim.cmd("e '" .. entry.path .. "'")
+			else
+				vim.api.nvim_set_current_buf(entry.bufid)
+			end
+			return
+		elseif entry.type == "collection" then
+			return entry
+		end
 	end
 
 	error("Action not implemented by plugin")
