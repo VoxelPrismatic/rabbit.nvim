@@ -326,7 +326,7 @@ function UI.highlight(entry)
 					align = "left",
 				},
 				CONFIG.window.nrs and {
-					text = tostring(entry.path):gsub(".*(%d+):.*$", "%1"),
+					text = tostring(entry.path):gsub(".*(%d+):.*$", "%1") .. " ",
 					hl = { "rabbit.types.tail" },
 					align = "right",
 				} or {},
@@ -353,7 +353,7 @@ function UI.highlight(entry)
 					align = "left",
 				},
 				CONFIG.window.nrs and {
-					text = tostring(entry.bufid),
+					text = tostring(entry.bufid) .. " ",
 					hl = { "rabbit.types.tail" },
 					align = "right",
 				} or {},
@@ -390,7 +390,7 @@ function UI.highlight(entry)
 				align = "left",
 			},
 			CONFIG.window.nrs and {
-				text = tostring(entry.bufid),
+				text = tostring(entry.bufid) .. " ",
 				hl = { "rabbit.types.tail" },
 				align = "right",
 			} or {},
@@ -428,9 +428,10 @@ function UI.apply_actions()
 		return -- This shouldn't happen
 	end
 
+	UI._keys = SET.new()
 	local legend = {}
 	local legend_parts = {}
-	local all_actions = {}
+	local all_actions = SET.new() ---@type Rabbit.Table.Set<string>
 
 	e.actions = e.actions or {}
 
@@ -438,25 +439,13 @@ function UI.apply_actions()
 		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf })
 	end
 
-	for key, _ in pairs(e.actions) do
-		SET.add(all_actions, key)
-	end
-
-	for key, _ in pairs(UI._plugin.actions) do
-		SET.add(all_actions, key)
-	end
-
-	for key, _ in pairs(UI._plugin.opts.keys) do
-		SET.add(all_actions, key)
-	end
-
-	for key, _ in pairs(ACT) do
-		SET.add(all_actions, key)
-	end
-
-	for key, _ in pairs(CONFIG.keys) do
-		SET.add(all_actions, key)
-	end
+	all_actions:add({
+		SET.keys(e.actions),
+		SET.keys(UI._plugin.actions),
+		SET.keys(UI._plugin.opts.keys),
+		SET.keys(ACT),
+		SET.keys(CONFIG.keys),
+	})
 
 	for _, key in ipairs(all_actions) do
 		local action = e.actions[key]
@@ -492,7 +481,7 @@ function UI.apply_actions()
 			ipairs(action.keys --[[@as table<string>]])
 		do
 			if type(k) == "string" then
-				SET.add(UI._keys, k)
+				UI._keys:add(k)
 				vim.keymap.set("n", k, function()
 					e._env = {
 						idx = i,

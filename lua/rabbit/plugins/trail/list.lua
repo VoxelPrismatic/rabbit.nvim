@@ -1,4 +1,4 @@
-local SET = require("rabbit.tables.set")
+local SET = require("rabbit.util.set")
 local CONFIG = require("rabbit.plugins.trail.config")
 local GLOBAL_CONFIG = require("rabbit.config")
 local LIST = {
@@ -49,7 +49,10 @@ LIST.major = {
 	idx = false,
 	label = {
 		text = "All Windows",
-		hl = { "rabbit.paint.iris" },
+		hl = {
+			"rabbit.types.collection",
+			"rabbit.paint.iris",
+		},
 	},
 	tail = {
 		text = "",
@@ -67,7 +70,7 @@ LIST.major = {
 		bufs = SET.new(),
 	},
 	as = function(self, label)
-		self.tail.text = tostring(label)
+		self.tail.text = tostring(label) .. " "
 		return self
 	end,
 }
@@ -136,7 +139,7 @@ function win_meta.__index(_, winid)
 
 	if GLOBAL_CONFIG.window.nrs then
 		ret.tail = {
-			text = tostring(winid),
+			text = tostring(winid) .. " ",
 			hl = { "rabbit.types.tail" },
 			align = "right",
 		}
@@ -206,5 +209,82 @@ function buf_meta:__index(bufid)
 end
 
 setmetatable(LIST.bufs, buf_meta)
+
+---@class Rabbit*Trail.SaveFile
+---@field layout Rabbit*Trail.SaveFile.Layout
+---@field wins table<integer, Rabbit*Trail.SaveFile.Wins>
+---@field bufs table<integer, string> BufID -> File name
+---@field win_order Rabbit.Table.Set<integer>
+---@field buf_order Rabbit.Table.Set<integer>
+
+---@class Rabbit*Trail.SaveFile.Wins
+---@field bufs integer[] Buffer IDs
+---@field name string Window name
+
+---@class Rabbit*Trail.SaveFile.Layout
+---@field [1] "leaf" | "row" | "col"
+---@field [2] integer | [Rabbit*Trail.SaveFile.Layout, Rabbit*Trail.SaveFile.Layout]
+
+---@class Rabbit*Trail.SaveFile.Layout.Leaf: Rabbit*Trail.SaveFile.Layout
+---@field [1] "leaf"
+---@field [2] integer Window ID
+
+---@class Rabbit*Trail.SaveFile.Layout.Split: Rabbit*Trail.SaveFile.Layout
+---@field [1] "row" | "col"
+---@field [2] Rabbit*Trail.SaveFile.Layout[]
+
+-- Produces a save file for the current list
+function LIST.save()
+	---@type Rabbit*Trail.SaveFile
+	local save = {
+		layout = vim.fn.winlayout(),
+		wins = {},
+		bufs = {},
+		win_order = SET.new(vim.deepcopy(LIST.major.ctx.wins)),
+		buf_order = SET.new(vim.deepcopy(LIST.major.ctx.bufs)),
+	}
+
+	local wins = LIST.traverse_layout(save.layout)
+	local bufs = SET.new() ---@type Rabbit.Table.Set<integer>
+
+	save.win_order = save.win_order:AND(wins)
+	save.buf_order = save.buf_order:AND(bufs)
+
+	for _, winid in ipairs(wins) do
+		save.wins[winid] = {
+			bufs = LIST.wins[winid].ctx.bufs,
+			name = LIST.wins[winid].label.text,
+		}
+		bufs:add(save.wins[winid].bufs)
+	end
+
+	for _, bufid in ipairs(bufs) do
+		save.bufs[bufid] = LIST.bufs[bufid].path
+	end
+
+	return save
+end
+
+-- Returns all the window IDs in the current layout
+---@param winlayout Rabbit*Trail.SaveFile.Layout
+---@return integer[]
+function LIST.traverse_layout(winlayout)
+	local ret = SET.new() ---@type Rabbit.Table.Set<integer>
+
+	---@param node Rabbit*Trail.SaveFile.Layout
+	local function traverse(node)
+		if node[1] == "leaf" then
+			ret:add(node[2])
+		else
+			local children = node--[[@as Rabbit*Trail.SaveFile.Layout.Split]][2]
+			for _, child in ipairs(children) do
+				traverse(child)
+			end
+		end
+	end
+
+	traverse(winlayout)
+	return ret
+end
 
 return LIST

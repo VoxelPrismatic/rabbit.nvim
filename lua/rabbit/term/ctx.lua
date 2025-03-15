@@ -4,8 +4,8 @@ local CTX = {
 	user = { ns = 0 }, ---@type Rabbit.UI.Workspace
 	stack = {}, ---@type Rabbit.UI.Workspace[]
 	used = {
-		win = {},
-		buf = {},
+		win = SET.new(),
+		buf = SET.new(),
 	},
 }
 
@@ -48,8 +48,8 @@ function CTX.workspace(bufnr, winnr)
 	ws.conf.width = ws.conf.width or vim.api.nvim_win_get_width(ws.win)
 	ws.conf.height = ws.conf.height or vim.api.nvim_win_get_height(ws.win)
 
-	SET.add(CTX.used.buf, bufnr)
-	SET.add(CTX.used.win, winnr)
+	CTX.used.buf:add(bufnr)
+	CTX.used.win:add(winnr)
 
 	return ws
 end
