@@ -12,7 +12,11 @@ function MSG.preview(data)
 
 	if UI._hov[data.winid] ~= nil then
 		UI._bufid = UI._hov[data.winid]
-		vim.api.nvim_win_set_buf(data.winid, UI._bufid)
+		if vim.api.nvim_buf_is_valid(UI._bufid) then
+			vim.api.nvim_win_set_buf(data.winid, UI._bufid)
+		else
+			UI._hov[data.winid] = nil
+		end
 	else
 		UI._hov[data.winid] = vim.api.nvim_win_get_buf(data.winid)
 	end

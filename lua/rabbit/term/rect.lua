@@ -5,32 +5,34 @@ local RECT = {}
 -- @param win? integer Window ID (default: current window)
 ---@return Rabbit.UI.Rect
 function RECT.calc(rect, win)
-	local max_width = vim.api.nvim_win_get_width(win or 0)
-	local max_height = vim.api.nvim_win_get_height(win or 0)
+	local conf = require("rabbit.term.ctx").win_config(win)
 
 	if rect.x < 0 then
 		rect.x = 0
-	elseif rect.x > max_width then
-		rect.x = max_width
+	elseif rect.x > conf.width then
+		rect.x = conf.width
 	end
 
 	if rect.y < 0 then
 		rect.y = 0
-	elseif rect.y > max_height then
-		rect.y = max_height
+	elseif rect.y > conf.height then
+		rect.y = conf.height
 	end
 
 	if rect.w < 0 then
 		rect.w = 0
-	elseif rect.w + rect.x > max_width then
-		rect.w = max_width - rect.x
+	elseif rect.w + rect.x > conf.width then
+		rect.w = conf.width - rect.x
 	end
 
 	if rect.h < 0 then
 		rect.h = 0
-	elseif rect.h + rect.y > max_height then
-		rect.h = max_height - rect.y
+	elseif rect.h + rect.y > conf.height then
+		rect.h = conf.height - rect.y
 	end
+
+	rect.x = rect.x + conf.col
+	rect.y = rect.y + conf.row
 
 	rect.T = rect.y
 	rect.B = rect.y + rect.h
@@ -44,11 +46,11 @@ end
 ---@return vim.api.keyset.win_config
 function RECT.win(rect)
 	return { ---@type vim.api.keyset.win_config
-		row = rect.y,
-		col = rect.x,
+		row = rect.split == nil and rect.y or nil,
+		col = rect.split == nil and rect.x or nil,
 		width = rect.w,
 		height = rect.h,
-		relative = rect.split == nil and "win" or nil,
+		relative = rect.split == nil and "editor" or nil,
 		split = rect.split,
 		style = "minimal",
 		anchor = "NW",

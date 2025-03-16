@@ -465,7 +465,9 @@ function UI.apply_actions()
 		UI._pre.t:close()
 		for winid, bufid in pairs(UI._hov) do
 			UI._bufid = bufid
-			vim.api.nvim_win_set_buf(winid, bufid)
+			if vim.api.nvim_buf_is_valid(bufid) then
+				vim.api.nvim_win_set_buf(winid, bufid)
+			end
 			UI._hov[winid] = nil
 		end
 	end
