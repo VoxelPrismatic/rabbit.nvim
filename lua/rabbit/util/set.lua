@@ -23,6 +23,7 @@ end
 ---@param self Rabbit.Table.Set<`T`>
 ---@param elem T
 ---@param idx? 1 | integer The index to insert the element at
+---@return Rabbit.Table.Set<`T`> "Self for chaining"
 ---@overload fun(self: Rabbit.Table.Set<`T`>, elem: `T`[], idx?: 1 | integer)
 function SET.Func:add(elem, idx)
 	if idx == nil then
@@ -36,13 +37,15 @@ function SET.Func:add(elem, idx)
 		self:del(to_add[i])
 		table.insert(self, 1, to_add[i])
 	end
+
+	return self
 end
 
 -- Pops an element from the set
 ---@generic T
 ---@param self Rabbit.Table.Set<`T`>
 ---@param idx 1 | integer The index of the element to pop
----@return `T`
+---@return `T` "The popped element"
 function SET.Func:pop(idx)
 	return table.remove(self, idx)
 end

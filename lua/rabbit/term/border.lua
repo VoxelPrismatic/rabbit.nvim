@@ -165,7 +165,6 @@ function BOX.make_sides(w, h, box, ...)
 	end
 
 	for _, side in ipairs({ ... }) do
-		vim.print(side)
 		if type(side) ~= "table" then
 			error("Expected table, got " .. type(side))
 		elseif side.align == "nil" then

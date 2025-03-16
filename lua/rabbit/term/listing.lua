@@ -9,6 +9,8 @@ local UI = {
 	_keys = {},
 	_winid = 0,
 	_bufid = 0,
+	_pre = {}, ---@type { [string]: Rabbit.UI.Workspace }
+	_hov = {}, ---@type { [integer]: integer }
 }
 
 local RECT = require("rabbit.term.rect")
@@ -18,7 +20,7 @@ local MEM = require("rabbit.util.mem")
 local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
-local ACT = require("rabbit.actions")
+local ACTIONS = require("rabbit.actions")
 
 ---@param key string | string[]
 ---@return string[]
@@ -113,7 +115,7 @@ function UI.spawn(plugin)
 	local listing = CTX.append(UI._bufid, UI._winid, bg)
 	listing.ns = vim.api.nvim_create_namespace("rabbit.listing")
 	UI._fg = listing
-	bg.parent = listing -- Treat these as the same layer
+	listing:add_child(bg) -- Treat these as the same layer
 	vim.wo[listing.win].cursorline = true
 
 	local function redraw()
@@ -188,7 +190,7 @@ function UI.list(collection)
 			elseif v == true then
 				entry.actions[k] = {
 					action = k,
-					callback = UI._plugin.actions[v] or ACT[v],
+					callback = UI._plugin.actions[v] or ACTIONS[v],
 				}
 			elseif type(v) == "function" then
 				entry.actions[k] = {
@@ -238,16 +240,14 @@ function UI.highlight(entry)
 		---@diagnostic disable-next-line: missing-fields
 		entry = entry --[[@as Rabbit.Entry.File]]
 		entry.closed = not vim.api.nvim_buf_is_valid(entry.bufid)
+		if not entry.closed and entry.path == "" then
+			entry.path = vim.api.nvim_buf_get_name(entry.bufid)
+		end
 		if tostring(entry.path):find("term://") == 1 then
 			return {
 				{
-					text = tostring(entry.path):gsub("^.*/(%w+)$", "%1"),
+					text = "$ ",
 					hl = { "rabbit.files.term" },
-					align = "left",
-				},
-				{
-					text = " $ ",
-					hl = { "rabbit.legend.separator" },
 					align = "left",
 				},
 				{
@@ -260,7 +260,7 @@ function UI.highlight(entry)
 					align = "left",
 				},
 				CONFIG.window.nrs and {
-					text = tostring(entry.path):gsub(".*(%d+):.*$", "%1") .. " ",
+					text = tostring(entry.path):gsub(".*/(%d+):.*/(%w+)$", "%2/%1") .. " ",
 					hl = { "rabbit.types.tail" },
 					align = "right",
 				} or {},
@@ -343,6 +343,25 @@ function UI.highlight(entry)
 	error("Not implemented for type: " .. entry.type)
 end
 
+---@param action string
+---@param entry Rabbit.Entry
+---@return fun(e: Rabbit.Entry) | nil
+---@return string[]
+local function find_action(action, entry)
+	local callback = entry.actions[action]
+	if callback == false then
+		return nil, {}
+	elseif callback == true or callback == nil then
+		callback = nil
+	elseif type(callback) ~= "function" then
+		error("Invalid action callback for " .. action .. "; Expected function, got " .. type(callback))
+	end
+
+	callback = callback or UI._plugin.actions[action] or ACTIONS[action]
+	local keys = _K(UI._plugin.opts.keys[action] or CONFIG.keys[action])
+	return callback, keys
+end
+
 -- Applies keymaps and draws the legend at the bottom of the listing
 function UI.apply_actions()
 	local bg = UI._bg
@@ -373,47 +392,28 @@ function UI.apply_actions()
 		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf })
 	end
 
-	all_actions:add({
-		SET.keys(e.actions),
-		SET.keys(UI._plugin.actions),
-		SET.keys(UI._plugin.opts.keys),
-		SET.keys(ACT),
-		SET.keys(CONFIG.keys),
-	})
+	all_actions
+		:add({
+			SET.keys(e.actions),
+			SET.keys(UI._plugin.actions),
+			SET.keys(UI._plugin.opts.keys),
+			SET.keys(ACTIONS),
+			SET.keys(CONFIG.keys),
+		})
+		:del("hover")
 
-	for _, key in ipairs(all_actions) do
-		local action = e.actions[key]
-		if action == false then
-			goto continue
-		elseif action == true or action == nil then
-			action = {}
-		elseif type(action) == "function" then
-			action = {
-				callback = action,
-			}
-		elseif type(action) ~= "table" then
-			error("Invalid action for " .. key .. ": Expected table, got " .. type(action))
-		end
-
-		action.keys = _K(action.keys or UI._plugin.opts.keys[key] or CONFIG.keys[key])
-		if #action.keys == 0 then
+	for _, action in ipairs(all_actions) do
+		local cb, keys = find_action(action, e)
+		if #keys == 0 or cb == nil then
 			goto continue
 		end
 
-		action.callback = action.callback or UI._plugin.actions[key] or ACT[key]
-		if action.callback == nil then
-			goto continue
-		end
+		table.insert(legend, {
+			title = action,
+			keys = keys,
+		})
 
-		action.title = action.title or key
-
-		action.priority = action.priority or 0
-
-		table.insert(legend, action)
-
-		for _, k in
-			ipairs(action.keys --[[@as table<string>]])
-		do
+		for _, k in ipairs(keys) do
 			if type(k) == "string" then
 				UI._keys:add(k)
 				vim.keymap.set("n", k, function()
@@ -424,7 +424,7 @@ function UI.apply_actions()
 						parent = UI._parent,
 						cwd = UI._plugin._env.cwd.value,
 					}
-					UI.handle_callback(action.callback(e))
+					UI.handle_callback(cb(e))
 				end, { buffer = fg.buf })
 			else
 				error("Invalid key: " .. vim.inspect(k))
@@ -434,27 +434,41 @@ function UI.apply_actions()
 	end
 
 	table.sort(legend, function(a, b)
-		return a.priority > b.priority
+		return a.title < b.title
 	end)
 
 	for _, action in ipairs(legend) do
 		table.insert(legend_parts, {
-			text = " " .. action.title,
-			hl = "rabbit.legend.action",
-		})
-
-		table.insert(legend_parts, {
-			text = ":",
-			hl = "rabbit.legend.separator",
-		})
-
-		table.insert(legend_parts, {
-			text = action.keys[1],
-			hl = "rabbit.legend.key",
+			{
+				text = " " .. action.title,
+				hl = "rabbit.legend.action",
+			},
+			{
+				text = ":",
+				hl = "rabbit.legend.separator",
+			},
+			{
+				text = action.keys[1],
+				hl = "rabbit.legend.key",
+			},
 		})
 	end
 
 	HL.nvim_buf_set_line(bg.buf, bg.conf.height - 1, false, bg.ns, bg.conf.width, legend_parts)
+
+	if e.actions.hover then
+		UI.handle_callback(find_action("hover", e)(e))
+	elseif UI._pre.l ~= nil then
+		UI._pre.l:close()
+		UI._pre.r:close()
+		UI._pre.b:close()
+		UI._pre.t:close()
+		for winid, bufid in pairs(UI._hov) do
+			UI._bufid = bufid
+			vim.api.nvim_win_set_buf(winid, bufid)
+			UI._hov[winid] = nil
+		end
+	end
 end
 
 function UI.handle_callback(data)
@@ -469,6 +483,8 @@ function UI.handle_callback(data)
 			UI._parent = data
 			return UI.list(UI._parent)
 		end
+	elseif data.class == "message" then
+		return require("rabbit.messages").Handle(data)
 	end
 
 	error("Callback data not implemented: " .. vim.inspect(data))
@@ -534,7 +550,6 @@ function UI.draw_border(ws)
 			})
 		end
 	else
-		vim.print(titles)
 		sides = BOX.make_sides(ws.conf.width, final_height, box, scroll_func, unpack(titles))
 	end
 
@@ -558,8 +573,8 @@ function UI.draw_border(ws)
 	HL.set_group(0, {
 		["rabbit.plugin"] = type(c) == "string" and { fg = c } or c,
 		["rabbit.plugin.inv"] = {
-			fg = ":NormalNC#bg",
-			bg = ":rabbit.plugin#fg",
+			fg = ":rabbit.plugin",
+			bg = ":Folded",
 		},
 	})
 	HL.apply()

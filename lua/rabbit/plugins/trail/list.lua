@@ -187,6 +187,7 @@ function buf_meta:__index(bufid)
 			actions = {
 				select = true,
 				delete = false,
+				hover = true,
 			},
 			ctx = {
 				listed = vim.fn.buflisted(bufid) == 1,

@@ -1,9 +1,10 @@
 local CTX = require("rabbit.term.ctx")
 
 ---@type Rabbit.Plugin.Actions
-local ACT = {}
+---@diagnostic disable-next-line: missing-fields
+local ACTIONS = {}
 
-function ACT.select(entry)
+function ACTIONS.select(entry)
 	if entry.class == "entry" then
 		entry = entry --[[@as Rabbit.Entry]]
 		if entry.type == "file" then
@@ -22,24 +23,34 @@ function ACT.select(entry)
 			end
 			return
 		elseif entry.type == "collection" then
-			return entry
+			return entry --[[@as Rabbit.Entry.Collection]]
 		end
 	end
 
 	error("Action not implemented by plugin")
 end
 
-function ACT.close(_, _, _)
-	local CTX = require("rabbit.term.ctx")
+function ACTIONS.close(_)
 	CTX.clear()
 	vim.api.nvim_set_current_win(CTX.user.win)
 	vim.api.nvim_set_current_buf(CTX.user.buf)
 end
 
-function ACT.delete(idx, _, entries)
-	local UIL = require("rabbit.term.listing")
-	table.remove(entries, idx)
-	UIL._plugin.list()
+function ACTIONS.hover(entry)
+	if entry.class == "entry" then
+		if entry.type == "file" then
+			entry = entry --[[@as Rabbit.Entry.File]]
+			return { ---@type Rabbit.Message.Preview
+				class = "message",
+				type = "preview",
+				file = entry.path,
+				bufid = entry.bufid,
+				winid = entry.target_winid,
+			}
+		end
+	end
+
+	error("Action not implemented by plugin")
 end
 
-return ACT
+return ACTIONS

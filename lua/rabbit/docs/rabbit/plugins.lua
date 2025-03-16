@@ -14,8 +14,10 @@
 ---@field cwd? Rabbit.Plugin.Context.Directory Working directory, according to `opts.cwd`
 
 ---@class Rabbit.Plugin.Actions
----@field select Rabbit.Action.Select.Cb
+---@field select Rabbit.Action.Select
 ---@field children Rabbit.Action.Children
+---@field close Rabbit.Action.Close
+---@field hover Rabbit.Action.Hover
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory

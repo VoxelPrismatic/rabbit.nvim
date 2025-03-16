@@ -9,49 +9,68 @@ local CTX = {
 	},
 }
 
--- Adds a workspace to the stack, and binds the WinClosed and BufDelete events
----@param bufnr integer
----@param winnr integer
----@param parent? Rabbit.UI.Workspace Will close this one if the parent is closed
----@return Rabbit.UI.Workspace
-function CTX.append(bufnr, winnr, parent)
-	local ws = CTX.workspace(bufnr, winnr)
-	table.insert(CTX.stack, ws)
-	if parent ~= nil then
-		ws.parent = parent
-		vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete" }, {
-			buffer = ws.parent.buf,
+-- Adds a parent workspace
+---@param self Rabbit.UI.Workspace
+---@param child Rabbit.UI.Workspace
+local function add_child(self, child)
+	table.insert(self.children, child)
+	if #self.children == 1 then
+		vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete", "QuitPre" }, {
+			buffer = self.buf,
 			callback = function()
-				CTX.close(ws)
-				if ws.parent ~= nil then
-					CTX.close(ws)
-				end
+				self:close()
 			end,
 		})
+	end
+end
+
+-- Adds a workspace to the stack, and binds the WinClosed and BufDelete events
+---@param bufid integer
+---@param winid integer
+---@param parent? Rabbit.UI.Workspace Will close this one if the parent is closed
+---@return Rabbit.UI.Workspace
+function CTX.append(bufid, winid, parent)
+	local ws = CTX.workspace(bufid, winid)
+	table.insert(CTX.stack, ws)
+	if parent ~= nil then
+		parent:add_child(ws)
 	end
 
 	return ws
 end
 
 -- Creates a workspace object
----@param bufnr? integer
----@param winnr? integer
+---@param bufid? integer
+---@param winid? integer
 ---@return Rabbit.UI.Workspace
-function CTX.workspace(bufnr, winnr)
+function CTX.workspace(bufid, winid)
 	local ws = { ---@type Rabbit.UI.Workspace
-		buf = bufnr or vim.api.nvim_get_current_buf(),
-		win = winnr or vim.api.nvim_get_current_win(),
+		buf = bufid or vim.api.nvim_get_current_buf(),
+		win = winid or vim.api.nvim_get_current_win(),
 		view = vim.fn.winsaveview(),
+		children = {},
 	}
+	ws.conf = CTX.win_config(ws.win)
+	ws.add_child = add_child
+	ws.close = CTX.close
 
-	ws.conf = vim.api.nvim_win_get_config(ws.win)
-	ws.conf.width = ws.conf.width or vim.api.nvim_win_get_width(ws.win)
-	ws.conf.height = ws.conf.height or vim.api.nvim_win_get_height(ws.win)
-
-	CTX.used.buf:add(bufnr)
-	CTX.used.win:add(winnr)
+	CTX.used.buf:add(bufid)
+	CTX.used.win:add(winid)
 
 	return ws
+end
+
+-- Returns the current window configuration, including the width and height
+---@param winid integer
+---@return vim.api.keyset.win_config
+function CTX.win_config(winid)
+	local conf = vim.api.nvim_win_get_config(winid)
+	conf.width = conf.width or vim.api.nvim_win_get_width(winid)
+	conf.height = conf.height or vim.api.nvim_win_get_height(winid)
+	if conf.row == nil or conf.col == nil then
+		conf.row, conf.col = unpack(vim.api.nvim_win_get_position(winid))
+	end
+	return conf
 end
 
 -- Clears the stack; closes all windows and buffers
@@ -69,11 +88,13 @@ end
 function CTX.close(ws)
 	_ = pcall(vim.api.nvim_win_close, ws.win, true)
 	_ = pcall(vim.api.nvim_buf_delete, ws.buf, { force = true })
-	for i, j in ipairs(CTX.stack) do
-		if j == ws then
+	for i = #CTX.stack, 1, -1 do
+		if CTX.stack[i] == ws then
 			_ = pcall(table.remove, CTX.stack, i)
-			return
 		end
+	end
+	while #ws.children > 0 do
+		table.remove(ws.children, 1):close()
 	end
 end
 

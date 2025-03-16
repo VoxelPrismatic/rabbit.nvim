@@ -51,6 +51,7 @@ function RECT.win(rect)
 		relative = rect.split == nil and "win" or nil,
 		split = rect.split,
 		style = "minimal",
+		anchor = "NW",
 		zindex = rect.z,
 	}
 end

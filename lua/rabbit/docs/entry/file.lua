@@ -2,6 +2,7 @@
 ---@field type "file"
 ---@field path string The path to the file.
 ---@field closed boolean True if the file is closed. This will be listed in red.
+---@field linenr? integer The target line number
 ---@field bufid integer The buffer number, if the file is currently open.
 ---@field target_winid integer The window number the file should be opened in.
 ---@field actions Rabbit.Entry.File.Actions The actions to perform on the file.
