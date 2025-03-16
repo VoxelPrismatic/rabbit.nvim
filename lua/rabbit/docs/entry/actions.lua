@@ -16,3 +16,4 @@
 ---@alias Rabbit.Action.Select fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Delete fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Hover fun(entry: Rabbit.Entry): Rabbit.Response
+---@alias Rabbit.Action.Parent fun(entry: Rabbit.Entry): Rabbit.Entry.Collection

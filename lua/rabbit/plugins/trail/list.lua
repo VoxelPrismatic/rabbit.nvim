@@ -64,6 +64,8 @@ LIST.major = {
 		delete = false,
 		children = true,
 		select = true,
+		hover = false,
+		parent = true,
 	},
 	ctx = {
 		wins = SET.new(),
@@ -86,6 +88,26 @@ function user_meta:__len()
 		end
 	end
 	return count
+end
+
+---@param self Rabbit*Trail.Win.User
+---@param key integer
+---@return Rabbit*Trail.Buf | nil
+function user_meta:__index(key)
+	if type(key) ~= "number" or math.floor(key) ~= key then
+		return nil
+	end
+
+	local idx = 0
+	for _, bufid in ipairs(self.ctx.bufs) do
+		if LIST.bufs[bufid].ctx.listed then
+			idx = idx + 1
+			if idx == key then
+				return LIST.bufs[bufid]:as(self.ctx.winid)
+			end
+		end
+	end
+	return nil
 end
 
 local win_meta = {}
@@ -117,6 +139,8 @@ function win_meta.__index(_, winid)
 				delete = false,
 				children = true,
 				select = true,
+				hover = true,
+				parent = true,
 			},
 			ctx = {
 				winid = winid,
@@ -173,7 +197,7 @@ function buf_meta:__index(bufid)
 
 	if ret == nil then
 		if not vim.api.nvim_buf_is_valid(bufid) then
-			error("Buffer " .. bufid .. " does not exist")
+			error("Invalid buffer id: " .. bufid)
 		end
 
 		ret = {
@@ -197,6 +221,7 @@ function buf_meta:__index(bufid)
 		LIST.real.bufs[bufid] = ret
 	else
 		ret.closed = not vim.api.nvim_buf_is_valid(bufid)
+		ret.actions.hover = not ret.closed
 		if not ret.closed then
 			ret.ctx.listed = vim.fn.buflisted(bufid) == 1 or not CONFIG.ignore_unlisted
 		elseif vim.loop.fs_stat(ret.path) then

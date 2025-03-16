@@ -57,16 +57,18 @@ vim.api.nvim_create_autocmd("BufEnter", {
 			end
 		end
 
-		CTX.clear()
+		vim.print("Focused elsewhere")
+		UI.close()
 	end,
 })
 
-vim.api.nvim_create_autocmd("WinResized", {
-	callback = function()
+vim.api.nvim_create_autocmd("VimResized", {
+	callback = function(evt)
 		if #CTX.stack == 0 then
 			return
 		end
 
+		vim.print("Resized", vim.print(evt))
 		UI.spawn(UI._plugin)
 	end,
 })
@@ -75,9 +77,14 @@ vim.api.nvim_create_autocmd("WinResized", {
 ---@param plugin string | Rabbit.Plugin
 function UI.spawn(plugin)
 	if #CTX.stack > 0 then
-		vim.api.nvim_set_current_win(CTX.user.win)
-		vim.api.nvim_set_current_buf(CTX.user.buf)
-		CTX.clear()
+		vim.print("Already open")
+		UI.close()
+	end
+
+	for _, winid in ipairs(vim.api.nvim_list_wins()) do
+		if vim.api.nvim_win_get_config(winid).relative == "" then
+			UI._hov[winid] = vim.api.nvim_win_get_buf(winid)
+		end
 	end
 
 	CTX.user = CTX.workspace()
@@ -119,6 +126,7 @@ function UI.spawn(plugin)
 	vim.wo[listing.win].cursorline = true
 
 	local function redraw()
+		vim.print("- Redrawing...")
 		UI.draw_border(bg)
 		UI.apply_actions()
 		-- vim.api.nvim_win_set_cursor(listing.win, { vim.fn.line("."), 0 })
@@ -162,6 +170,8 @@ end
 ---@param collection Rabbit.Entry.Collection
 ---@return Rabbit.Entry[]
 function UI.list(collection)
+	vim.print("New collection")
+	-- vim.print(collection)
 	vim.bo[UI._fg.buf].modifiable = true
 	if collection.actions.children == true then
 		collection.actions.children = UI._plugin.actions.children
@@ -349,9 +359,9 @@ end
 ---@return string[]
 local function find_action(action, entry)
 	local callback = entry.actions[action]
-	if callback == false then
+	if callback == false or callback == nil then
 		return nil, {}
-	elseif callback == true or callback == nil then
+	elseif callback == true then
 		callback = nil
 	elseif type(callback) ~= "function" then
 		error("Invalid action callback for " .. action .. "; Expected function, got " .. type(callback))
@@ -364,21 +374,25 @@ end
 
 -- Applies keymaps and draws the legend at the bottom of the listing
 function UI.apply_actions()
+	vim.print("- Applying actions")
 	local bg = UI._bg
 	local fg = UI._fg
 	local i = vim.fn.line(".")
 	local e = UI._entries[i] ---@type Rabbit.Entry
 
 	if e == nil then
-		local keys = _K(CONFIG.keys.close)
-		if #keys < 1 then
-			keys = { "q", "<Esc>" }
+		e = {
+			class = "entry",
+			type = "collection",
+			actions = { close = true },
+		}
+	else
+		-- Enable some actions by default
+		for _, action in ipairs({ "close" }) do
+			if e.actions[action] == nil then
+				e.actions[action] = true
+			end
 		end
-		for _, k in ipairs(keys) do
-			_ = pcall(vim.keymap.del, "n", k, { buffer = UI._fg.buf })
-		end
-
-		return -- This shouldn't happen
 	end
 
 	UI._keys = SET.new()
@@ -424,6 +438,7 @@ function UI.apply_actions()
 						parent = UI._parent,
 						cwd = UI._plugin._env.cwd.value,
 					}
+					vim.print("Callback event: " .. action)
 					UI.handle_callback(cb(e))
 				end, { buffer = fg.buf })
 			else
@@ -457,25 +472,18 @@ function UI.apply_actions()
 	HL.nvim_buf_set_line(bg.buf, bg.conf.height - 1, false, bg.ns, bg.conf.width, legend_parts)
 
 	if e.actions.hover then
+		vim.print("- Hover callback")
 		UI.handle_callback(find_action("hover", e)(e))
-	elseif UI._pre.l ~= nil then
-		UI._pre.l:close()
-		UI._pre.r:close()
-		UI._pre.b:close()
-		UI._pre.t:close()
-		for winid, bufid in pairs(UI._hov) do
-			UI._bufid = bufid
-			if vim.api.nvim_buf_is_valid(bufid) then
-				vim.api.nvim_win_set_buf(winid, bufid)
-			end
-			UI._hov[winid] = nil
-		end
+	else
+		vim.print("- No hover callback")
+		UI.cancel_hover()
 	end
 end
 
 function UI.handle_callback(data)
 	if data == nil then
-		return CTX.clear()
+		vim.print("Empty callback")
+		return UI.close()
 	end
 
 	if data.class == "entry" then
@@ -676,9 +684,31 @@ end
 
 -- Closes the window
 function UI.close()
-	vim.api.nvim_win_close(UI._bg.win, true)
-	vim.api.nvim_set_current_win(CTX.user.win)
-	vim.api.nvim_set_current_buf(CTX.user.buf)
+	if #CTX.stack == 0 then
+		return
+	end
+
+	if UI._bg ~= nil then
+		vim.print("Closing window")
+		UI.cancel_hover()
+		UI._bg:close()
+	end
+	vim.api.nvim_set_current_win(CTX.user.win or 0)
+	vim.api.nvim_set_current_buf(CTX.user.buf or 0)
+	CTX.clear()
+end
+
+function UI.cancel_hover()
+	vim.print("Cancelling hover")
+	for winid, bufid in pairs(UI._hov) do
+		UI._bufid = bufid
+		vim.api.nvim_win_set_buf(winid, bufid)
+	end
+
+	for _, v in pairs(UI._pre) do
+		v:close()
+	end
+	UI._pre = {}
 end
 
 -- Returns the current workspace

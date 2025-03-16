@@ -10,29 +10,19 @@ function MSG.preview(data)
 	local win_config = CTX.win_config(data.winid)
 	local box = BOX.normalize("┏┓╚┛━┃║")
 
-	if UI._hov[data.winid] ~= nil then
-		UI._bufid = UI._hov[data.winid]
-		if vim.api.nvim_buf_is_valid(UI._bufid) then
-			vim.api.nvim_win_set_buf(data.winid, UI._bufid)
-		else
-			UI._hov[data.winid] = nil
-		end
-	else
-		UI._hov[data.winid] = vim.api.nvim_win_get_buf(data.winid)
-	end
-
 	for _, v in pairs(UI._pre) do
 		v:close()
 	end
 
 	local relpath
+	local fallback_bufid = UI._hov[data.winid]
 	if vim.api.nvim_buf_is_valid(data.bufid or -1) then
 		relpath = MEM.rel_path(vim.api.nvim_buf_get_name(data.bufid))
-		-- vim.api.nvim_win_set_option(
 		UI._bufid = data.bufid
 		vim.api.nvim_win_set_buf(data.winid, data.bufid)
-	else
-		relpath = MEM.rel_path(data.file)
+	elseif vim.api.nvim_buf_is_valid(fallback_bufid) then
+		UI._bufid = fallback_bufid
+		return vim.api.nvim_win_set_buf(data.winid, fallback_bufid)
 	end
 
 	local sides = BOX.make_sides(win_config.width, win_config.height, box, {
@@ -62,7 +52,7 @@ function MSG.preview(data)
 
 	UI._bufid = vim.api.nvim_create_buf(false, true)
 	local win = vim.api.nvim_open_win(UI._bufid, false, this_config)
-	UI._pre.l = CTX.append(UI._bufid, win, UI._fg)
+	UI._pre.l = CTX.append(UI._bufid, win, UI._bg)
 
 	this_config.col = win_config.width + win_config.col - 1
 	UI._bufid = vim.api.nvim_create_buf(false, true)

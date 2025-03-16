@@ -18,7 +18,9 @@ local function add_child(self, child)
 		vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete", "QuitPre" }, {
 			buffer = self.buf,
 			callback = function()
-				self:close()
+				while #self.children > 0 do
+					table.remove(self.children, 1):close()
+				end
 			end,
 		})
 	end
@@ -92,9 +94,6 @@ function CTX.close(ws)
 		if CTX.stack[i] == ws then
 			_ = pcall(table.remove, CTX.stack, i)
 		end
-	end
-	while #ws.children > 0 do
-		table.remove(ws.children, 1):close()
 	end
 end
 

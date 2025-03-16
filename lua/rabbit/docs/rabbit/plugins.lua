@@ -1,5 +1,6 @@
----@class Rabbit.Plugin
+---@class (exact) Rabbit.Plugin
 ---@field name string Name of the plugin
+---@field empty_msg string Message to display when the listing is empty
 ---@field actions Rabbit.Plugin.Actions Action callbacks
 ---@field events Rabbit.Plugin.Events NvimEvent Callbacks
 ---@field opts Rabbit.Plugin.Options Plugin specific options (user editable)
@@ -18,6 +19,7 @@
 ---@field children Rabbit.Action.Children
 ---@field close Rabbit.Action.Close
 ---@field hover Rabbit.Action.Hover
+---@field parent Rabbit.Action.Parent
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory

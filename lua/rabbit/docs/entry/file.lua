@@ -10,3 +10,5 @@
 ---@class Rabbit.Entry.File.Actions
 ---@field select Rabbit.Action.Callback<Rabbit.Action.Select>
 ---@field delete Rabbit.Action.Callback<Rabbit.Action.Delete>
+---@field hover Rabbit.Action.Callback<Rabbit.Action.Hover>
+---@field parent Rabbit.Action.Callback<Rabbit.Action.Parent>

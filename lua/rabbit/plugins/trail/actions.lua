@@ -1,5 +1,7 @@
 local CTX = require("rabbit.term.ctx")
 local LIST = require("rabbit.plugins.trail.list")
+
+---@type Rabbit.Plugin.Actions
 local ACTIONS = {}
 
 ---@param source_winid integer
@@ -24,6 +26,8 @@ local function cb_copy_win(source_winid)
 			select = true,
 			delete = false,
 			children = false,
+			parent = true,
+			hover = true,
 		},
 		ctx = {
 			source = source_winid,
@@ -71,7 +75,7 @@ function ACTIONS.children(entry)
 			local win = LIST.wins[winid]
 			if win == nil then
 				-- pass
-			elseif win:Len() >= 2 then
+			elseif win:Len() >= 1 then
 				if entry._env then
 					win.default = win.ctx.winid == entry._env.parent.ctx.winid
 				end
@@ -120,6 +124,47 @@ function ACTIONS.children(entry)
 	end
 
 	return entries
+end
+
+function ACTIONS.hover(entry)
+	if entry.type == "collection" then
+		if entry.ctx.source ~= nil then
+			entry = entry --[[@as Rabbit*Trail.Win.Copy]]
+			return {
+				class = "message",
+				type = "preview",
+				bufid = LIST.wins[CTX.user.win][1].bufid,
+				winid = CTX.user.win,
+			}
+		elseif entry.ctx.winid ~= nil then
+			entry = entry --[[@as Rabbit*Trail.Win.User]]
+			return {
+				class = "message",
+				type = "preview",
+				bufid = entry[1].bufid,
+				winid = entry.ctx.winid,
+			}
+		elseif entry.ctx.winid == nil then
+			error("Unreachable (major listing should not be hovered)")
+		end
+
+		error("Unreachable (unknown case)")
+	elseif entry.type == "file" then
+		entry = entry --[[@as Rabbit*Trail.Buf]]
+		return {
+			class = "message",
+			type = "preview",
+			file = entry.path,
+			bufid = entry.bufid,
+			winid = entry.target_winid,
+		}
+	end
+	vim.print(entry)
+	error("Unreachable (unknown entry type)")
+end
+
+function ACTIONS.parent(_)
+	return LIST.major
 end
 
 return ACTIONS
