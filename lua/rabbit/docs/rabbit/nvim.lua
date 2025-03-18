@@ -1,24 +1,24 @@
 ---@class NvimHlKwargs: vim.api.keyset.highlight
 ---@field fg? string Foreground color name or "#RRGGBB" or ":HlGroupName"
 ---@field bg? string Background color name or "#RRGGBB" or ":HlGroupName"
----@field sp? string Space color name or "#RRGGBB"
+---@field sp? string Underline color name or "#RRGGBB"
 ---@field blend? integer Opacity between 0 and 100
 ---@field bold? boolean **Bold** text
----@field standout? boolean
+---@field standout? boolean Standout text, usually an alias for reverse
 ---@field underline? boolean __Underline__ text
----@field undercurl? boolean __Underline__, but curled like misspelled words
----@field underdouble? boolean __Underline__, but double underline
----@field underdotted? boolean __Underline__, but dotted underline
----@field underdashed? boolean __Underline__, but dashed underline
+---@field undercurl? boolean U᪶nd᪶er᪶cu᪶r᪶l text
+---@field underdouble? boolean U͇n͇d͇e͇r͇d͇o͇u͇b͇l͇e͇ text
+---@field underdotted? boolean Ṳn̤d̤e̤r̤d̤o̤t̤t̤e̤d̤ text
+---@field underdashed? boolean U̱ṉḏe̱ṟḏa̱s̱ẖe̱ḏ text
 ---@field strikethrough? boolean ~~Strike~~
 ---@field italic? boolean *Italic* text
 ---@field reverse? boolean Reverse FG and BG
----@field nocombine? boolean
+---@field nocombine? boolean Do not combine text decorations (underlines & strikes)
 ---@field link? string Link to another highlight group name
 ---@field default? boolean Don't override existing definition
 ---@field ctermfg? string Sets foreground of cterm color
 ---@field ctermbg? string Sets background of cterm color
----@field cterm? NvimHlKwargs cterm attr map
+---@field cterm? string[] Special attributes. Use the boolean values above instead.
 ---@field force? boolean Update the highlight group if it exists
 
 ---@class NvimEvent
