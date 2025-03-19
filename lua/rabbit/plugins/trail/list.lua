@@ -141,6 +141,7 @@ function win_meta.__index(_, winid)
 				select = true,
 				hover = true,
 				parent = true,
+				rename = true,
 			},
 			ctx = {
 				winid = winid,
@@ -155,10 +156,12 @@ function win_meta.__index(_, winid)
 		ret.label.hl = { "rabbit.types.collection", "rabbit.paint.iris" }
 		ret.ctx.killed = false
 		ret.actions.delete = false
+		ret.actions.rename = true
 	else
 		ret.label.hl = { "rabbit.types.collection", "rabbit.paint.rose" }
 		ret.ctx.killed = true
 		ret.actions.delete = true
+		ret.actions.rename = false
 	end
 
 	if GLOBAL_CONFIG.window.nrs then
@@ -212,6 +215,8 @@ function buf_meta:__index(bufid)
 				select = true,
 				delete = false,
 				hover = true,
+				parent = true,
+				rename = false,
 			},
 			ctx = {
 				listed = vim.fn.buflisted(bufid) == 1,

@@ -13,6 +13,7 @@
 ---@field plugin? Rabbit.Plugin
 ---@field winid? integer Window ID
 ---@field cwd? Rabbit.Plugin.Context.Directory Working directory, according to `opts.cwd`
+---@field open? boolean Whether Rabbit is currently open
 
 ---@class Rabbit.Plugin.Actions
 ---@field select Rabbit.Action.Select
@@ -20,6 +21,7 @@
 ---@field close Rabbit.Action.Close
 ---@field hover Rabbit.Action.Hover
 ---@field parent Rabbit.Action.Parent
+---@field rename Rabbit.Action.Rename
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory

@@ -10,3 +10,4 @@
 ---@field children Rabbit.Action.Callback<Rabbit.Action.Children>
 ---@field hover Rabbit.Action.Callback<Rabbit.Action.Hover>
 ---@field parent Rabbit.Action.Callback<Rabbit.Action.Parent>
+---@field rename Rabbit.Action.Callback<Rabbit.Action.Rename>

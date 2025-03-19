@@ -13,6 +13,7 @@
 ---@field parent? Rabbit.Entry.Collection The parent collection
 ---@field siblings? Rabbit.Entry[] The siblings
 ---@field entry? Rabbit.Entry The current entry
+---@field real? integer The real index (as shown in the listing)
 
 ---@alias Rabbit.Entry._.Label
 ---| string # Generic text

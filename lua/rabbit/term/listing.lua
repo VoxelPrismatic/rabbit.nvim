@@ -6,9 +6,8 @@ local UI = {
 	_plugin = {}, ---@type Rabbit.Plugin
 	_entries = {}, ---@type Rabbit.Entry[]
 	_parent = nil, ---@type Rabbit.Entry.Collection
+	_display = nil, ---@type Rabbit.Entry.Collection
 	_keys = {},
-	_winid = 0,
-	_bufid = 0,
 	_pre = {}, ---@type { [string]: Rabbit.UI.Workspace }
 	_hov = {}, ---@type { [integer]: integer }
 }
@@ -20,7 +19,7 @@ local MEM = require("rabbit.util.mem")
 local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
-local ACTIONS = require("rabbit.actions")
+local ACTIONS
 
 ---@param key string | string[]
 ---@return string[]
@@ -44,31 +43,12 @@ local case_func = {
 	end,
 }
 
-vim.api.nvim_create_autocmd("BufEnter", {
-	callback = function()
-		if UI._bufid == vim.api.nvim_get_current_buf() then
-			return
-		end
-
-		local w = vim.api.nvim_get_current_win()
-		for _, v in ipairs(CTX.stack) do
-			if v.win == w then
-				return
-			end
-		end
-
-		vim.print("Focused elsewhere")
-		UI.close()
-	end,
-})
-
 vim.api.nvim_create_autocmd("VimResized", {
-	callback = function(evt)
+	callback = function()
 		if #CTX.stack == 0 then
 			return
 		end
 
-		vim.print("Resized", vim.print(evt))
 		UI.spawn(UI._plugin)
 	end,
 })
@@ -76,8 +56,9 @@ vim.api.nvim_create_autocmd("VimResized", {
 -- Creates a buffer for the given plugin
 ---@param plugin string | Rabbit.Plugin
 function UI.spawn(plugin)
+	ACTIONS = require("rabbit.actions")
+
 	if #CTX.stack > 0 then
-		vim.print("Already open")
 		UI.close()
 	end
 
@@ -103,39 +84,46 @@ function UI.spawn(plugin)
 
 	-- Create background window
 	local r = UI.rect(CTX.user.win, 55)
-	UI._bufid = vim.api.nvim_create_buf(false, true)
-	UI._winid = vim.api.nvim_open_win(UI._bufid, true, r)
-	local bg = CTX.append(UI._bufid, UI._winid)
-	bg.ns = vim.api.nvim_create_namespace("rabbit.bg")
-	UI._bg = bg
+
+	UI._bg = CTX.scratch({
+		focus = false,
+		ns = "rabbit.bg",
+		config = r,
+		name = "Rabbit [borders]",
+	})
 
 	-- Create foreground window
 	r.split = nil
 	r.relative = "win"
+	r.win = UI._bg.win
 	r.row = 1
 	r.col = 1
 	r.width = r.width - 2
 	r.height = r.height - 3
 	r.zindex = r.zindex + 1
-	UI._bufid = vim.api.nvim_create_buf(false, true)
-	UI._winid = vim.api.nvim_open_win(UI._bufid, true, r)
-	local listing = CTX.append(UI._bufid, UI._winid, bg)
-	listing.ns = vim.api.nvim_create_namespace("rabbit.listing")
-	UI._fg = listing
-	listing:add_child(bg) -- Treat these as the same layer
-	vim.wo[listing.win].cursorline = true
 
 	local function redraw()
-		vim.print("- Redrawing...")
-		UI.draw_border(bg)
+		UI.draw_border(UI._bg)
 		UI.apply_actions()
 		-- vim.api.nvim_win_set_cursor(listing.win, { vim.fn.line("."), 0 })
 	end
 
-	vim.api.nvim_create_autocmd("CursorMoved", {
-		buffer = listing.buf,
-		callback = redraw,
+	UI._fg = CTX.scratch({
+		focus = true,
+		ns = "rabbit.listing",
+		config = r,
+		parent = UI._bg,
+		name = "Rabbit: " .. UI._plugin.name,
+		wo = {
+			cursorline = true,
+		},
+		autocmd = {
+			CursorMoved = redraw,
+			BufLeave = UI.maybe_close,
+		},
 	})
+
+	UI._fg:add_child(UI._bg) -- Treat these as the same layer
 
 	UI._bufid = -1
 
@@ -157,11 +145,11 @@ function UI.spawn(plugin)
 		cwd.value = cwd.raw()
 	end
 
-	UI._plugin._env = {
-		plugin = UI._plugin,
-		winid = CTX.user.win,
-		cwd = cwd,
-	}
+	-- Do not reassign in case _env is a reference to a module
+	UI._plugin._env.plugin = UI._plugin
+	UI._plugin._env.winid = CTX.user.win
+	UI._plugin._env.cwd = cwd
+	UI._plugin._env.open = true
 
 	UI.handle_callback(UI._plugin.list())
 end
@@ -170,9 +158,6 @@ end
 ---@param collection Rabbit.Entry.Collection
 ---@return Rabbit.Entry[]
 function UI.list(collection)
-	vim.print("New collection")
-	-- vim.print(collection)
-	vim.bo[UI._fg.buf].modifiable = true
 	if collection.actions.children == true then
 		collection.actions.children = UI._plugin.actions.children
 	elseif collection.actions.children == false then
@@ -180,6 +165,7 @@ function UI.list(collection)
 	end
 
 	UI._entries = collection.actions.children(collection)
+	UI._display = collection
 
 	_ = pcall(vim.api.nvim_buf_clear_namespace, UI._fg.buf, UI._fg.ns, 0, -1)
 
@@ -193,45 +179,10 @@ function UI.list(collection)
 
 	for i, entry in ipairs(UI._entries) do
 		j = i
-
-		for k, v in ipairs(entry.actions) do
-			if v == false or v == nil then
-				entry.actions[k] = nil
-			elseif v == true then
-				entry.actions[k] = {
-					action = k,
-					callback = UI._plugin.actions[v] or ACTIONS[v],
-				}
-			elseif type(v) == "function" then
-				entry.actions[k] = {
-					action = k,
-					callback = v,
-				}
-			elseif type(v) ~= "table" then
-				error("Invalid action for " .. k .. ": Expected table, function, or boolean; got " .. type(v))
-			end
-		end
-
-		local idx
-		if entry.idx ~= false then
-			r = r + 1
-			auto_default = auto_default or j
-			man_default = entry.default and (man_default or j) or man_default
-			idx = ("0"):rep(idx_len - #tostring(r)) .. r .. "."
-		else
-			idx = (" "):rep(idx_len - 1) .. "——"
-		end
-
-		HL.nvim_buf_set_line(UI._fg.buf, i - 1, false, UI._fg.ns, UI._fg.conf.width, {
-			{
-				text = " " .. idx .. " ",
-				hl = "rabbit.types.index",
-				align = "left",
-			},
-			UI.highlight(entry),
-		})
+		auto_default, man_default, r = UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 	end
 
+	vim.bo[UI._fg.buf].modifiable = true
 	vim.api.nvim_buf_set_lines(UI._fg.buf, j, -1, false, {})
 	vim.api.nvim_win_set_cursor(UI._fg.win, { man_default or auto_default or 1, 0 })
 
@@ -240,6 +191,68 @@ function UI.list(collection)
 
 	vim.bo[UI._fg.buf].modifiable = false
 	return UI._entries
+end
+
+---@param entry Rabbit.Entry
+---@param j number Index (line number).
+---@param r number Real index.
+---@param idx_len number String length of max index.
+---@param auto_default? number Default index to select.
+---@param man_default? number Manual index to select.
+---@return number | nil "auto_default"
+---@return number | nil "man_default"
+---@return number "real index"
+function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
+	vim.bo[UI._fg.buf].modifiable = true
+
+	entry._env = {
+		idx = j,
+		real = r,
+		entry = entry,
+		siblings = UI._entries,
+		parent = UI._display,
+		cwd = UI._plugin._env.cwd.value,
+	}
+
+	for k, v in ipairs(entry.actions) do
+		if v == false or v == nil then
+			entry.actions[k] = nil
+		elseif v == true then
+			entry.actions[k] = {
+				action = k,
+				callback = UI._plugin.actions[v] or ACTIONS[v],
+			}
+		elseif type(v) == "function" then
+			entry.actions[k] = {
+				action = k,
+				callback = v,
+			}
+		elseif type(v) ~= "table" then
+			error("Invalid action for " .. k .. ": Expected table, function, or boolean; got " .. type(v))
+		end
+	end
+
+	local idx
+	if entry.idx ~= false then
+		r = r + 1
+		auto_default = auto_default or j
+		man_default = entry.default and (man_default or j) or man_default
+		idx = ("0"):rep(idx_len - #tostring(r)) .. r .. "."
+	else
+		idx = ("—"):rep(idx_len + 1)
+	end
+
+	HL.nvim_buf_set_line(UI._fg.buf, j - 1, false, UI._fg.ns, UI._fg.conf.width, {
+		{
+			text = " " .. idx .. "\u{a0}",
+			hl = "rabbit.types.index",
+			align = "left",
+		},
+		UI.highlight(entry),
+	})
+
+	vim.bo[UI._fg.buf].modifiable = false
+	return auto_default, man_default, r
 end
 
 -- Creates the highlights for a particular entry
@@ -357,7 +370,7 @@ end
 ---@param entry Rabbit.Entry
 ---@return fun(e: Rabbit.Entry) | nil
 ---@return string[]
-local function find_action(action, entry)
+function UI.find_action(action, entry)
 	local callback = entry.actions[action]
 	if callback == false or callback == nil then
 		return nil, {}
@@ -374,10 +387,9 @@ end
 
 -- Applies keymaps and draws the legend at the bottom of the listing
 function UI.apply_actions()
-	vim.print("- Applying actions")
 	local bg = UI._bg
 	local fg = UI._fg
-	local i = vim.fn.line(".")
+	local i = vim.api.nvim_win_get_cursor(UI._fg.win)[1]
 	local e = UI._entries[i] ---@type Rabbit.Entry
 
 	if e == nil then
@@ -416,8 +428,14 @@ function UI.apply_actions()
 		})
 		:del("hover")
 
+	if e.actions.parent then
+		if UI.find_action("parent", e)(e) == UI._display then
+			all_actions:del("parent")
+		end
+	end
+
 	for _, action in ipairs(all_actions) do
-		local cb, keys = find_action(action, e)
+		local cb, keys = UI.find_action(action, e)
 		if #keys == 0 or cb == nil then
 			goto continue
 		end
@@ -431,14 +449,6 @@ function UI.apply_actions()
 			if type(k) == "string" then
 				UI._keys:add(k)
 				vim.keymap.set("n", k, function()
-					e._env = {
-						idx = i,
-						entry = e,
-						siblings = UI._entries,
-						parent = UI._parent,
-						cwd = UI._plugin._env.cwd.value,
-					}
-					vim.print("Callback event: " .. action)
 					UI.handle_callback(cb(e))
 				end, { buffer = fg.buf })
 			else
@@ -472,17 +482,14 @@ function UI.apply_actions()
 	HL.nvim_buf_set_line(bg.buf, bg.conf.height - 1, false, bg.ns, bg.conf.width, legend_parts)
 
 	if e.actions.hover then
-		vim.print("- Hover callback")
-		UI.handle_callback(find_action("hover", e)(e))
+		UI.handle_callback(UI.find_action("hover", e)(e))
 	else
-		vim.print("- No hover callback")
 		UI.cancel_hover()
 	end
 end
 
 function UI.handle_callback(data)
 	if data == nil then
-		vim.print("Empty callback")
 		return UI.close()
 	end
 
@@ -688,22 +695,36 @@ function UI.close()
 		return
 	end
 
+	vim.api.nvim_set_current_win(CTX.user.win or 0)
+	vim.api.nvim_set_current_buf(CTX.user.buf or 0)
 	if UI._bg ~= nil then
-		vim.print("Closing window")
 		UI.cancel_hover()
 		UI._bg:close()
 	end
-	vim.api.nvim_set_current_win(CTX.user.win or 0)
-	vim.api.nvim_set_current_buf(CTX.user.buf or 0)
 	CTX.clear()
+	UI._plugin._env.open = false
 end
 
+-- Closes the window ONLY if the latest window is NOT generated by CTX via the scratch function
+function UI.maybe_close()
+	if CTX.is_scratch then
+		CTX.is_scratch = false
+	else
+		UI.close()
+	end
+end
+
+-- Deletes the hover windows
 function UI.cancel_hover()
-	vim.print("Cancelling hover")
 	for winid, bufid in pairs(UI._hov) do
 		UI._bufid = bufid
-		vim.api.nvim_win_set_buf(winid, bufid)
+		if vim.api.nvim_buf_is_valid(bufid) and vim.api.nvim_win_is_valid(winid) then
+			vim.api.nvim_win_set_buf(winid, bufid)
+		else
+			UI._hov[winid] = nil
+		end
 	end
+	UI._bufid = -1
 
 	for _, v in pairs(UI._pre) do
 		v:close()

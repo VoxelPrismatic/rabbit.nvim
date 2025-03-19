@@ -101,6 +101,9 @@ function MEM.rel_path(target)
 	local CTX = require("rabbit.term.ctx")
 	local CONFIG = require("rabbit.config")
 	local UIL = require("rabbit.term.listing")
+	if not vim.api.nvim_buf_is_valid(CTX.user.buf) then
+		CTX.user.buf = vim.api.nvim_win_get_buf(CTX.user.win)
+	end
 	return rel_path({
 		source = vim.api.nvim_buf_get_name(CTX.user.buf),
 		target = tostring(target),

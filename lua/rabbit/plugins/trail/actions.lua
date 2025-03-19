@@ -1,4 +1,4 @@
-local CTX = require("rabbit.term.ctx")
+local ENV = require("rabbit.plugins.trail.env")
 local LIST = require("rabbit.plugins.trail.list")
 
 ---@type Rabbit.Plugin.Actions
@@ -62,10 +62,10 @@ function ACTIONS.children(entry)
 	if entry.ctx.source ~= nil then
 		entry = entry --[[@as Rabbit*Trail.Win.Copy]]
 		local source = LIST.wins[entry.ctx.source]
-		local target = LIST.wins[CTX.user.win]
+		local target = LIST.wins[ENV.winid]
 		target.ctx.bufs:add(source.ctx.bufs)
 		LIST.major.ctx.wins:del(entry.ctx.source)
-		LIST.major.ctx.wins:add(CTX.user.win)
+		LIST.major.ctx.wins:add(ENV.winid)
 		LIST.real.wins[entry.ctx.source] = nil
 		entries = target.actions.children(target)
 	elseif entry.ctx.winid == nil then
@@ -87,7 +87,7 @@ function ACTIONS.children(entry)
 		end
 
 		for _, bufid in ipairs(entry.ctx.bufs) do
-			local buf = LIST.bufs[bufid]:as(CTX.user.win)
+			local buf = LIST.bufs[bufid]:as(ENV.winid)
 			if buf.ctx.listed then
 				buf.idx = true
 				table.insert(entries, buf)
@@ -127,30 +127,11 @@ function ACTIONS.children(entry)
 end
 
 function ACTIONS.hover(entry)
-	if entry.type == "collection" then
-		if entry.ctx.source ~= nil then
-			entry = entry --[[@as Rabbit*Trail.Win.Copy]]
-			return {
-				class = "message",
-				type = "preview",
-				bufid = LIST.wins[CTX.user.win][1].bufid,
-				winid = CTX.user.win,
-			}
-		elseif entry.ctx.winid ~= nil then
-			entry = entry --[[@as Rabbit*Trail.Win.User]]
-			return {
-				class = "message",
-				type = "preview",
-				bufid = entry[1].bufid,
-				winid = entry.ctx.winid,
-			}
-		elseif entry.ctx.winid == nil then
-			error("Unreachable (major listing should not be hovered)")
-		end
-
-		error("Unreachable (unknown case)")
-	elseif entry.type == "file" then
+	if entry.type == "file" then
 		entry = entry --[[@as Rabbit*Trail.Buf]]
+		if entry._env.parent == LIST.major then
+			entry:as(ENV.winid)
+		end
 		return {
 			class = "message",
 			type = "preview",
@@ -158,13 +139,77 @@ function ACTIONS.hover(entry)
 			bufid = entry.bufid,
 			winid = entry.target_winid,
 		}
+	elseif entry.ctx.winid == nil then
+		error("Unreachable (major listing should never be hovered)")
+	elseif entry.ctx.source ~= nil then
+		entry = entry --[[@as Rabbit*Trail.Win.Copy]]
+		return {
+			class = "message",
+			type = "preview",
+			bufid = LIST.wins[ENV.winid][1].bufid,
+			winid = ENV.winid,
+		}
 	end
-	vim.print(entry)
-	error("Unreachable (unknown entry type)")
+
+	entry = entry --[[@as Rabbit*Trail.Win.User]]
+	return {
+		class = "message",
+		type = "preview",
+		bufid = entry[1].bufid,
+		winid = entry.ctx.winid,
+	}
 end
 
 function ACTIONS.parent(_)
 	return LIST.major
+end
+
+---@param entry Rabbit*Trail.Win.User
+---@param new_name string
+local function apply_rename(entry, new_name)
+	if new_name == "" then
+		new_name = tostring(entry.ctx.winid)
+	end
+
+	for _, winobj in pairs(LIST.real.wins) do
+		if winobj ~= entry and winobj.label.text == new_name then
+			local _, _, count, match = new_name:find("(%++)([0-9]*)$")
+			if match == nil and count == nil then
+				return apply_rename(entry, new_name .. "+")
+			elseif match == "" and count ~= "" then
+				return apply_rename(entry, new_name .. #count)
+			else
+				local new_idx = tostring(tonumber(match) + 1)
+				return apply_rename(entry, new_name:sub(1, -#new_idx - 1) .. new_idx)
+			end
+		end
+	end
+	entry.label.text = new_name
+	return new_name
+end
+
+function ACTIONS.rename(entry)
+	if entry.type == "file" then
+		error("Unreachable (file should never be renamed)")
+	elseif entry.ctx.winid == nil then
+		error("Unreachable (major listing should never be renamed)")
+	elseif entry.ctx.source ~= nil then
+		error("Unreachable (copy listing should never be renamed)")
+	end
+
+	entry = entry --[[@as Rabbit*Trail.Win.User]]
+
+	if entry.ctx.killed then
+		error("Unreachable (killed window should never be renamed)")
+	end
+
+	return { ---@type Rabbit.Message.Rename
+		class = "message",
+		type = "rename",
+		apply = apply_rename,
+		color = false,
+		name = entry.label.text,
+	}
 end
 
 return ACTIONS

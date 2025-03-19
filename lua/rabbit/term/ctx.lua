@@ -7,6 +7,7 @@ local CTX = {
 		win = SET.new(),
 		buf = SET.new(),
 	},
+	is_scratch = false,
 }
 
 -- Adds a parent workspace
@@ -18,6 +19,7 @@ local function add_child(self, child)
 		vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete", "QuitPre" }, {
 			buffer = self.buf,
 			callback = function()
+				self:close()
 				while #self.children > 0 do
 					table.remove(self.children, 1):close()
 				end
@@ -96,5 +98,66 @@ function CTX.close(ws)
 		end
 	end
 end
+
+-- Creates a scratch buffer and window and appends it to the stack
+---@param opts? Rabbit.Term.ScratchKwargs
+---@return Rabbit.UI.Workspace
+function CTX.scratch(opts)
+	CTX.is_scratch = true
+	if type(opts) ~= "table" then
+		error("Expected table, got " .. type(opts))
+	end
+
+	if opts.focus == nil then
+		opts.focus = true
+	end
+
+	local bufid = vim.api.nvim_create_buf(false, true)
+	local winid = vim.api.nvim_open_win(bufid, opts.focus, opts.config)
+
+	local ws = CTX.append(bufid, winid, opts.parent)
+
+	if opts.name then
+		vim.api.nvim_buf_set_name(bufid, opts.name)
+	end
+
+	if opts.ns then
+		ws.ns = vim.api.nvim_create_namespace(opts.ns)
+	end
+
+	for k, v in pairs(opts.wo or {}) do
+		vim.wo[winid][k] = v
+	end
+
+	for k, v in pairs(opts.bo or {}) do
+		vim.bo[bufid][k] = v
+	end
+
+	for k, v in pairs(opts.autocmd or {}) do
+		vim.api.nvim_create_autocmd(k, { buffer = bufid, callback = v })
+	end
+
+	if opts.lines then
+		vim.api.nvim_buf_set_lines(bufid, 0, -1, false, opts.lines)
+	end
+
+	if opts.cursor then
+		vim.api.nvim_win_set_cursor(winid, opts.cursor)
+	end
+
+	return ws
+end
+
+---@class (exact) Rabbit.Term.ScratchKwargs
+---@field name? string Buffer name
+---@field focus boolean Focus the window immediately after creation
+---@field config vim.api.keyset.win_config Window configuration
+---@field parent? Rabbit.UI.Workspace Will close this one if the parent is closed
+---@field ns? string Highlight namespace
+---@field wo? table Window options
+---@field bo? table Buffer options
+---@field autocmd? table<string, fun()> Buffer Autocmds
+---@field lines? string[] Initial lines
+---@field cursor? integer[] Cursor position
 
 return CTX

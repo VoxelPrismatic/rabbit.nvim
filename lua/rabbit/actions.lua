@@ -1,4 +1,5 @@
 local CTX = require("rabbit.term.ctx")
+local UI = require("rabbit.term.listing")
 
 ---@type Rabbit.Plugin.Actions
 ---@diagnostic disable-next-line: missing-fields
@@ -9,7 +10,7 @@ function ACTIONS.select(entry)
 		entry = entry --[[@as Rabbit.Entry]]
 		if entry.type == "file" then
 			entry = entry --[[@as Rabbit.Entry.File]]
-			CTX.clear()
+			UI.close()
 			if entry.target_winid ~= nil then
 				vim.api.nvim_set_current_win(entry.target_winid)
 			else
@@ -31,7 +32,7 @@ function ACTIONS.select(entry)
 end
 
 function ACTIONS.close(_)
-	CTX.clear()
+	UI.close()
 	vim.api.nvim_set_current_win(CTX.user.win)
 	vim.api.nvim_set_current_buf(CTX.user.buf)
 end

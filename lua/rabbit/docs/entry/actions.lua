@@ -12,7 +12,7 @@
 
 ---@alias Rabbit.Action.Children fun(entry: Rabbit.Entry.Collection): Rabbit.Entry[]
 ---@alias Rabbit.Action.Close fun(entry: Rabbit.Entry.Collection): nil
----@alias Rabbit.Action.Rename fun(entry: Rabbit.Entry, new_name: string): string, Rabbit.Entry # Returns the corrected name and the updated entry. When the cursor is moved away from this line, the old entry is automatically replaced with the new one.
+---@alias Rabbit.Action.Rename fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Select fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Delete fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Hover fun(entry: Rabbit.Entry): Rabbit.Response
