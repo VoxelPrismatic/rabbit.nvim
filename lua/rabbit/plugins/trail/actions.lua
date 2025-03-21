@@ -28,6 +28,7 @@ local function cb_copy_win(source_winid)
 			children = false,
 			parent = true,
 			hover = true,
+			rename = false,
 		},
 		ctx = {
 			source = source_winid,

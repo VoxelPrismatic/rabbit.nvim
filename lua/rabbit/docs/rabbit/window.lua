@@ -73,5 +73,28 @@
 ---@field titles Rabbit.Config.Window.Titles | Rabbit.Term.Border.Side[] Title positioning & whatnot.
 ---@field overflow Rabbit.Config.Window.Overflow How to handle overflow.
 ---@field legend boolean Show a quick legend at the bottom. Consumes one line.
----@field nrs boolean Whether or not to show bufids, winids, term pids, etc
+---@field extras Rabbit.Config.Window.Extras Extra info
 ---@field preview true Whether or not to display a preview of the buffer about to be opened
+---@field icons Rabbit.Config.Window.Icons Icons for various things
+
+---@class (exact) Rabbit.Config.Window.Extras
+---@field nrs boolean Whether or not to show BufIDs, WinIDs, term PIDs, etc.
+---@field readonly boolean Whether or not to show if the buffer is read-only.
+---@field lsp Rabbit.Config.Window.Extras.Lsp | Rabbit.Config.Window.Extras.Lsp.Callback Whether or not to show lsp info.
+---@field modified boolean Whether or not to show if the buffer has been modified.
+
+---@class (exact) Rabbit.Config.Window.Extras.Lsp
+---@field hint Rabbit.Config.Window.Extras.Lsp.Callback LSP level 'Hint'
+---@field info Rabbit.Config.Window.Extras.Lsp.Callback LSP level 'Info'
+---@field warn Rabbit.Config.Window.Extras.Lsp.Callback LSP level 'Warn'
+---@field error Rabbit.Config.Window.Extras.Lsp.Callback LSP level 'Error'
+
+---@alias Rabbit.Config.Window.Extras.Lsp.Callback boolean | fun(data: vim.Diagnostic): boolean
+
+---@class (exact) Rabbit.Config.Window.Icons
+---@field modified string Icon for modified buffers.
+---@field readonly string Icon for read-only buffers.
+---@field lsp_error string Icon for LSP errors.
+---@field lsp_info string Icon for LSP info.
+---@field lsp_warn string Icon for LSP warnings.
+---@field lsp_hint string Icon for LSP help.

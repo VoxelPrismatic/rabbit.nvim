@@ -4,6 +4,7 @@ local LIST = require("rabbit.plugins.trail.list")
 
 ---@type Rabbit*Trail
 local PLUG = {
+	empty_msg = "There's nowhere to jump to!",
 	name = "trail",
 	actions = require("rabbit.plugins.trail.actions"),
 	events = require("rabbit.plugins.trail.autocmd"),

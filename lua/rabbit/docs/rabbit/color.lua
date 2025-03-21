@@ -44,3 +44,10 @@
 ---@field files Rabbit.Config.Colors.Files Colors for different types of files
 ---@field paint Rabbit.Config.Colors.Paint Colors to use for your collections. Will pull from rose-pine or the background colors from highlight groups when possible
 ---@field popup Rabbit.Config.Colors.Popup Colors for popup boxes.
+---@field lsp Rabbit.Config.Colors.Lsp Colors for lsp info
+
+---@class (exact) Rabbit.Config.Colors.Lsp
+---@field hint Color.Nvim LSP level 'Hint'
+---@field info Color.Nvim LSP level 'Info'
+---@field warn Color.Nvim LSP level 'Warn'
+---@field error Color.Nvim LSP level 'Error'

@@ -11,11 +11,11 @@
 ---@field z? number Z-index
 
 ---@class Rabbit.UI.Workspace
----@field win? integer Window ID
----@field buf? integer Buffer ID
----@field ns? integer Highlight Namespace ID
----@field view? vim.fn.winsaveview.ret Window viewport details
----@field conf? vim.api.keyset.win_config Window configuration details
+---@field win? integer Window ID.
+---@field buf? integer Buffer ID.
+---@field ns? integer Highlight Namespace ID.
+---@field view? vim.fn.winsaveview.ret Window viewport details.
+---@field conf? vim.api.keyset.win_config Window configuration details.
 ---@field children? Rabbit.UI.Workspace[]
----@field add_child? fun(self: Rabbit.UI.Workspace, child: Rabbit.UI.Workspace)
+---@field add_child? fun(self: Rabbit.UI.Workspace, child: Rabbit.UI.Workspace): Rabbit.UI.Workspace Adds a child workspace and returns it.
 ---@field close? fun(self: Rabbit.UI.Workspace)

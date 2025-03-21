@@ -13,6 +13,7 @@ local CTX = {
 -- Adds a parent workspace
 ---@param self Rabbit.UI.Workspace
 ---@param child Rabbit.UI.Workspace
+---@return Rabbit.UI.Workspace
 local function add_child(self, child)
 	table.insert(self.children, child)
 	if #self.children == 1 then
@@ -26,6 +27,8 @@ local function add_child(self, child)
 			end,
 		})
 	end
+
+	return child
 end
 
 -- Adds a workspace to the stack, and binds the WinClosed and BufDelete events
@@ -100,10 +103,10 @@ function CTX.close(ws)
 end
 
 -- Creates a scratch buffer and window and appends it to the stack
----@param opts? Rabbit.Term.ScratchKwargs
+---@param opts Rabbit.Term.ScratchKwargs
 ---@return Rabbit.UI.Workspace
 function CTX.scratch(opts)
-	CTX.is_scratch = true
+	CTX.is_scratch = opts.focus
 	if type(opts) ~= "table" then
 		error("Expected table, got " .. type(opts))
 	end
