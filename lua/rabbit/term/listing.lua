@@ -19,6 +19,7 @@ local MEM = require("rabbit.util.mem")
 local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
+local LSP = require("rabbit.util.lsp")
 local ACTIONS
 
 ---@param key string | string[]
@@ -259,100 +260,7 @@ end
 ---@param entry Rabbit.Entry
 ---@return Rabbit.Term.HlLine
 function UI.highlight(entry)
-	if entry.type == "file" then
-		---@diagnostic disable-next-line: missing-fields
-		entry = entry --[[@as Rabbit.Entry.File]]
-		entry.closed = not vim.api.nvim_buf_is_valid(entry.bufid)
-		if not entry.closed and entry.path == "" then
-			entry.path = vim.api.nvim_buf_get_name(entry.bufid)
-		end
-		if tostring(entry.path):find("term://") == 1 then
-			return {
-				{
-					text = "$ ",
-					hl = { "rabbit.files.term" },
-					align = "left",
-				},
-				{
-					text = vim.b[entry.bufid].term_title,
-					hl = {
-						["rabbit.files.closed"] = entry.closed,
-						["rabbit.types.index"] = entry.idx == false,
-						"rabbit.files.file",
-					},
-					align = "left",
-				},
-				CONFIG.window.nrs and {
-					text = tostring(entry.path):gsub(".*/(%d+):.*/(%w+)$", "%2/%1") .. " ",
-					hl = { "rabbit.types.tail" },
-					align = "right",
-				} or {},
-			}
-		elseif tostring(entry.path):find("://") ~= nil then
-			return {
-				{
-					text = tostring(entry.path):gsub("://.*$", ""),
-					hl = { "rabbit.files.term" },
-					align = "left",
-				},
-				{
-					text = ":",
-					hl = { "rabbit.legend.separator" },
-					align = "left",
-				},
-				{
-					text = tostring(entry.path):gsub(".*://", ""),
-					hl = {
-						["rabbit.files.closed"] = entry.closed,
-						["rabbit.types.index"] = entry.idx == false,
-						"rabbit.files.file",
-					},
-					align = "left",
-				},
-				CONFIG.window.nrs and {
-					text = tostring(entry.bufid) .. " ",
-					hl = { "rabbit.types.tail" },
-					align = "right",
-				} or {},
-			}
-		elseif entry.path == "" then
-			return {
-				{
-					text = "#nil ",
-					hl = { "rabbit.files.void" },
-					align = "left",
-				},
-				{
-					text = tostring(entry.bufid),
-					hl = {
-						["rabbit.files.closed"] = entry.closed,
-						["rabbit.types.index"] = entry.idx == false,
-						"rabbit.files.file",
-					},
-					align = "left",
-				},
-			}
-		end
-
-		local rel_path = MEM.rel_path(tostring(entry.path))
-		return {
-			{ text = rel_path.dir, hl = { "rabbit.files.path" }, align = "left" },
-			{
-				text = rel_path.name,
-				hl = {
-					["rabbit.files.closed"] = entry.closed,
-					["rabbit.types.index"] = entry.idx == false,
-					"rabbit.files.file",
-				},
-				align = "left",
-			},
-			CONFIG.window.nrs and {
-				text = tostring(entry.bufid) .. " ",
-				hl = { "rabbit.types.tail" },
-				align = "right",
-			} or {},
-		}
-	elseif entry.type == "collection" then
+	if entry.type == "collection" then
 		entry = entry --[[@as Rabbit.Entry.Collection]]
 		return {
 			type(entry.label) == "string" and { text = entry.label, hl = { "rabbit.paint.iris" }, align = "left" }
@@ -362,8 +270,133 @@ function UI.highlight(entry)
 				or entry.tail
 				or {},
 		}
+	elseif entry.type ~= "file" then
+		error("Highlight not implemented for type: " .. entry.type)
 	end
-	error("Not implemented for type: " .. entry.type)
+
+	---@diagnostic disable-next-line: missing-fields
+	entry = entry --[[@as Rabbit.Entry.File]]
+	entry.closed = not vim.api.nvim_buf_is_valid(entry.bufid)
+	if not entry.closed and entry.path == "" then
+		entry.path = vim.api.nvim_buf_get_name(entry.bufid)
+	end
+	if tostring(entry.path):find("term://") == 1 then
+		return {
+			{
+				text = "$ ",
+				hl = { "rabbit.files.term" },
+				align = "left",
+			},
+			{
+				text = vim.b[entry.bufid].term_title,
+				hl = {
+					["rabbit.files.closed"] = entry.closed,
+					["rabbit.types.index"] = entry.idx == false,
+					"rabbit.files.file",
+				},
+				align = "left",
+			},
+			CONFIG.window.extras.nrs and {
+				text = tostring(entry.path):gsub(".*/(%d+):.*/(%w+)$", "%2/%1") .. " ",
+				hl = { "rabbit.types.tail" },
+				align = "right",
+			} or {},
+		}
+	elseif tostring(entry.path):find("://") ~= nil then
+		return {
+			{
+				text = tostring(entry.path):gsub("://.*$", ""),
+				hl = { "rabbit.files.term" },
+				align = "left",
+			},
+			{
+				text = ":",
+				hl = { "rabbit.legend.separator" },
+				align = "left",
+			},
+			{
+				text = tostring(entry.path):gsub(".*://", ""),
+				hl = {
+					["rabbit.files.closed"] = entry.closed,
+					["rabbit.types.index"] = entry.idx == false,
+					"rabbit.files.file",
+				},
+				align = "left",
+			},
+			CONFIG.window.extras.nrs and {
+				text = tostring(entry.bufid) .. " ",
+				hl = { "rabbit.types.tail" },
+				align = "right",
+			} or {},
+		}
+	end
+
+	local extras = {}
+
+	local lsp_count = LSP.get_count(entry.bufid, CONFIG.window.extras.lsp)
+	for k, v in pairs(lsp_count) do
+		if v > 0 then
+			table.insert(extras, {
+				text = CONFIG.window.icons["lsp_" .. k] .. v .. " ",
+				hl = { "rabbit.lsp." .. k },
+				align = "right",
+			})
+		end
+	end
+
+	if CONFIG.window.extras.modified and vim.bo[entry.bufid].modified then
+		table.insert(extras, {
+			text = CONFIG.window.icons.modified .. " ",
+			hl = { "rabbit.files.modified" },
+			align = "right",
+		})
+	elseif CONFIG.window.extras.readonly and vim.bo[entry.bufid].readonly then
+		table.insert(extras, {
+			text = CONFIG.window.icons.readonly .. " ",
+			hl = { "rabbit.files.readonly" },
+			align = "right",
+		})
+	end
+
+	if entry.path == "" then
+		return {
+			{
+				text = "#nil ",
+				hl = { "rabbit.files.void" },
+				align = "left",
+			},
+			{
+				text = tostring(entry.bufid),
+				hl = {
+					["rabbit.files.closed"] = entry.closed,
+					["rabbit.types.index"] = entry.idx == false,
+					"rabbit.files.file",
+				},
+				align = "left",
+			},
+			extras,
+		}
+	end
+
+	local rel_path = MEM.rel_path(tostring(entry.path))
+	return {
+		{ text = rel_path.dir, hl = { "rabbit.files.path" }, align = "left" },
+		{
+			text = rel_path.name,
+			hl = {
+				["rabbit.files.closed"] = entry.closed,
+				["rabbit.types.index"] = entry.idx == false,
+				"rabbit.files.file",
+			},
+			align = "left",
+		},
+		extras,
+		CONFIG.window.extras.nrs and {
+			text = tostring(entry.bufid) .. " ",
+			hl = { "rabbit.types.tail" },
+			align = "right",
+		} or {},
+	}
 end
 
 ---@param action string

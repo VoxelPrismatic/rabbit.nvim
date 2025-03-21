@@ -20,6 +20,7 @@ C.colors = {
 		term = { fg = ":Constant", bold = true },
 		void = { fg = ":Function", italic = true },
 		closed = { fg = ":DiagnosticVirtualTextError" },
+		modified = { fg = ":WarningMsg" },
 	},
 
 	paint = {
@@ -42,6 +43,13 @@ C.colors = {
 		action = { fg = ":rabbit.plugin", bold = true },
 		separator = { fg = ":Comment" },
 		key = { fg = ":Normal" },
+	},
+
+	lsp = {
+		error = { fg = ":DiagnosticError", bold = true },
+		warn = { fg = ":DiagnosticWarn", bold = true },
+		info = { fg = ":DiagnosticInfo", bold = true },
+		hint = { fg = ":DiagnosticHint", bold = true },
 	},
 }
 
@@ -81,8 +89,34 @@ C.window = {
 		distance_trim = 3,
 	},
 
+	icons = {
+		modified = "•",
+		readonly = "",
+		lsp_hint = "󱐋",
+		lsp_info = "",
+		lsp_warn = "󰔶",
+		lsp_error = "",
+	},
+
+	extras = {
+		nrs = true,
+		readonly = true,
+		modified = true,
+		lsp = {
+			hint = function(data)
+				if data.source == "Harper" and vim.bo[data.bufnr].filetype ~= "markdown" then
+					return false
+				end
+
+				return true
+			end,
+			error = true,
+			warn = true,
+			info = true,
+		},
+	},
+
 	legend = true,
-	nrs = true,
 	preview = true,
 }
 

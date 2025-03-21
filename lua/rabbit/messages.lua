@@ -60,7 +60,12 @@ function MSG.preview(data)
 		})
 	end
 
-	local this_config = {
+	table.insert(sides.r.txt, 1, box.ne)
+	table.insert(sides.l.txt, 1, box.nw)
+	table.insert(sides.r.txt, box.se)
+	table.insert(sides.l.txt, box.sw)
+
+	local left_config = {
 		row = win_config.row,
 		col = win_config.col,
 		width = 1,
@@ -71,42 +76,52 @@ function MSG.preview(data)
 		style = "minimal",
 	}
 
-	UI._bufid = vim.api.nvim_create_buf(false, true)
-	local win = vim.api.nvim_open_win(UI._bufid, false, this_config)
-	UI._pre.l = CTX.append(UI._bufid, win, UI._bg)
+	local right_config = vim.deepcopy(left_config)
+	right_config.col = win_config.col + win_config.width - 1
 
-	this_config.col = win_config.width + win_config.col - 1
-	UI._bufid = vim.api.nvim_create_buf(false, true)
-	win = vim.api.nvim_open_win(UI._bufid, false, this_config)
-	UI._pre.r = CTX.append(UI._bufid, win, UI._pre.l)
+	local top_config = vim.deepcopy(right_config)
+	top_config.height = 1
+	top_config.col = win_config.col + 1
+	top_config.width = win_config.width - 2
 
-	this_config.height = 1
-	this_config.col = win_config.col + 1
-	this_config.width = win_config.width - 2
-	UI._bufid = vim.api.nvim_create_buf(false, true)
-	win = vim.api.nvim_open_win(UI._bufid, false, this_config)
-	UI._pre.t = CTX.append(UI._bufid, win, UI._pre.r)
+	local bot_config = vim.deepcopy(top_config)
+	bot_config.row = win_config.row + win_config.height - 1
 
-	this_config.row = win_config.height + win_config.row - 1
-	UI._bufid = vim.api.nvim_create_buf(false, true)
-	win = vim.api.nvim_open_win(UI._bufid, false, this_config)
-	UI._pre.b = CTX.append(UI._bufid, win, UI._pre.t)
-	UI._pre.l:add_child(UI._pre.b)
+	UI._pre.l = CTX.scratch({
+		focus = false,
+		config = left_config,
+		parent = UI._bg,
+		lines = sides.l.txt,
+	})
 
-	table.insert(sides.r.txt, 1, box.ne)
-	table.insert(sides.l.txt, 1, box.nw)
-	table.insert(sides.r.txt, box.se)
-	table.insert(sides.l.txt, box.sw)
+	UI._pre.r = CTX.scratch({
+		focus = false,
+		config = right_config,
+		parent = UI._pre.l,
+		lines = sides.r.txt,
+	})
 
-	vim.api.nvim_buf_set_lines(UI._pre.l.buf, 0, -1, false, sides.l.txt)
-	vim.api.nvim_buf_set_lines(UI._pre.r.buf, 0, -1, false, sides.r.txt)
+	UI._pre.t = CTX.scratch({
+		focus = false,
+		config = top_config,
+		parent = UI._pre.r,
+		lines = { table.concat(sides.t.txt, "") },
+	})
+
+	UI._pre.b = CTX.scratch({
+		focus = false,
+		config = bot_config,
+		parent = UI._pre.t,
+		lines = { table.concat(sides.b.txt, "") },
+	})
+
+	UI._pre.l:add_child(UI._pre.b) -- Circle so they all close at the same time
+
 	for i = 1, win_config.height do
 		vim.api.nvim_buf_add_highlight(UI._pre.l.buf, -1, "rabbit.plugin.inv", i - 1, 0, -1)
 		vim.api.nvim_buf_add_highlight(UI._pre.r.buf, -1, "rabbit.plugin.inv", i - 1, 0, -1)
 	end
 
-	vim.api.nvim_buf_set_lines(UI._pre.t.buf, 0, -1, false, { table.concat(sides.t.txt) })
-	vim.api.nvim_buf_set_lines(UI._pre.b.buf, 0, -1, false, { table.concat(sides.b.txt) })
 	vim.api.nvim_buf_add_highlight(UI._pre.t.buf, -1, "rabbit.plugin.inv", 0, 0, -1)
 	vim.api.nvim_buf_add_highlight(UI._pre.b.buf, -1, "rabbit.plugin.inv", 0, 0, -1)
 

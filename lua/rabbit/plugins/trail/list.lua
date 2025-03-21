@@ -66,6 +66,7 @@ LIST.major = {
 		select = true,
 		hover = false,
 		parent = true,
+		rename = false,
 	},
 	ctx = {
 		wins = SET.new(),
@@ -164,7 +165,7 @@ function win_meta.__index(_, winid)
 		ret.actions.rename = false
 	end
 
-	if GLOBAL_CONFIG.window.nrs then
+	if GLOBAL_CONFIG.window.extras.nrs then
 		ret.tail = {
 			text = tostring(winid) .. " ",
 			hl = { "rabbit.types.tail" },
@@ -229,7 +230,7 @@ function buf_meta:__index(bufid)
 		ret.actions.hover = not ret.closed
 		if not ret.closed then
 			ret.ctx.listed = vim.fn.buflisted(bufid) == 1 or not CONFIG.ignore_unlisted
-		elseif vim.loop.fs_stat(ret.path) then
+		elseif vim.uv.fs_stat(ret.path) then
 			ret.ctx.listed = true
 		else
 			ret.ctx.listed = false
