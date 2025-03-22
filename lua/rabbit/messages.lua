@@ -10,12 +10,15 @@ local rename_ws ---@type Rabbit.UI.Workspace
 
 ---@param data Rabbit.Message.Preview
 function MSG.preview(data)
-	local win_config = CTX.win_config(data.winid)
-	local box = BOX.normalize("┏┓╚┛━┃║")
-
 	for _, v in pairs(UI._pre) do
 		v:close()
 	end
+
+	local win_config = CTX.win_config(data.winid)
+	if win_config == nil then
+		return
+	end
+	local box = BOX.normalize("┏┓╚┛━┃║")
 
 	local relpath
 	local fallback_bufid = UI._hov[data.winid]

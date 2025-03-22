@@ -7,7 +7,7 @@ local CTX = {
 		win = SET.new(),
 		buf = SET.new(),
 	},
-	is_scratch = false,
+	scratch_time = 0,
 }
 
 -- Adds a parent workspace
@@ -67,10 +67,14 @@ function CTX.workspace(bufid, winid)
 	return ws
 end
 
--- Returns the current window configuration, including the width and height
+-- Returns the current window configuration, including the width and height.
+-- Nil if window doesn't exist.
 ---@param winid integer
----@return vim.api.keyset.win_config
+---@return vim.api.keyset.win_config | nil
 function CTX.win_config(winid)
+	if vim.api.nvim_win_is_valid(winid) == false then
+		return nil
+	end
 	local conf = vim.api.nvim_win_get_config(winid)
 	conf.width = conf.width or vim.api.nvim_win_get_width(winid)
 	conf.height = conf.height or vim.api.nvim_win_get_height(winid)
@@ -106,7 +110,9 @@ end
 ---@param opts Rabbit.Term.ScratchKwargs
 ---@return Rabbit.UI.Workspace
 function CTX.scratch(opts)
-	CTX.is_scratch = opts.focus
+	if opts.focus then
+		CTX.scratch_time = os.time()
+	end
 	if type(opts) ~= "table" then
 		error("Expected table, got " .. type(opts))
 	end
