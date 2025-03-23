@@ -111,7 +111,7 @@ end
 ---@return Rabbit.UI.Workspace
 function CTX.scratch(opts)
 	if opts.focus then
-		CTX.scratch_time = os.time()
+		CTX.scratch_time = vim.uv.hrtime()
 	end
 	if type(opts) ~= "table" then
 		error("Expected table, got " .. type(opts))

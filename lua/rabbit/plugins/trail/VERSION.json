@@ -1,0 +1,26 @@
+{
+	"latest": "r02",
+	"changes": {
+		"r02": {
+			"date": "Mar 19, 2025",
+			"bugs": [
+				"Trail now ignores all events when Rabbit is open",
+				"Previewing buffers no longer breaks the buffer order"
+			],
+			"features": [
+				"Implemented Rename action, imitating Oil",
+				"Implemented Parent action; quickly jump to parent collection"
+			]
+		},
+		"r01": {
+			"date": "Mar 15, 2025",
+			"bugs": [],
+			"features": [
+				"Initial release",
+				"Legacy:History and Legacy:Reopen have been merged into Trail",
+				"Trail allows you to select which window to open",
+				"Trail displays shows a preview of what and where you're about to open"
+			]
+		}
+	}
+}

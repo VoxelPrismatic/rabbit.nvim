@@ -115,9 +115,9 @@ function HL.nvim_buf_set_line(buf, line, strict, ns, width, lines)
 
 	local center_pad = (
 		width
-		- vim.fn.strdisplaywidth(parts.left.text)
-		- vim.fn.strdisplaywidth(parts.right.text)
-		- vim.fn.strdisplaywidth(parts.center.text)
+		- vim.api.nvim_strwidth(parts.left.text)
+		- vim.api.nvim_strwidth(parts.right.text)
+		- vim.api.nvim_strwidth(parts.center.text)
 	) / 2
 	local text = parts.left.text
 		.. (" "):rep(math.floor(center_pad))
@@ -140,6 +140,33 @@ function HL.nvim_buf_set_line(buf, line, strict, ns, width, lines)
 	for _, v in ipairs(parts.right.hl) do
 		vim.api.nvim_buf_add_highlight(buf, ns or -1, v.name, line, v.start + offset, v.end_ + offset)
 	end
+end
+
+-- Splits the list of lines so each character is in it's own line
+---@param lines Rabbit.Term.HlLine[]
+---@return Rabbit.Term.HlLine[]
+function HL.split(lines)
+	local result = {}
+
+	while #lines > 0 do
+		local line = table.remove(lines, 1)
+
+		for _, v in ipairs(line) do
+			table.insert(lines, v)
+		end
+
+		if line.text ~= nil then
+			for _, char in ipairs(vim.split(line.text, "")) do
+				table.insert(result, {
+					text = char,
+					hl = line.hl,
+					align = line.align,
+				})
+			end
+		end
+	end
+
+	return result
 end
 
 ---@class Rabbit.Term.HlLine.Loc

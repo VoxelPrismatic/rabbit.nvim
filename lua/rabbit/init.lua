@@ -25,6 +25,11 @@ function RABBIT.setup(opts)
 
 		RABBIT.register(p, v)
 	end
+
+	local ok, msg, errno = vim.uv.fs_mkdir(vim.fn.stdpath("data") .. "/rabbit", 493)
+	if not ok and errno ~= "EEXIST" then
+		error(msg)
+	end
 end
 
 -- Sets up a plugin

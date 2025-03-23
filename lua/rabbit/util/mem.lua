@@ -115,4 +115,50 @@ function MEM.rel_path(target)
 	})
 end
 
+---@param self Rabbit.Writeable
+local function writeable_save(self)
+	MEM.Write(self, self.__Dest)
+end
+
+-- Tries to read a file. If the file isn't found, it returns an empty table.
+---@param src string The path to the file to read.
+---@return Rabbit.Writeable
+function MEM.Read(src)
+	local data, msg, errno = io.open(src, "r")
+	if errno == 2 then
+		return {}
+	elseif data == nil then
+		error(msg)
+	end
+
+	local serial = data:read("*a")
+	data:close()
+
+	local ret = vim.fn.json_decode(serial)
+	ret.__Dest = src
+	ret.__Save = writeable_save
+
+	return ret
+end
+
+-- Tries to save a file. If the file doesn't exist, it is created.
+-- If the data is not of JSON format, it will throw an error.
+-- If the file cannot be saved, it will throw an error.
+---@param dest string The path to the file to save.
+---@param data table The data to save.
+function MEM.Write(data, dest)
+	local serial = vim.fn.json_encode(data)
+	local writer, msg = io.open(dest, "w")
+	if writer == nil then
+		error(msg)
+	end
+
+	data:write(serial)
+	data:close()
+end
+
+---@class Rabbit.Writeable: table
+---@field __Save fun(self: Rabbit.Writeable)
+---@field __Dest string The destination
+
 return MEM

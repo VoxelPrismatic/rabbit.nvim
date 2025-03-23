@@ -51,3 +51,12 @@
 ---@field info Color.Nvim LSP level 'Info'
 ---@field warn Color.Nvim LSP level 'Warn'
 ---@field error Color.Nvim LSP level 'Error'
+
+---@alias Rabbit.Colors.Paint
+---| "rose" # Pink
+---| "love" # Red
+---| "gold" # Yellow
+---| "tree" # Green
+---| "foam" # Light Blue
+---| "iris" # Deep Blue
+---| "pine" # Navy
