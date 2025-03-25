@@ -18,7 +18,7 @@ function ACTIONS.select(entry)
 			end
 
 			if entry.closed then
-				vim.cmd("e '" .. entry.path .. "'")
+				vim.cmd("e " .. entry.path)
 			else
 				vim.api.nvim_set_current_buf(entry.bufid)
 			end

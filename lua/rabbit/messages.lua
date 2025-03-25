@@ -14,6 +14,10 @@ function MSG.preview(data)
 		v:close()
 	end
 
+	if not vim.api.nvim_buf_is_valid(data.bufid) then
+		return
+	end
+
 	local win_config = CTX.win_config(data.winid)
 	if win_config == nil then
 		return
@@ -24,10 +28,8 @@ function MSG.preview(data)
 	local fallback_bufid = UI._hov[data.winid]
 	if vim.api.nvim_buf_is_valid(data.bufid or -1) then
 		relpath = MEM.rel_path(vim.api.nvim_buf_get_name(data.bufid))
-		UI._bufid = data.bufid
 		vim.api.nvim_win_set_buf(data.winid, data.bufid)
 	elseif vim.api.nvim_buf_is_valid(fallback_bufid) then
-		UI._bufid = fallback_bufid
 		return vim.api.nvim_win_set_buf(data.winid, fallback_bufid)
 	end
 
@@ -138,7 +140,6 @@ end
 ---@param data Rabbit.Message.Rename
 function MSG.rename(data)
 	local linenr, curpos = unpack(vim.api.nvim_win_get_cursor(UI._fg.win))
-	vim.print({ linenr, curpos })
 	local entry = UI._entries[linenr] ---@type Rabbit.Entry
 	if not entry.actions.rename then
 		vim.print("WARNING: Attempt to rename an entry that cannot be renamed.")
@@ -228,6 +229,9 @@ function MSG.rename(data)
 
 		if dx == 0 or vim.fn.line("$") < 3 then
 			curpos = vim.fn.col(".")
+			return
+		elseif vim.fn.line("$") > 3 then
+			vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, true, true), "n")
 			return
 		end
 

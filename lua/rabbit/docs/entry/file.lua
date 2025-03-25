@@ -13,3 +13,4 @@
 ---@field hover Rabbit.Action.Callback<Rabbit.Action.Hover>
 ---@field parent Rabbit.Action.Callback<Rabbit.Action.Parent>
 ---@field insert Rabbit.Action.Callback<Rabbit.Action.Insert>
+---@field collect Rabbit.Action.Callback<Rabbit.Action.Collect>

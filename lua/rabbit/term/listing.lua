@@ -193,6 +193,7 @@ function UI.list(collection)
 		vim.api.nvim_win_set_cursor(UI._fg.win, { man_default or auto_default or 1, 0 })
 		vim.api.nvim_buf_set_lines(UI._fg.buf, j, -1, false, {})
 	else
+		vim.bo[UI._fg.buf].modifiable = true
 		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.conf.width)
 		table.insert(lines, "")
 		vim.api.nvim_buf_set_lines(UI._fg.buf, 0, -1, false, lines)
@@ -251,6 +252,13 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		auto_default = auto_default or j
 		man_default = entry.default and (man_default or j) or man_default
 		idx = ("0"):rep(idx_len - #tostring(r)) .. r .. "."
+		if r < 10 and entry.actions.select then
+			vim.keymap.set("n", tostring(r), function()
+				UI.handle_callback(UI.find_action("select", entry)(entry))
+			end, {
+				buffer = UI._fg.buf,
+			})
+		end
 	else
 		idx = ("—"):rep(idx_len + 1)
 	end
@@ -345,31 +353,30 @@ function UI.highlight(entry)
 
 	local extras = {}
 
-	local lsp_count = LSP.get_count(entry.bufid, CONFIG.window.extras.lsp)
-	for k, v in pairs(lsp_count) do
-		if v > 0 then
+	if vim.api.nvim_buf_is_valid(entry.bufid) then
+		local lsp_count = LSP.get_count(entry.bufid, CONFIG.window.extras.lsp)
+		for k, v in pairs(lsp_count) do
+			if v > 0 then
+				table.insert(extras, {
+					text = CONFIG.window.icons["lsp_" .. k] .. v .. " ",
+					hl = { "rabbit.lsp." .. k },
+					align = "right",
+				})
+			end
+		end
+		if CONFIG.window.extras.modified and vim.bo[entry.bufid].modified then
 			table.insert(extras, {
-				text = CONFIG.window.icons["lsp_" .. k] .. v .. " ",
-				hl = { "rabbit.lsp." .. k },
-				align = "right",
+				text = " " .. CONFIG.window.icons.modified,
+				hl = { "rabbit.files.modified" },
+				align = "left",
+			})
+		elseif CONFIG.window.extras.readonly and vim.bo[entry.bufid].readonly then
+			table.insert(extras, {
+				text = " " .. CONFIG.window.icons.readonly .. " ",
+				hl = { "rabbit.files.readonly" },
+				align = "left",
 			})
 		end
-	end
-
-	if not vim.api.nvim_buf_is_valid(entry.bufid) then
-		-- pass
-	elseif CONFIG.window.extras.modified and vim.bo[entry.bufid].modified then
-		table.insert(extras, {
-			text = " " .. CONFIG.window.icons.modified,
-			hl = { "rabbit.files.modified" },
-			align = "left",
-		})
-	elseif CONFIG.window.extras.readonly and vim.bo[entry.bufid].readonly then
-		table.insert(extras, {
-			text = " " .. CONFIG.window.icons.readonly .. " ",
-			hl = { "rabbit.files.readonly" },
-			align = "left",
-		})
 	end
 
 	if entry.path == "" then
@@ -405,7 +412,7 @@ function UI.highlight(entry)
 			align = "left",
 		},
 		extras,
-		CONFIG.window.extras.nrs and {
+		(CONFIG.window.extras.nrs and not entry.closed) and {
 			text = tostring(entry.bufid) .. " ",
 			hl = { "rabbit.types.tail" },
 			align = "right",

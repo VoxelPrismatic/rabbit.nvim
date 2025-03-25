@@ -8,7 +8,6 @@ local ACTIONS = {}
 ---@return Rabbit.Entry.Collection
 local function cb_copy_win(source_winid)
 	---@type Rabbit*Trail.Win.Copy
-	vim.print(source_winid)
 	return {
 		class = "entry",
 		type = "collection",
@@ -31,6 +30,7 @@ local function cb_copy_win(source_winid)
 			hover = true,
 			rename = false,
 			insert = false,
+			collect = false,
 		},
 		ctx = {
 			source = source_winid,

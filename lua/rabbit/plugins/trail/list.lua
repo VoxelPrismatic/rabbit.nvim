@@ -68,6 +68,7 @@ LIST.major = {
 		parent = true,
 		rename = false,
 		insert = false,
+		collect = false,
 	},
 	ctx = {
 		wins = SET.new(),
@@ -145,6 +146,7 @@ function win_meta.__index(_, winid)
 				parent = true,
 				rename = true,
 				insert = false,
+				collect = false,
 			},
 			ctx = {
 				winid = winid,
@@ -241,10 +243,11 @@ function buf_meta:__index(bufid)
 			actions = {
 				select = true,
 				delete = false,
-				hover = true,
+				hover = type(bufid) == "number",
 				parent = true,
 				rename = false,
 				insert = false,
+				collect = false,
 			},
 			ctx = {
 				listed = true_listed,

@@ -117,7 +117,12 @@ end
 
 ---@param self Rabbit.Writeable
 local function writeable_save(self)
-	MEM.Write(self, self.__Dest)
+	local dest = self.__Dest
+	self.__Dest = nil
+	self.__Save = nil
+	MEM.Write(self, dest)
+	self.__Dest = dest
+	self.__Save = writeable_save
 end
 
 -- Tries to read a file. If the file isn't found, it returns an empty table.
@@ -125,16 +130,19 @@ end
 ---@return Rabbit.Writeable
 function MEM.Read(src)
 	local data, msg, errno = io.open(src, "r")
+	local ret = {}
 	if errno == 2 then
-		return {}
+		--pass
 	elseif data == nil then
 		error(msg)
+	else
+		local serial = data:read("*a")
+		data:close()
+		if serial ~= "" then
+			ret = vim.fn.json_decode(serial)
+		end
 	end
 
-	local serial = data:read("*a")
-	data:close()
-
-	local ret = vim.fn.json_decode(serial)
 	ret.__Dest = src
 	ret.__Save = writeable_save
 
@@ -153,8 +161,8 @@ function MEM.Write(data, dest)
 		error(msg)
 	end
 
-	data:write(serial)
-	data:close()
+	writer:write(serial)
+	writer:close()
 end
 
 ---@class Rabbit.Writeable: table

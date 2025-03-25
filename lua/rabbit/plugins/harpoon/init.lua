@@ -16,6 +16,7 @@ local PLUG = {
 			rename = false,
 			select = false,
 			insert = true,
+			collect = true,
 		},
 	},
 	name = "harpoon",
@@ -36,7 +37,7 @@ end
 
 function PLUG.list()
 	PLUG.empty.actions.insert = false
-	for _, bufid in pairs(TRAIL.major.ctx.bufs) do
+	for _, bufid in ipairs(TRAIL.major.ctx.bufs) do
 		local bufobj = TRAIL.bufs[bufid]
 		if bufobj.ctx.listed and vim.uv.fs_stat(bufobj.path) ~= nil then
 			LIST.recent = bufobj.path

@@ -29,6 +29,7 @@
 ---@field parent? Rabbit.Action.Parent
 ---@field rename? Rabbit.Action.Rename
 ---@field insert? Rabbit.Action.Insert
+---@field collect? Rabbit.Action.Collect
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory

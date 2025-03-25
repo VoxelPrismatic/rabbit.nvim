@@ -14,6 +14,7 @@ local PLUG = {
 			rename = false,
 			select = false,
 			insert = false,
+			collect = false,
 		},
 	},
 	name = "trail",

@@ -12,3 +12,4 @@
 ---@field parent Rabbit.Action.Callback<Rabbit.Action.Parent>
 ---@field rename Rabbit.Action.Callback<Rabbit.Action.Rename>
 ---@field insert Rabbit.Action.Callback<Rabbit.Action.Insert>
+---@field collect Rabbit.Action.Callback<Rabbit.Action.Collect>

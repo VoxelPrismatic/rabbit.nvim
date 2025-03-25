@@ -1,6 +1,7 @@
 local MEM = require("rabbit.util.mem")
 local ENV = require("rabbit.plugins.harpoon.env")
 local CONFIG = require("rabbit.plugins.harpoon.config")
+local TRAIL = require("rabbit.plugins.trail.list")
 
 ---@class (exact) Rabbit*Harpoon.Collection: Rabbit.Entry.Collection
 ---@field ctx Rabbit*Harpoon.Collection.Ctx
@@ -15,16 +16,19 @@ local CONFIG = require("rabbit.plugins.harpoon.config")
 ---@field name string Collection name
 ---@field color Rabbit.Colors.Paint Collection color
 ---@field parent integer Parent collection (or 0 for root)
----@field [integer] string | integer String: File path; Integer: Collection ID
+---@field list (string | integer)[] String: File path; Integer: Collection ID
 
 ---@class (exact) Rabbit*Harpoon.Dump
----@field [integer] Rabbit*Harpoon.Collection.Dump
+---@field [string] Rabbit*Harpoon.Collection.Dump
+
+---@class Rabbit*Harpoon.Writeable: Rabbit.Writeable
+---@field [string] Rabbit*Harpoon.Dump
 
 ---@class Rabbit*Harpoon.Listing
 local LIST = {
-	---@type table<string, Rabbit*Harpoon.Dump>
+	---@type Rabbit*Harpoon.Writeable
 	-- { path: Collection }
-	harpoon = {},
+	harpoon = { __Dest = "harpoon.json", __Save = MEM.Write },
 
 	---@type table<string, Rabbit*Harpoon.Collection>
 	-- Memory pointers to collections to prevent duplicates
@@ -37,6 +41,8 @@ local LIST = {
 	---@type table<integer, Rabbit*Harpoon.Collection>
 	-- { buffer id: Collection }
 	buffers = {},
+
+	files = {},
 }
 
 -- Loads collection data from disk
@@ -57,23 +63,28 @@ end
 
 ---@param id integer Collection ID
 local function create_collection(self, id)
+	if rawget(self, tostring(id)) ~= nil then
+		return self[tostring(id)]
+	end
+
 	if LIST.harpoon[ENV.cwd.value] == nil then
 		LIST.harpoon[ENV.cwd.value] = {}
 	end
 
-	if LIST.harpoon[ENV.cwd.value][id] == nil then
+	if LIST.harpoon[ENV.cwd.value][tostring(id)] == nil then
 		---@type Rabbit*Harpoon.Collection.Dump
-		LIST.harpoon[ENV.cwd.value][id] = {
-			name = id == 0 and "Root" or tostring(id),
+		LIST.harpoon[ENV.cwd.value][tostring(id)] = {
+			name = id == 0 and "Root" or "",
 			color = "rose",
-			parent = 0,
+			parent = -1,
+			list = {},
 		}
 	end
 
-	local collection = LIST.harpoon[ENV.cwd.value][id]
+	local collection = LIST.harpoon[ENV.cwd.value][tostring(id)]
 
 	---@type Rabbit*Harpoon.Collection
-	self[id] = {
+	self[tostring(id)] = {
 		class = "entry",
 		type = "collection",
 		idx = true,
@@ -89,9 +100,10 @@ local function create_collection(self, id)
 			children = true,
 			select = true,
 			hover = false,
-			parent = true,
-			rename = false,
+			parent = collection.parent ~= 0,
+			rename = tostring(id) ~= "0",
 			insert = false,
+			collect = true,
 		},
 		ctx = {
 			bufid = ENV.bufid,
@@ -110,6 +122,16 @@ setmetatable(LIST.collections, {
 
 setmetatable(LIST.buffers, {
 	__index = buffer_collection,
+})
+
+setmetatable(LIST.files, {
+	__index = function(_, key)
+		local c = vim.deepcopy(TRAIL.bufs[key])
+		c.actions.insert = true
+		c.actions.collect = true
+		c.idx = true
+		return c
+	end,
 })
 
 -- Recently deleted entry
