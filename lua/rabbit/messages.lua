@@ -84,8 +84,7 @@ function MSG.preview(data)
 		vim.api.nvim_win_set_buf(data.winid, data.bufid)
 	else
 		if preview_ws ~= nil then
-			preview_ws:close()
-			preview_ws = nil
+			preview_ws = preview_ws:close()
 		end
 
 		if vim.api.nvim_buf_is_valid(fallback_bufid) then
@@ -107,7 +106,8 @@ function MSG.preview(data)
 				col = 0,
 				zindex = 1,
 			})
-			preview_ws = CTX.workspace(data.bufid, fakewin)
+			preview_ws = CTX.append(data.bufid, fakewin)
+			preview_ws.container = true
 		end
 	end
 

@@ -19,3 +19,4 @@
 ---@field children? Rabbit.UI.Workspace[]
 ---@field add_child? fun(self: Rabbit.UI.Workspace, child: Rabbit.UI.Workspace): Rabbit.UI.Workspace Adds a child workspace and returns it.
 ---@field close? fun(self: Rabbit.UI.Workspace)
+---@field container? boolean True if this workspace is a container (will not delete buffer upon close)

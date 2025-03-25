@@ -87,18 +87,23 @@ end
 -- Clears the stack; closes all windows and buffers
 function CTX.clear()
 	while #CTX.stack > 0 do
-		local v = CTX.stack[1]
-		_ = pcall(vim.api.nvim_win_close, v.win, true)
-		_ = pcall(vim.api.nvim_buf_delete, v.buf, { force = true })
+		local ws = CTX.stack[1]
+		_ = pcall(vim.api.nvim_win_close, ws.win, true)
+		if not ws.container then
+			_ = pcall(vim.api.nvim_buf_delete, ws.buf, { force = true })
+		end
 		_ = pcall(table.remove, CTX.stack, 1)
 	end
 end
 
 -- Closes the current workspace
 ---@param ws Rabbit.UI.Workspace
+---@return nil
 function CTX.close(ws)
 	_ = pcall(vim.api.nvim_win_close, ws.win, true)
-	_ = pcall(vim.api.nvim_buf_delete, ws.buf, { force = true })
+	if not ws.container then
+		_ = pcall(vim.api.nvim_buf_delete, ws.buf, { force = true })
+	end
 	for i = #CTX.stack, 1, -1 do
 		if CTX.stack[i] == ws then
 			_ = pcall(table.remove, CTX.stack, i)
