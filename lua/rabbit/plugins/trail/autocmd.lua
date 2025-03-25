@@ -11,23 +11,17 @@ function EVT.BufEnter(evt, ctx)
 
 	evt.file = vim.api.nvim_buf_get_name(evt.buf)
 
-	local dupes = LIST.find_dupes(LIST.bufs[evt.buf].path)
+	local buf = LIST.bufs[evt.buf]
 	LIST.major.ctx.wins:add(ctx.winid)
-	LIST.major.ctx.bufs:add(evt.buf):del(dupes)
-	LIST.wins[ctx.winid].ctx.bufs:add(evt.buf):del(dupes)
+	LIST.major.ctx.bufs:add(evt.buf)
+	LIST.wins[ctx.winid].ctx.bufs:add(evt.buf)
 
-	if #dupes > 0 then
-		-- Update all windows with the new buffer
-		for _, winid in ipairs(LIST.major.ctx.wins) do
-			LIST.wins[winid].ctx.bufs:sub(dupes, evt.buf)
-		end
-	end
-
-	LIST.clean_bufs(dupes)
+	LIST.handle_duped_bufs(buf.bufid)
 end
 
 function EVT.BufDelete(evt, _)
 	if not LIST.bufs[evt.buf].ctx.listed or vim.uv.fs_stat(evt.file) == nil then
+		LIST.handle_duped_bufs(evt.buf)
 		LIST.major.ctx.bufs:del({ evt.buf })
 		for _, winid in ipairs(LIST.major.ctx.wins) do
 			LIST.wins[winid].ctx.bufs:del({ evt.buf })

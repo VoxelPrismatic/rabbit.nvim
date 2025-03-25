@@ -59,7 +59,6 @@ LIST.major = {
 		hl = { "rabbit.types.tail" },
 		align = "right",
 	},
-
 	actions = {
 		delete = false,
 		children = true,
@@ -86,7 +85,7 @@ local user_meta = {}
 function user_meta:__len()
 	local count = 0
 	for _, bufid in ipairs(self.ctx.bufs) do
-		if vim.api.nvim_buf_is_valid(bufid) and LIST.bufs[bufid].ctx.listed then
+		if LIST.bufs[bufid].ctx.listed then
 			count = count + 1
 		end
 	end
@@ -255,16 +254,8 @@ function buf_meta:__index(bufid)
 			as = buf_as,
 		}
 
-		local bufs_to_del = {}
-		for id, bufobj in pairs(LIST.real.bufs) do
-			if bufobj.path == ret.path then
-				LIST.real.bufs[id] = ret
-				table.insert(bufs_to_del, id)
-			end
-		end
-
 		LIST.real.bufs[true_bufid] = ret
-		LIST.clean_bufs(bufs_to_del)
+		LIST.handle_duped_bufs(true_bufid)
 	else
 		bufid = bufid --[[@as integer]]
 
@@ -314,11 +305,23 @@ function LIST.find_dupes(bufid)
 	local target = LIST.bufs[bufid]
 	local ret = {}
 	for id, obj in pairs(LIST.real.bufs) do
-		if obj.path == target.path and id ~= target.bufid then
+		if obj.path == target.path and id ~= target.bufid and not vim.api.nvim_buf_is_valid(id) then
 			table.insert(ret, id)
 		end
 	end
 	return ret
+end
+
+-- Handles duplicate buffers
+---@param bufid integer
+function LIST.handle_duped_bufs(bufid)
+	local dupes = LIST.find_dupes(bufid)
+	LIST.major.ctx.bufs:sub(dupes, bufid)
+	for _, winid in ipairs(LIST.major.ctx.wins) do
+		LIST.wins[winid].ctx.bufs:sub(dupes, bufid)
+	end
+
+	LIST.clean_bufs(dupes)
 end
 
 ---@class Rabbit*Trail.SaveFile

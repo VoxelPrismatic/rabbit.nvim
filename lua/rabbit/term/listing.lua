@@ -858,14 +858,12 @@ end
 -- Deletes the hover windows
 function UI.cancel_hover()
 	for winid, bufid in pairs(UI._hov) do
-		UI._bufid = bufid
 		if vim.api.nvim_buf_is_valid(bufid) and vim.api.nvim_win_is_valid(winid) then
 			vim.api.nvim_win_set_buf(winid, bufid)
 		else
 			UI._hov[winid] = nil
 		end
 	end
-	UI._bufid = -1
 
 	for _, v in pairs(UI._pre) do
 		v:close()

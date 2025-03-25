@@ -210,10 +210,26 @@ function ACTIONS.delete(entry)
 		LIST.major.ctx.wins:del(entry.ctx.winid)
 	elseif entry.type == "file" then
 		entry = entry --[[@as Rabbit*Trail.Buf]]
-		assert(entry.closed == true, "opened buffers should never be deleted")
 		local parent = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
-		parent.ctx.bufs:del(entry.bufid)
-		LIST.clean_bufs({ entry.bufid })
+		if not entry.closed then
+			assert(vim.bo[entry.bufid].modified == false, "modified buffer should never be deleted")
+			local bufid = -1
+			for _, winid in ipairs(vim.api.nvim_list_wins()) do
+				if vim.api.nvim_win_get_buf(winid) == entry.bufid then
+					if bufid == -1 then
+						bufid = vim.api.nvim_create_buf(true, false)
+					end
+					vim.api.nvim_win_set_buf(winid, bufid)
+					LIST.wins[winid].ctx.bufs:add(bufid)
+					require("rabbit.term.listing")._hov[winid] = bufid
+				end
+			end
+
+			vim.api.nvim_buf_delete(entry.bufid, { force = true })
+		else
+			parent.ctx.bufs:del(entry.bufid)
+			LIST.clean_bufs({ entry.bufid })
+		end
 	else
 		error("unknown entry type")
 	end
@@ -222,7 +238,6 @@ function ACTIONS.delete(entry)
 	if default == #entry._env.siblings then
 		default = default - 1
 	end
-	vim.print(default)
 
 	return entry._env.parent
 end
