@@ -204,6 +204,31 @@ function ACTIONS.rename(entry)
 	}
 end
 
+-- Closes the buffer, but also opens new buffers in windows that have that buffer open
+---@param target integer
+local function migrate_closing_buf(target)
+	local blank = -1
+	for _, winid in ipairs(LIST.major.ctx.wins) do
+		if vim.api.nvim_win_is_valid(winid) and vim.api.nvim_win_get_buf(winid) == target then
+			local try_bufs = LIST.wins[winid].ctx.bufs
+			local try_buf = blank
+			for _, b in ipairs(try_bufs) do
+				if b ~= target and vim.api.nvim_buf_is_valid(b) then
+					try_buf = b
+					break
+				end
+			end
+			if try_buf == -1 then
+				blank = vim.api.nvim_create_buf(true, false)
+				try_buf = blank
+			end
+			vim.api.nvim_win_set_buf(winid, try_buf)
+			LIST.wins[winid].ctx.bufs:add(try_buf)
+			require("rabbit.term.listing")._hov[winid] = try_buf
+		end
+	end
+end
+
 function ACTIONS.delete(entry)
 	default = entry._env.idx
 	if entry.type == "collection" then
@@ -220,26 +245,8 @@ function ACTIONS.delete(entry)
 		local parent = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
 		if not entry.closed then
 			assert(vim.bo[entry.bufid].modified == false, "modified buffer should never be deleted")
-			local bufid = -1
-			for _, winid in ipairs(LIST.major.ctx.wins) do
-				if vim.api.nvim_win_is_valid(winid) and vim.api.nvim_win_get_buf(winid) == entry.bufid then
-					local try_bufs = LIST.wins[winid].ctx.bufs
-					local try_buf = bufid
-					for _, b in ipairs(try_bufs) do
-						if b ~= entry.bufid and vim.api.nvim_buf_is_valid(b) then
-							try_buf = b
-							break
-						end
-					end
-					if try_buf == -1 then
-						bufid = vim.api.nvim_create_buf(true, false)
-						try_buf = bufid
-					end
-					vim.api.nvim_win_set_buf(winid, try_buf)
-					LIST.wins[winid].ctx.bufs:add(try_buf)
-					require("rabbit.term.listing")._hov[winid] = bufid
-				end
-			end
+
+			migrate_closing_buf(entry.bufid)
 
 			vim.api.nvim_buf_delete(entry.bufid, { force = true })
 		else
