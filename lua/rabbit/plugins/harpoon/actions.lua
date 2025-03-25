@@ -31,14 +31,18 @@ function ACTIONS.children(entry)
 	end
 
 	local to_remove = {}
+	local top_level = LIST.collections[0] == entry
 	for i, e in ipairs(entry.ctx.real.list) do
 		if e == vim.NIL or e == nil then
 			table.insert(to_remove, i)
 		elseif type(e) == "string" then
 			local c = LIST.files[e]:as(ENV.winid)
+			c.actions.parent = not top_level
 			table.insert(entries, c)
 		else
 			local c = LIST.collections[e]
+			c.actions.parent = not top_level
+			c.actions.insert = true
 			c.default = false
 			table.insert(entries, c)
 			if c == entry._env.parent then
@@ -71,7 +75,7 @@ function ACTIONS.insert(entry)
 	if entry._env == nil then
 		entry._env = { idx = 1, cwd = ENV.cwd.value }
 	end
-	SET.Func.add(collection.ctx.real.list, LIST.recent, math.max(1, entry._env.idx - 1))
+	SET.Func.add(collection.ctx.real.list, LIST.recent, entry._env.idx)
 	selection = entry._env.idx
 
 	LIST.harpoon:__Save()
@@ -112,7 +116,9 @@ local function apply_rename(entry, new_name)
 
 	for _, collection in pairs(entry._env.siblings) do
 		collection = collection --[[@as Rabbit*Harpoon.Collection]]
-		if collection ~= entry and collection.ctx.real.name == new_name then
+		if collection.type ~= "collection" then
+			-- pass
+		elseif collection ~= entry and collection.ctx.real.name == new_name then
 			local _, _, count, match = new_name:find("(%++)([0-9]*)$")
 			if match == nil and count == nil then
 				return apply_rename(entry, new_name .. "+")
