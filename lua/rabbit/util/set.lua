@@ -59,12 +59,19 @@ end
 ---@return integer "How many elements were removed (usually 1)"
 function SET.Func:del(elem)
 	local count = 0
-	for i, v in ipairs(self) do
-		if v == elem then
-			table.remove(self, i)
-			count = count + 1
+	if type(elem) ~= "table" then
+		elem = { elem }
+	end
+
+	for _, e in ipairs(elem) do
+		for i = #self, 1, -1 do
+			if self[i] == e then
+				table.remove(self, i)
+				count = count + 1
+			end
 		end
 	end
+
 	return count
 end
 
@@ -80,6 +87,35 @@ function SET.Func:idx(elem)
 		end
 	end
 	return nil
+end
+
+-- Replaces all instances of these elements with another
+---@generic T
+---@param self Rabbit.Table.Set<`T`>
+---@param elem T | T[]
+---@param new T
+---@return Rabbit.Table.Set<T>
+function SET.Func:sub(elem, new)
+	if type(elem) ~= "table" then
+		elem = { elem }
+	end
+
+	local done = SET.Func.idx(self, new) ~= nil
+
+	for _, e in ipairs(elem) do
+		local idx = SET.Func.idx(self, e)
+		while idx do
+			if not done then
+				self[idx] = new
+				done = true
+			else
+				table.remove(self, idx)
+			end
+			idx = SET.Func.idx(self, e)
+		end
+	end
+
+	return self
 end
 
 -- Returns logical AND (intersection)

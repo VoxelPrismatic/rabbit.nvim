@@ -86,7 +86,7 @@ local user_meta = {}
 function user_meta:__len()
 	local count = 0
 	for _, bufid in ipairs(self.ctx.bufs) do
-		if LIST.bufs[bufid].ctx.listed then
+		if vim.api.nvim_buf_is_valid(bufid) and LIST.bufs[bufid].ctx.listed then
 			count = count + 1
 		end
 	end
@@ -216,7 +216,7 @@ function buf_meta:__index(bufid)
 
 		if type(bufid) == "number" then
 			if not vim.api.nvim_buf_is_valid(bufid) then
-				error("Invalid buffer id: " .. bufid)
+				error("Rabbit: Invalid buffer id: " .. bufid)
 			end
 
 			true_bufid = bufid
@@ -269,7 +269,8 @@ function buf_meta:__index(bufid)
 		bufid = bufid --[[@as integer]]
 
 		ret.closed = not vim.api.nvim_buf_is_valid(bufid)
-		ret.actions.hover = not ret.closed
+		ret.actions.hover = true
+		ret.actions.delete = ret.closed or (vim.bo[bufid].modified == false)
 		if not ret.closed then
 			ret.ctx.listed = vim.fn.buflisted(bufid) == 1 or not CONFIG.ignore_unlisted
 		elseif vim.uv.fs_stat(ret.path) then
@@ -292,7 +293,8 @@ function LIST.clean_bufs(bufs_to_del)
 			goto referenced
 		end
 
-		for _, winobj in ipairs(LIST.real.wins) do
+		for _, winid in ipairs(LIST.major.ctx.wins) do
+			local winobj = LIST.wins[winid]
 			if winobj.ctx.bufs:idx(bufid) then
 				goto referenced
 			end
@@ -312,7 +314,7 @@ function LIST.find_dupes(bufid)
 	local target = LIST.bufs[bufid]
 	local ret = {}
 	for id, obj in pairs(LIST.real.bufs) do
-		if obj.path == target.path and obj ~= target then
+		if obj.path == target.path and id ~= target.bufid then
 			table.insert(ret, id)
 		end
 	end

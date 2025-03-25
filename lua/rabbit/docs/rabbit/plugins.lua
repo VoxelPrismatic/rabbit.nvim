@@ -30,6 +30,7 @@
 ---@field rename? Rabbit.Action.Rename
 ---@field insert? Rabbit.Action.Insert
 ---@field collect? Rabbit.Action.Collect
+---@field delete? Rabbit.Action.Delete
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory

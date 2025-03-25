@@ -7,6 +7,40 @@ local CONFIG = require("rabbit.config")
 local MSG = {}
 
 local rename_ws ---@type Rabbit.UI.Workspace
+local preview_ws ---@type Rabbit.UI.Workspace | nil
+
+---@param width integer
+---@param height integer
+local function gen_binary_preview(width, height)
+	local h = math.floor(height / 3)
+	local w = math.floor(width / 3)
+	local grid = {}
+	local lines = {}
+	local diagonal = ("╱"):rep(w)
+	local extra = ("╱"):rep(width - w * 3)
+	for i = 1, h do
+		grid[i] = diagonal
+	end
+
+	local msg_h = math.floor(h / 2)
+	local st = "Binaries cannot be previewed"
+	local fix = ("╱"):rep((w - #st - 2) / 2)
+	grid[msg_h - 1] = fix .. " " .. (" "):rep(#st) .. " " .. fix
+	grid[msg_h] = fix .. " " .. st .. " " .. fix
+	grid[msg_h + 1] = grid[msg_h - 1]
+
+	for i = 1, h do
+		lines[i] = grid[i] .. grid[i] .. grid[i] .. extra
+		lines[i + 1 * h] = lines[i]
+		lines[i + 2 * h] = lines[i]
+	end
+
+	for i = 3 * h, height do
+		lines[i] = lines[1]
+	end
+
+	return lines
+end
 
 ---@param data Rabbit.Message.Preview
 function MSG.preview(data)
@@ -14,8 +48,27 @@ function MSG.preview(data)
 		v:close()
 	end
 
-	if not vim.api.nvim_buf_is_valid(data.bufid) then
-		return
+	if not vim.api.nvim_buf_is_valid(data.bufid) and vim.uv.fs_stat(data.file or "") ~= nil then
+		local bufid = vim.api.nvim_create_buf(false, true)
+		data.bufid = bufid
+		vim.api.nvim_create_autocmd("BufLeave", {
+			buffer = bufid,
+			callback = function()
+				vim.api.nvim_buf_delete(bufid, { force = true })
+			end,
+		})
+		local ok = pcall(vim.api.nvim_buf_set_lines, bufid, 0, -1, false, vim.fn.readfile(data.file))
+		if not ok then
+			local config = CTX.win_config(data.winid)
+			if config == nil then
+				data.bufid = nil
+			else
+				vim.api.nvim_buf_set_lines(bufid, 0, -1, false, gen_binary_preview(config.width, config.height))
+			end
+		else
+		end
+		vim.bo[bufid].filetype = vim.filetype.match({ filename = data.file }) or "text"
+		vim.bo[bufid].readonly = true
 	end
 
 	local win_config = CTX.win_config(data.winid)
@@ -29,8 +82,33 @@ function MSG.preview(data)
 	if vim.api.nvim_buf_is_valid(data.bufid or -1) then
 		relpath = MEM.rel_path(vim.api.nvim_buf_get_name(data.bufid))
 		vim.api.nvim_win_set_buf(data.winid, data.bufid)
-	elseif vim.api.nvim_buf_is_valid(fallback_bufid) then
-		return vim.api.nvim_win_set_buf(data.winid, fallback_bufid)
+	else
+		if preview_ws ~= nil then
+			preview_ws:close()
+			preview_ws = nil
+		end
+
+		if vim.api.nvim_buf_is_valid(fallback_bufid) then
+			vim.api.nvim_win_set_buf(data.winid, fallback_bufid)
+		end
+		return
+	end
+
+	if vim.api.nvim_buf_is_valid(fallback_bufid) then
+		-- Keep Oil windows open
+		if preview_ws ~= nil and vim.api.nvim_win_is_valid(preview_ws.win) then
+			vim.api.nvim_win_set_buf(preview_ws.win, fallback_bufid)
+		else
+			local fakewin = vim.api.nvim_open_win(fallback_bufid, false, {
+				width = 1,
+				height = 1,
+				relative = "editor",
+				row = 0,
+				col = 0,
+				zindex = 1,
+			})
+			preview_ws = CTX.workspace(data.bufid, fakewin)
+		end
 	end
 
 	local sides ---@type Rabbit.Term.Border.Applied
@@ -133,8 +211,6 @@ function MSG.preview(data)
 	for _, i in ipairs(sides.b.hl) do
 		vim.api.nvim_buf_add_highlight(UI._pre.b.buf, -1, "rabbit.types.title", 0, i - 1, i)
 	end
-
-	UI._bufid = -1
 end
 
 ---@param data Rabbit.Message.Rename

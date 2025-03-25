@@ -468,6 +468,9 @@ function UI.apply_actions()
 		end
 	end
 
+	for _, key in ipairs(UI._keys) do
+		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf })
+	end
 	UI._keys = SET.new()
 	local legend = {}
 	UI._legend = {}
@@ -475,10 +478,6 @@ function UI.apply_actions()
 	local all_actions = SET.new() ---@type Rabbit.Table.Set<string>
 
 	e.actions = e.actions or {}
-
-	for _, key in ipairs(UI._keys) do
-		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf })
-	end
 
 	all_actions
 		:add({
@@ -840,7 +839,7 @@ function UI.close()
 	end
 
 	vim.api.nvim_set_current_win(CTX.user.win or 0)
-	vim.api.nvim_set_current_buf(CTX.user.buf or 0)
+	pcall(vim.api.nvim_set_current_buf, CTX.user.buf or 0)
 	if UI._bg ~= nil then
 		UI.cancel_hover()
 		UI._bg:close()

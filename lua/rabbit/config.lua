@@ -33,6 +33,16 @@ C.colors = {
 		pine = { fg = rose_ok and rosepine.pine or "Navy" },
 	},
 
+	marks = {
+		rose = { bg = ":rabbit.paint.rose#fg", blend = 10 },
+		love = { bg = ":rabbit.paint.love#fg", blend = 10 },
+		gold = { bg = ":rabbit.paint.gold#fg", blend = 10 },
+		tree = { bg = ":rabbit.paint.tree#fg", blend = 10 },
+		foam = { bg = ":rabbit.paint.foam#fg", blend = 10 },
+		iris = { bg = ":rabbit.paint.iris#fg", blend = 10 },
+		pine = { bg = ":rabbit.paint.pine#fg", blend = 10 },
+	},
+
 	popup = {
 		error = { fg = ":ErrorMsg", bg = ":FloatBorder", bold = true },
 		warning = { fg = ":Question", bg = ":FloatBorder", bold = true },

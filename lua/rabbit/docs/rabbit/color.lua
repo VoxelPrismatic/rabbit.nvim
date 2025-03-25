@@ -43,6 +43,7 @@
 ---@field types Rabbit.Config.Colors.Types Highlight different parts of each entry.
 ---@field files Rabbit.Config.Colors.Files Colors for different types of files
 ---@field paint Rabbit.Config.Colors.Paint Colors to use for your collections. Will pull from rose-pine or the background colors from highlight groups when possible
+---@field marks Rabbit.Config.Colors.Paint Colors to use for your collections. Will pull from rose-pine or the background colors from highlight groups when possible
 ---@field popup Rabbit.Config.Colors.Popup Colors for popup boxes.
 ---@field lsp Rabbit.Config.Colors.Lsp Colors for lsp info
 

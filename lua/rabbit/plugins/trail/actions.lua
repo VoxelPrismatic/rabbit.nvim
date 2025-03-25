@@ -4,6 +4,8 @@ local LIST = require("rabbit.plugins.trail.list")
 ---@type Rabbit.Plugin.Actions
 local ACTIONS = {}
 
+local default = 0
+
 ---@param source_winid integer
 ---@return Rabbit.Entry.Collection
 local function cb_copy_win(source_winid)
@@ -59,7 +61,7 @@ function ACTIONS.children(entry)
 			if win == nil then
 				-- pass
 			elseif win:Len() >= 1 then
-				if entry._env then
+				if entry._env and default == 0 then
 					win.default = win.ctx.winid == entry._env.parent.ctx.winid
 				end
 				table.insert(entries, win)
@@ -106,6 +108,14 @@ function ACTIONS.children(entry)
 		LIST.clean_bufs(bufs_to_del)
 	end
 
+	if default ~= 0 then
+		if entries[default] ~= nil then
+			entries[default] = vim.deepcopy(entries[default])
+			entries[default].default = true
+		end
+		default = 0
+	end
+
 	return entries
 end
 
@@ -122,9 +132,12 @@ function ACTIONS.hover(entry)
 			bufid = entry.bufid,
 			winid = entry.target_winid,
 		}
-	elseif entry.ctx.winid == nil then
-		error("Unreachable (major listing should never be hovered)")
-	elseif entry.ctx.source ~= nil then
+	end
+
+	entry = entry --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Copy]]
+	assert(entry.ctx.winid ~= nil, "major listing should never be hovered")
+
+	if entry.ctx.source ~= nil then
 		entry = entry --[[@as Rabbit*Trail.Win.Copy]]
 		return {
 			class = "message",
@@ -134,7 +147,6 @@ function ACTIONS.hover(entry)
 		}
 	end
 
-	entry = entry --[[@as Rabbit*Trail.Win.User]]
 	return {
 		class = "message",
 		type = "preview",
@@ -172,19 +184,13 @@ local function apply_rename(entry, new_name)
 end
 
 function ACTIONS.rename(entry)
-	if entry.type == "file" then
-		error("Unreachable (file should never be renamed)")
-	elseif entry.ctx.winid == nil then
-		error("Unreachable (major listing should never be renamed)")
-	elseif entry.ctx.source ~= nil then
-		error("Unreachable (copy listing should never be renamed)")
-	end
+	assert(entry.type == "collection", "only collections can be renamed")
+	assert(entry.ctx.winid ~= nil, "major window should never be renamed")
+	assert(entry.ctx.source == nil, "copy window should never be renamed")
 
 	entry = entry --[[@as Rabbit*Trail.Win.User]]
 
-	if entry.ctx.killed then
-		error("Unreachable (killed window should never be renamed)")
-	end
+	assert(not entry.ctx.killed, "killed window should never be renamed")
 
 	return { ---@type Rabbit.Message.Rename
 		class = "message",
@@ -193,6 +199,32 @@ function ACTIONS.rename(entry)
 		color = false,
 		name = entry.label.text,
 	}
+end
+
+function ACTIONS.delete(entry)
+	if entry.type == "collection" then
+		entry = entry --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
+		assert(entry.ctx.winid ~= nil, "major window should never be deleted")
+		assert(entry.ctx.killed == true, "non-killed window should never be deleted")
+
+		LIST.major.ctx.wins:del(entry.ctx.winid)
+	elseif entry.type == "file" then
+		entry = entry --[[@as Rabbit*Trail.Buf]]
+		assert(entry.closed == true, "opened buffers should never be deleted")
+		local parent = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
+		parent.ctx.bufs:del(entry.bufid)
+		LIST.clean_bufs({ entry.bufid })
+	else
+		error("unknown entry type")
+	end
+
+	default = entry._env.idx
+	if default == #entry._env.siblings then
+		default = default - 1
+	end
+	vim.print(default)
+
+	return entry._env.parent
 end
 
 return ACTIONS

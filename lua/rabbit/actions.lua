@@ -19,6 +19,7 @@ function ACTIONS.select(entry)
 
 			if entry.closed then
 				vim.cmd("e " .. entry.path)
+				vim.bo.filetype = vim.filetype.match({ filename = entry.path })
 			else
 				vim.api.nvim_set_current_buf(entry.bufid)
 			end
