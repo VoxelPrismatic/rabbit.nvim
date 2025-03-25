@@ -310,8 +310,8 @@ function UI.highlight(entry)
 			{
 				text = vim.b[entry.bufid].term_title,
 				hl = {
-					["rabbit.files.closed"] = entry.closed,
 					["rabbit.types.index"] = entry.idx == false,
+					["rabbit.files.closed"] = entry.closed,
 					"rabbit.files.file",
 				},
 				align = "left",
@@ -337,8 +337,8 @@ function UI.highlight(entry)
 			{
 				text = tostring(entry.path):gsub(".*://", ""),
 				hl = {
-					["rabbit.files.closed"] = entry.closed,
 					["rabbit.types.index"] = entry.idx == false,
+					["rabbit.files.closed"] = entry.closed,
 					"rabbit.files.file",
 				},
 				align = "left",
@@ -389,8 +389,8 @@ function UI.highlight(entry)
 			{
 				text = tostring(entry.bufid),
 				hl = {
-					["rabbit.files.closed"] = entry.closed,
 					["rabbit.types.index"] = entry.idx == false,
+					["rabbit.files.closed"] = entry.closed,
 					"rabbit.files.file",
 				},
 				align = "left",
