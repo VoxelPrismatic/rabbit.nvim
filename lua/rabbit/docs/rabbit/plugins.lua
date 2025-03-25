@@ -1,6 +1,5 @@
 ---@class (exact) Rabbit.Plugin
 ---@field name string Name of the plugin
----@field empty_msg string Message to display when the listing is empty
 ---@field actions Rabbit.Plugin.Actions Action callbacks
 ---@field events Rabbit.Plugin.Events NvimEvent Callbacks
 ---@field opts Rabbit.Plugin.Options Plugin specific options (user editable)
@@ -8,20 +7,28 @@
 ---@field save string | false Where to save persistent storage, if necessary.
 ---@field setup? fun(opts: Rabbit.Plugin.Options) Initialize the plugin
 ---@field list? fun(): Rabbit.Entry.Collection Create a listing
+---@field requires? string[] List of other required plugins
+---@field empty Rabbit.Plugin.Empty What to do when the listing is empty
+
+---@class (exact) Rabbit.Plugin.Empty
+---@field msg string Message to display when the listing is empty
+---@field actions Rabbit.Entry.Collection.Actions Action callbacks
 
 ---@class Rabbit.Plugin.Environment
 ---@field plugin? Rabbit.Plugin
----@field winid? integer Window ID
+---@field winid? integer User's current Window ID
 ---@field cwd? Rabbit.Plugin.Context.Directory Working directory, according to `opts.cwd`
 ---@field open? boolean Whether Rabbit is currently open
+---@field bufid? integer User's current Buffer ID
 
----@class Rabbit.Plugin.Actions
----@field select Rabbit.Action.Select
----@field children Rabbit.Action.Children
----@field close Rabbit.Action.Close
----@field hover Rabbit.Action.Hover
----@field parent Rabbit.Action.Parent
----@field rename Rabbit.Action.Rename
+---@class (exact) Rabbit.Plugin.Actions
+---@field select? Rabbit.Action.Select
+---@field children? Rabbit.Action.Children
+---@field close? Rabbit.Action.Close
+---@field hover? Rabbit.Action.Hover
+---@field parent? Rabbit.Action.Parent
+---@field rename? Rabbit.Action.Rename
+---@field insert? Rabbit.Action.Insert
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory
@@ -58,13 +65,14 @@
 ---@field help? _Str Open the keymap legend.
 ---@field debug? _Str Open the debug dialog.
 ---@field rename? _Str Rename an entry.
----@field switch _Str Open this plugin after Rabbit is open.
+---@field switch _Str Open this plugin after Rabbit is open. Set to "" to disable.
 ---@field [string] _Str Keybindings
 
 ---@class (exact) Rabbit.Plugin.Options
 ---@field color Color.Nvim Default border color.
 ---@field border? Rabbit.Term.Border Default border style. (leave blank to use global border)
 ---@field keys Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
----@field cwd? string | fun() Current working directory function. (leave blank to use global cwd)
+---@field cwd? string | fun(): string Current working directory function. (leave blank to use global cwd)
+---@field default? boolean Default plugin to open upon Rabbit opening
 
 ---@alias _Str string | string[]

@@ -67,6 +67,7 @@ LIST.major = {
 		hover = false,
 		parent = true,
 		rename = false,
+		insert = false,
 	},
 	ctx = {
 		wins = SET.new(),
@@ -143,6 +144,7 @@ function win_meta.__index(_, winid)
 				hover = true,
 				parent = true,
 				rename = true,
+				insert = false,
 			},
 			ctx = {
 				winid = winid,
@@ -189,43 +191,80 @@ end
 
 local buf_meta = {}
 
----@param bufid integer
+---@param bufid integer | string Integer: Buffer ID; String: File path
 ---@return Rabbit*Trail.Buf
 function buf_meta:__index(bufid)
-	if type(bufid) ~= "number" or math.floor(bufid) ~= bufid then
-		error("Expected integer, got " .. type(bufid))
+	if type(bufid) == "string" then
+		for _, obj in pairs(LIST.real.bufs) do
+			if obj.path == bufid then
+				return obj
+			end
+		end
+	elseif type(bufid) ~= "number" or math.floor(bufid) ~= bufid then
+		error("Expected integer or string, got " .. type(bufid))
 	end
 
 	---@type Rabbit*Trail.Buf
 	local ret = LIST.real.bufs[bufid]
 
 	if ret == nil then
-		if not vim.api.nvim_buf_is_valid(bufid) then
-			error("Invalid buffer id: " .. bufid)
+		local true_bufid ---@type integer
+		local true_path ---@type string
+		local true_listed ---@type boolean
+
+		if type(bufid) == "number" then
+			if not vim.api.nvim_buf_is_valid(bufid) then
+				error("Invalid buffer id: " .. bufid)
+			end
+
+			true_bufid = bufid
+			true_path = vim.api.nvim_buf_get_name(bufid)
+			true_listed = vim.fn.buflisted(bufid) == 1
+		elseif type(bufid) == "string" then
+			if vim.uv.fs_stat(bufid) == nil then
+				error("Invalid file path: " .. bufid)
+			end
+
+			true_bufid = vim.uv.hrtime()
+			true_path = bufid
+			true_listed = false
 		end
 
 		ret = {
 			class = "entry",
 			type = "file",
 			idx = true,
-			bufid = bufid,
+			bufid = true_bufid,
 			target_winid = 0,
-			closed = false,
-			path = vim.api.nvim_buf_get_name(bufid),
+			closed = type(bufid) == "number",
+			path = true_path,
 			actions = {
 				select = true,
 				delete = false,
 				hover = true,
 				parent = true,
 				rename = false,
+				insert = false,
 			},
 			ctx = {
-				listed = vim.fn.buflisted(bufid) == 1,
+				listed = true_listed,
 			},
 			as = buf_as,
 		}
-		LIST.real.bufs[bufid] = ret
+
+		local bufs_to_del = {}
+		for id, bufobj in pairs(LIST.real.bufs) do
+			if bufobj.path == ret.path then
+				LIST.real.bufs[id] = ret
+				table.insert(bufs_to_del, id)
+			end
+		end
+
+		LIST.real.bufs[true_bufid] = ret
+		LIST.clean_bufs(bufs_to_del)
 	else
+		bufid = bufid --[[@as integer]]
+
 		ret.closed = not vim.api.nvim_buf_is_valid(bufid)
 		ret.actions.hover = not ret.closed
 		if not ret.closed then
@@ -241,6 +280,41 @@ function buf_meta:__index(bufid)
 end
 
 setmetatable(LIST.bufs, buf_meta)
+
+-- Remove buffers that are not referenced anywhere
+---@param bufs_to_del integer[]
+function LIST.clean_bufs(bufs_to_del)
+	for _, bufid in ipairs(bufs_to_del) do
+		if LIST.major.ctx.bufs:idx(bufid) then
+			goto referenced
+		end
+
+		for _, winobj in ipairs(LIST.real.wins) do
+			if winobj.ctx.bufs:idx(bufid) then
+				goto referenced
+			end
+		end
+
+		LIST.real.bufs[bufid] = nil
+
+		-- Only delete buffers that are not referenced anywhere
+		::referenced::
+	end
+end
+
+-- Finds duplicate buffers based on a buf id or path
+---@param bufid integer | string
+---@return integer[]
+function LIST.find_dupes(bufid)
+	local target = LIST.bufs[bufid]
+	local ret = {}
+	for id, obj in pairs(LIST.real.bufs) do
+		if obj.path == target.path and obj ~= target then
+			table.insert(ret, id)
+		end
+	end
+	return ret
+end
 
 ---@class Rabbit*Trail.SaveFile
 ---@field layout Rabbit*Trail.SaveFile.Layout

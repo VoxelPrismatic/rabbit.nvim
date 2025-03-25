@@ -4,7 +4,18 @@ local LIST = require("rabbit.plugins.trail.list")
 
 ---@type Rabbit*Trail
 local PLUG = {
-	empty_msg = "There's nowhere to jump to! Get started by opening a buffer",
+	empty = {
+		msg = "There's nowhere to jump to! Get started by opening a buffer",
+		actions = {
+			children = false,
+			delete = false,
+			hover = false,
+			parent = false,
+			rename = false,
+			select = false,
+			insert = false,
+		},
+	},
 	name = "trail",
 	actions = require("rabbit.plugins.trail.actions"),
 	events = require("rabbit.plugins.trail.autocmd"),

@@ -1,0 +1,12 @@
+{
+	"latest": "r01",
+	"changes": {
+		"r01": {
+			"date": "Mar 21, 2025",
+			"bugs": [],
+			"features": [
+				"Initial release"
+			]
+		}
+	}
+}

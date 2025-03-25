@@ -8,6 +8,7 @@ local ACTIONS = {}
 ---@return Rabbit.Entry.Collection
 local function cb_copy_win(source_winid)
 	---@type Rabbit*Trail.Win.Copy
+	vim.print(source_winid)
 	return {
 		class = "entry",
 		type = "collection",
@@ -29,31 +30,12 @@ local function cb_copy_win(source_winid)
 			parent = true,
 			hover = true,
 			rename = false,
+			insert = false,
 		},
 		ctx = {
 			source = source_winid,
 		},
 	}
-end
-
--- Cleans all buffers that are not referenced
----@param bufs_to_del integer[]
-local function clean_bufs(bufs_to_del)
-	for _, bufid in ipairs(bufs_to_del) do
-		if LIST.major.ctx.bufs:idx(bufid) then
-			goto referenced
-		end
-		for _, winobj in ipairs(LIST.real.wins) do
-			if winobj.ctx.bufs:idx(bufid) then
-				goto referenced
-			end
-		end
-
-		LIST.bufs[bufid] = nil
-
-		-- Only delete buffers that are not referenced anywhere
-		::referenced::
-	end
 end
 
 ---@param entry Rabbit*Trail.Win
@@ -100,7 +82,7 @@ function ACTIONS.children(entry)
 		entry.ctx.wins:del(wins_to_del)
 		entry.ctx.bufs:del(bufs_to_del)
 
-		clean_bufs(bufs_to_del)
+		LIST.clean_bufs(bufs_to_del)
 	else
 		entry = entry --[[@as Rabbit*Trail.Win.User]]
 		table.insert(entries, LIST.major:as(entry.label.text))
@@ -121,7 +103,7 @@ function ACTIONS.children(entry)
 
 		entry.ctx.bufs:del(bufs_to_del)
 
-		clean_bufs(bufs_to_del)
+		LIST.clean_bufs(bufs_to_del)
 	end
 
 	return entries

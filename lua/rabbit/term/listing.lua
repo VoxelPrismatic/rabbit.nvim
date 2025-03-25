@@ -25,6 +25,7 @@ local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
 local LSP = require("rabbit.util.lsp")
+local TERM = require("rabbit.util.term")
 local ACTIONS
 
 ---@param key string | string[]
@@ -154,6 +155,7 @@ function UI.spawn(plugin)
 	UI._plugin._env.winid = CTX.user.win
 	UI._plugin._env.cwd = cwd
 	UI._plugin._env.open = true
+	UI._plugin._env.bufid = CTX.user.buf
 
 	UI.handle_callback(UI._plugin.list())
 end
@@ -173,27 +175,34 @@ function UI.list(collection)
 
 	_ = pcall(vim.api.nvim_buf_clear_namespace, UI._fg.buf, UI._fg.ns, 0, -1)
 
-	local j = 0
-	local r = 0
+	if #UI._entries > 0 then
+		local j = 0
+		local r = 0
 
-	local auto_default = nil
-	local man_default = nil
+		local auto_default = nil
+		local man_default = nil
 
-	local idx_len = #tostring(#UI._entries)
+		local idx_len = #tostring(#UI._entries)
 
-	for i, entry in ipairs(UI._entries) do
-		j = i
-		auto_default, man_default, r = UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
+		for i, entry in ipairs(UI._entries) do
+			j = i
+			auto_default, man_default, r = UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
+		end
+
+		vim.bo[UI._fg.buf].modifiable = true
+		vim.api.nvim_win_set_cursor(UI._fg.win, { man_default or auto_default or 1, 0 })
+		vim.api.nvim_buf_set_lines(UI._fg.buf, j, -1, false, {})
+	else
+		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.conf.width)
+		table.insert(lines, "")
+		vim.api.nvim_buf_set_lines(UI._fg.buf, 0, -1, false, lines)
+		vim.api.nvim_win_set_cursor(UI._fg.win, { #lines, 0 })
 	end
-
-	vim.bo[UI._fg.buf].modifiable = true
-	vim.api.nvim_buf_set_lines(UI._fg.buf, j, -1, false, {})
-	vim.api.nvim_win_set_cursor(UI._fg.win, { man_default or auto_default or 1, 0 })
 
 	UI.draw_border(UI._bg)
 	UI.apply_actions()
-
 	vim.bo[UI._fg.buf].modifiable = false
+
 	return UI._entries
 end
 
@@ -347,17 +356,19 @@ function UI.highlight(entry)
 		end
 	end
 
-	if CONFIG.window.extras.modified and vim.bo[entry.bufid].modified then
+	if not vim.api.nvim_buf_is_valid(entry.bufid) then
+		-- pass
+	elseif CONFIG.window.extras.modified and vim.bo[entry.bufid].modified then
 		table.insert(extras, {
-			text = CONFIG.window.icons.modified .. " ",
+			text = " " .. CONFIG.window.icons.modified,
 			hl = { "rabbit.files.modified" },
-			align = "right",
+			align = "left",
 		})
 	elseif CONFIG.window.extras.readonly and vim.bo[entry.bufid].readonly then
 		table.insert(extras, {
-			text = CONFIG.window.icons.readonly .. " ",
+			text = " " .. CONFIG.window.icons.readonly .. " ",
 			hl = { "rabbit.files.readonly" },
-			align = "right",
+			align = "left",
 		})
 	end
 
@@ -427,11 +438,20 @@ function UI.apply_actions()
 	local e = UI._entries[i] ---@type Rabbit.Entry
 
 	if e == nil then
-		e = {
-			class = "entry",
-			type = "collection",
-			actions = { close = true },
-		}
+		if #UI._entries == 0 then
+			e = {
+				class = "entry",
+				type = "collection",
+				actions = UI._plugin.empty.actions,
+			}
+		else
+			e = {
+				class = "entry",
+				type = "collection",
+				actions = { close = true },
+			}
+		end
+		e.actions.close = true
 	else
 		-- Enable some actions by default
 		for _, action in ipairs({ "close" }) do
@@ -516,10 +536,8 @@ function UI.apply_actions()
 
 	UI._legend = HL.split(UI._legend)
 
-	UI._marquee:stop()
-
 	for name, plugin in pairs(require("rabbit").plugins) do
-		if plugin == UI._plugin then
+		if plugin == UI._plugin or plugin.opts.keys.switch == "" or plugin.opts.keys.switch == false then
 			goto continue
 		end
 
@@ -535,7 +553,7 @@ function UI.apply_actions()
 			["rabbit.plugin." .. name] = { fg = tostring(plugin.opts.color) },
 		})
 
-		local part = HL.split({
+		local part = {
 			{
 				text = name,
 				hl = {
@@ -554,19 +572,17 @@ function UI.apply_actions()
 				hl = "rabbit.legend.key",
 				align = "right",
 			},
-		})
+		}
 
-		if (not UI._marquee:is_active()) and #UI._legend + #part > UI._bg.conf.width then
-			vim.print("Starting marquee")
-			UI._marquee:start(100, 100, vim.schedule_wrap(UI.marquee_legend))
-		end
-
-		table.insert(UI._plugins, part)
+		table.insert(UI._plugins, { join = part, split = HL.split(part) })
 
 		::continue::
 	end
 
 	UI.marquee_legend()
+	if not UI._marquee:is_active() then
+		UI._marquee:start(100, 100, vim.schedule_wrap(UI.marquee_legend))
+	end
 
 	if e.actions.hover then
 		UI.handle_callback(UI.find_action("hover", e)(e))
@@ -577,7 +593,7 @@ end
 
 -- Marquee legend
 function UI.marquee_legend()
-	local cur_plugin = {}
+	local cur_plugin = { join = {}, split = {} }
 	if #UI._plugins > 0 then
 		local idx = (os.time() % #UI._plugins) + 1
 		cur_plugin = UI._plugins[idx]
@@ -585,30 +601,28 @@ function UI.marquee_legend()
 
 	local legend = vim.deepcopy(UI._legend)
 
-	if UI._marquee:is_active() then
-		while #cur_plugin + #legend >= UI._bg.conf.width do
+	local max_len = UI._bg.conf.width - #cur_plugin.split - #legend
+	if max_len < 0 then
+		for _ = 1, -max_len do
 			table.remove(legend, #legend)
 		end
 		table.insert(legend, { text = " " })
+		table.insert(UI._legend, table.remove(UI._legend, 1))
 	else
-		while #cur_plugin + #legend < UI._bg.conf.width do
-			table.insert(legend, { text = " " })
-		end
+		table.insert(legend, {
+			text = (" "):rep(max_len),
+		})
 	end
 
-	local ok = pcall(
-		HL.nvim_buf_set_line,
-		UI._bg.buf,
-		UI._bg.conf.height - 1,
-		false,
-		UI._bg.ns,
-		UI._bg.conf.width,
-		{ legend, cur_plugin }
-	)
+	local ns = vim.api.nvim_create_namespace("rabbit.marquee")
+	local ok = pcall(vim.api.nvim_buf_clear_namespace, UI._bg.buf, ns, 0, -1)
+
 	if not ok then
 		UI._marquee:stop()
+		return
 	end
-	table.insert(UI._legend, table.remove(UI._legend, 1))
+
+	HL.nvim_buf_set_line(UI._bg.buf, UI._bg.conf.height - 1, false, ns, UI._bg.conf.width, { legend, cur_plugin.join })
 end
 
 function UI.handle_callback(data)

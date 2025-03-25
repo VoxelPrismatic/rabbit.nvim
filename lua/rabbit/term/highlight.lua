@@ -48,7 +48,7 @@ end
 
 -- Applies config colors
 function HL.apply()
-	local colors = require("rabbit.config").colors
+	local colors = vim.deepcopy(require("rabbit.config").colors)
 	for pre, hl in pairs(colors) do
 		for k, v in pairs(hl) do
 			vim.api.nvim_set_hl(0, "rabbit." .. pre .. "." .. k, HL.gen_group(v))
@@ -146,6 +146,7 @@ end
 ---@param lines Rabbit.Term.HlLine[]
 ---@return Rabbit.Term.HlLine[]
 function HL.split(lines)
+	lines = vim.deepcopy(lines)
 	local result = {}
 
 	while #lines > 0 do

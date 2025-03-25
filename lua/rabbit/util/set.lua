@@ -28,14 +28,16 @@ end
 function SET.Func:add(elem, idx)
 	if idx == nil then
 		idx = 1
+	elseif idx == -1 then
+		idx = #self + 1
 	elseif type(idx) ~= "number" or math.floor(idx) ~= idx then
 		error("Expected integer, got " .. type(idx))
 	end
 
 	local to_add = type(elem) == "table" and elem or { elem }
 	for i = #to_add, 1, -1 do
-		self:del(to_add[i])
-		table.insert(self, 1, to_add[i])
+		SET.Func.del(self, to_add[i])
+		table.insert(self, idx, to_add[i])
 	end
 
 	return self
@@ -119,7 +121,7 @@ end
 ---@param elem Rabbit.Table.Set<T>
 ---@return Rabbit.Table.Set<T>
 function SET.Func:XOR(elem)
-	return self:OR(elem):del(self:AND(elem))
+	return SET.Func.OR(self, elem):del(SET.Func.AND(self, elem))
 end
 
 -- Returns keys from pairs

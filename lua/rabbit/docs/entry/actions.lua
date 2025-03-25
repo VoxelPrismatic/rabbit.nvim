@@ -13,6 +13,7 @@
 ---@alias Rabbit.Action.Children fun(entry: Rabbit.Entry.Collection): Rabbit.Entry[]
 ---@alias Rabbit.Action.Close fun(entry: Rabbit.Entry.Collection): nil
 ---@alias Rabbit.Action.Rename fun(entry: Rabbit.Entry): Rabbit.Response
+---@alias Rabbit.Action.Insert fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Select fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Delete fun(entry: Rabbit.Entry): Rabbit.Response
 ---@alias Rabbit.Action.Hover fun(entry: Rabbit.Entry): Rabbit.Response

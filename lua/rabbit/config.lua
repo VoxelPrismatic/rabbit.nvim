@@ -1,5 +1,5 @@
 ---@class Rabbit.Config
-C = {}
+local C = {}
 
 local rose_ok, rosepine = pcall(require, "rose-pine.palette")
 
@@ -127,9 +127,9 @@ C.keys = {
 	select = { "<CR>", "g" },
 	close = { "q", "<Esc>", "<leader>" },
 	delete = { "x", "d", "<Del>" },
-	collect = { "A", "c" },
+	collect = { "A" },
 	parent = { "-", "<BS>" },
-	insert = { "a", "i" },
+	insert = { "a" },
 	help = { "?", "h" },
 	rename = { "i" },
 	["debug"] = { "D" },
@@ -138,8 +138,22 @@ C.keys = {
 -- Plugin settings
 ---@class Rabbit.Config.Plugin
 C.plugins = {
+	---@type Rabbit*Trail.Options
 	---@diagnostic disable-next-line: missing-fields
-	trail = {}, ---@type Rabbit*Trail.Options
+	trail = {
+		default = true,
+	},
+
+	---@diagnostic disable-next-line: missing-fields
+	harpoon = {}, ---@type Rabbit*Harpoon.Options
+}
+
+-- Other rabbit system settings
+---@class Rabbit.Config.System
+C.system = {
+	---@type string
+	-- The path to the data directory
+	data = vim.fn.stdpath("data") .. "/rabbit",
 }
 
 function C.cwd()
@@ -170,6 +184,10 @@ function C.setup(opts)
 				end
 			end
 		end
+	end
+
+	if C.system.data:sub(-1) ~= "/" then
+		C.system.data = C.system.data .. "/"
 	end
 end
 
