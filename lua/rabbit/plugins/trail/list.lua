@@ -109,7 +109,7 @@ function user_meta:__index(key)
 			end
 		end
 	end
-	return nil
+	return LIST.bufs[vim.api.nvim_win_get_buf(self.ctx.winid)]
 end
 
 local win_meta = {}

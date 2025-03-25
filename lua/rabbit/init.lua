@@ -92,6 +92,7 @@ function RABBIT.propagate(evt)
 
 	local ctx = { ---@type Rabbit.Plugin.Environment
 		winid = winid,
+		bufid = vim.api.nvim_win_get_buf(winid),
 		---@diagnostic disable-next-line: missing-fields
 		dir = {},
 	}

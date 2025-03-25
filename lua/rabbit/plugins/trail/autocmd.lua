@@ -1,5 +1,6 @@
 local LIST = require("rabbit.plugins.trail.list")
 local ENV = require("rabbit.plugins.trail.env")
+local CTX = require("rabbit.term.ctx")
 
 ---@type Rabbit.Plugin.Events
 local EVT = {}
@@ -7,6 +8,11 @@ local EVT = {}
 function EVT.BufEnter(evt, ctx)
 	if ENV.open then
 		return -- Ignore everything that happens when Rabbit is open
+	end
+
+	if CTX.win_config(ctx.winid).relative ~= "" then
+		-- Ignore nested windows
+		return
 	end
 
 	evt.file = vim.api.nvim_buf_get_name(evt.buf)
@@ -31,6 +37,24 @@ function EVT.BufDelete(evt, _)
 	LIST.clean_bufs({ evt.buf })
 end
 
--- EVT.WinEnter = EVT.BufEnter
+function EVT.WinEnter(evt, ctx)
+	if CTX.win_config(ctx.winid).relative ~= "" then
+		-- Ignore nested windows
+		return
+	end
+
+	if not LIST.bufs[ctx.bufid].ctx.listed then
+		-- Window was opened with the buffer not listed
+		return
+	end
+
+	EVT.BufEnter({
+		buf = ctx.bufid,
+		event = "BufEnter",
+		file = "",
+		id = evt.id,
+		match = "",
+	}, ctx)
+end
 
 return EVT

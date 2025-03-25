@@ -18,7 +18,7 @@ local function cb_copy_win(source_winid)
 			hl = { "rabbit.paint.gold" },
 		},
 		tail = {
-			text = LIST.wins[source_winid].label[1].text,
+			text = "to " .. LIST.wins[ENV.winid].label.text .. " ",
 			hl = { "rabbit.types.tail" },
 			align = "right",
 		},
@@ -36,6 +36,7 @@ local function cb_copy_win(source_winid)
 		},
 		ctx = {
 			source = source_winid,
+			winid = ENV.winid,
 		},
 	}
 end
@@ -63,6 +64,8 @@ function ACTIONS.children(entry)
 			elseif win:Len() >= 1 then
 				if entry._env and default == 0 then
 					win.default = win.ctx.winid == entry._env.parent.ctx.winid
+				else
+					win.default = false
 				end
 				table.insert(entries, win)
 			elseif win.ctx.killed and win:Len() == 0 then
@@ -202,25 +205,38 @@ function ACTIONS.rename(entry)
 end
 
 function ACTIONS.delete(entry)
+	default = entry._env.idx
 	if entry.type == "collection" then
 		entry = entry --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
 		assert(entry.ctx.winid ~= nil, "major window should never be deleted")
 		assert(entry.ctx.killed == true, "non-killed window should never be deleted")
 
 		LIST.major.ctx.wins:del(entry.ctx.winid)
+		if default == #entry._env.siblings then
+			default = default - 1
+		end
 	elseif entry.type == "file" then
 		entry = entry --[[@as Rabbit*Trail.Buf]]
 		local parent = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
 		if not entry.closed then
 			assert(vim.bo[entry.bufid].modified == false, "modified buffer should never be deleted")
 			local bufid = -1
-			for _, winid in ipairs(vim.api.nvim_list_wins()) do
-				if vim.api.nvim_win_get_buf(winid) == entry.bufid then
-					if bufid == -1 then
-						bufid = vim.api.nvim_create_buf(true, false)
+			for _, winid in ipairs(LIST.major.ctx.wins) do
+				if vim.api.nvim_win_is_valid(winid) and vim.api.nvim_win_get_buf(winid) == entry.bufid then
+					local try_bufs = LIST.wins[winid].ctx.bufs
+					local try_buf = bufid
+					for _, b in ipairs(try_bufs) do
+						if b ~= entry.bufid and vim.api.nvim_buf_is_valid(b) then
+							try_buf = b
+							break
+						end
 					end
-					vim.api.nvim_win_set_buf(winid, bufid)
-					LIST.wins[winid].ctx.bufs:add(bufid)
+					if try_buf == -1 then
+						bufid = vim.api.nvim_create_buf(true, false)
+						try_buf = bufid
+					end
+					vim.api.nvim_win_set_buf(winid, try_buf)
+					LIST.wins[winid].ctx.bufs:add(try_buf)
 					require("rabbit.term.listing")._hov[winid] = bufid
 				end
 			end
@@ -229,14 +245,12 @@ function ACTIONS.delete(entry)
 		else
 			parent.ctx.bufs:del(entry.bufid)
 			LIST.clean_bufs({ entry.bufid })
+			if default == #entry._env.siblings then
+				default = default - 1
+			end
 		end
 	else
 		error("unknown entry type")
-	end
-
-	default = entry._env.idx
-	if default == #entry._env.siblings then
-		default = default - 1
 	end
 
 	return entry._env.parent
