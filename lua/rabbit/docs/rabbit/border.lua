@@ -55,11 +55,10 @@
 ---@field suf? string Suffix
 ---@field make? fun(size: integer, text: string): string, string, string Function to call to make the side
 
----@class (exact) Rabbit.Term.Border.Applied
----@field t Rabbit.Term.Border.Applied.Side Top side
----@field b Rabbit.Term.Border.Applied.Side Bottom side
----@field r Rabbit.Term.Border.Applied.Side Right side
----@field l Rabbit.Term.Border.Applied.Side Left side
+---@class (exact) Rabbit.Term.Border.Generic<T>: { b: T, t: T, l: T, r: T }
+
+---@class (exact) Rabbit.Term.Border.Applied: Rabbit.Term.Border.Generic<Rabbit.Term.Border.Side>
+---@field to_hl fun(self: Rabbit.Term.Border.Applied, kwargs: Rabbit.Term.Border.Applied.Hl.Kwargs): Rabbit.Term.Border.Applied.Hl Convert to highlight lines
 
 ---@class (exact) Rabbit.Term.Border.Applied.Side
 ---@field txt string[] Text characters

@@ -73,7 +73,7 @@
 ---@field titles Rabbit.Config.Window.Titles | Rabbit.Term.Border.Side[] Title positioning & whatnot.
 ---@field overflow Rabbit.Config.Window.Overflow How to handle overflow.
 ---@field legend boolean Show a quick legend at the bottom. Consumes one line.
----@field extras Rabbit.Config.Window.Extras Extra info
+---@field beacon Rabbit.Config.Window.Extras Extra info
 ---@field preview true Whether or not to display a preview of the buffer about to be opened
 ---@field icons Rabbit.Config.Window.Icons Icons for various things
 
