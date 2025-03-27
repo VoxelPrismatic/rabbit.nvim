@@ -1,9 +1,11 @@
 local MEM = {}
 
+-- Split the paths into components
+---@param path string
 local function split_path(path)
 	local components = {}
 	if vim.fn.has("win") then
-		path = path:gsub("\\", "/"):sub(2) -- C:\...\... -> /.../...
+		path = path:gsub("\\", "/"):sub(2) -- C:\ --> /
 	end
 	for component in path:gmatch("[^/]+") do
 		table.insert(components, component)
@@ -11,58 +13,78 @@ local function split_path(path)
 	return components
 end
 
+---@param source string
+---@param target string
+---@return string[]
 local function relative_filepath(source, target)
 	-- Split the paths into components
-	local source_components = split_path(source)
-	local target_components = split_path(target)
-	local relative_components = {}
+	-- We do not care about the filename for the source
+	local src_path = split_path(vim.fs.dirname(source))
+	local dst_path = split_path(target)
 
-	-- Drop the file part of the source path
-	local source_paths = vim.deepcopy(source_components)
-	table.remove(source_paths)
+	local same = 1
+	local max_len = math.min(#src_path, #dst_path)
 
-	-- Find the length of the common prefix
-	local common_len = 0
-	for i = 1, math.min(#source_paths, #target_components) do
-		if source_paths[i] ~= target_components[i] then
-			break
-		end
-		common_len = i
+	while same <= max_len and src_path[same] == dst_path[same] do
+		same = same + 1
 	end
 
-	-- Add '..' for each directory to go up from source to the common ancestor
-	for _ = 1, #source_paths - common_len do
-		table.insert(relative_components, "..")
+	local rel_path = { unpack(dst_path, same) }
+
+	-- Go up one folder for each differing ancestor
+	for _ = 0, #src_path - same do
+		table.insert(rel_path, 1, "..")
 	end
 
-	-- Add the remaining components from target after the common prefix
-	for i = common_len + 1, #target_components do
-		table.insert(relative_components, target_components[i])
-	end
-
-	return relative_components
+	return rel_path
 end
+
+local rel_cache = {} ---@type { [integer]: { [string]: { [string]: { dir: string, name: string } } } }
+local rel_semi_cache = {} ---@type { [string]: { [string]: string[] } }
 
 ---@class Rabbit.Mem.RelPath.Kwargs
 ---@field source string Which file you're coming from.
 ---@field target string Which file you're going to.
----@field distance_trim integer The maximum number of folders to display.
 ---@field dirname_trim integer The maximum number of characters to display in a folder name.
----@field dirname_char string The character to use for directory name trimming. (use with cutoff)
----@field distance_char string The character to use for overflow. (use with max_parts)
+---@field dirname_char string The character to use for directory name trimming. (use with dirname_trim)
+---@field distance_trim integer The maximum number of folders to display.
+---@field distance_char string The character to use for overflow. (use with distance_trim)
 ---@field width integer The maximum width of the window.
 
--- Return the relative path between two paths.
+-- Return the relative path between two paths. Separated here so you can easily copy/paste
 ---@param kwargs Rabbit.Mem.RelPath.Kwargs
 ---@return { dir: string, name: string }
 local function rel_path(kwargs)
-	local source = vim.fn.fnamemodify(kwargs.source, ":p")
-	local target = vim.fn.fnamemodify(kwargs.target, ":p")
+	-- Cache results; calculating every time is expensive, especially on WSL.
+	-- It saves an order of magnitude of time. 50us+ down to 3us
+	-- We can assume that the trim characters will be the same, since this is a private function
+	if rel_cache[kwargs.width] == nil then
+		rel_cache[kwargs.width] = { [kwargs.source] = {} }
+	elseif rel_cache[kwargs.width][kwargs.source] == nil then
+		rel_cache[kwargs.width][kwargs.source] = {}
+	elseif rel_cache[kwargs.width][kwargs.source][kwargs.target] ~= nil then
+		return rel_cache[kwargs.width][kwargs.source][kwargs.target]
+	end
 
-	local relative = relative_filepath(source, target)
+	if rel_semi_cache[kwargs.source] == nil then
+		rel_semi_cache[kwargs.source] = {}
+	end
 
-	if #relative > kwargs.distance_trim + 2 then
-		while #relative > kwargs.distance_trim + 1 or relative[1] == ".." do
+	-- Again, cache results. This time, we're just storing the relative path instead of the final return
+	if rel_semi_cache[kwargs.source][kwargs.target] == nil then
+		local source = vim.fn.fnamemodify(kwargs.source, ":p")
+		local target = vim.fn.fnamemodify(kwargs.target, ":p")
+		rel_semi_cache[kwargs.source][kwargs.target] = relative_filepath(source, target)
+	end
+
+	local relative = rel_semi_cache[kwargs.source][kwargs.target]
+
+	if #relative > kwargs.distance_trim + 2 or #table.concat(relative) > kwargs.width then
+		while
+			#relative > kwargs.distance_trim + 1
+			or relative[1] == ".."
+			or (#table.concat(relative) > kwargs.width and #relative > 1)
+		do
 			table.remove(relative, 1)
 		end
 		table.insert(relative, 1, kwargs.distance_char or ":::")
@@ -91,6 +113,8 @@ local function rel_path(kwargs)
 		end
 	end
 
+	rel_cache[kwargs.width][kwargs.source][kwargs.target] = ret
+
 	return ret
 end
 
@@ -104,8 +128,12 @@ function MEM.rel_path(target)
 	if not vim.api.nvim_buf_is_valid(CTX.user.buf) then
 		CTX.user.buf = vim.api.nvim_win_get_buf(CTX.user.win)
 	end
+	local source = vim.api.nvim_buf_get_name(CTX.user.buf)
+	if vim.uv.fs_stat(source) == nil then
+		source = vim.fn.getcwd()
+	end
 	return rel_path({
-		source = vim.api.nvim_buf_get_name(CTX.user.buf),
+		source = vim.fs.dirname(source),
 		target = tostring(target),
 		width = UIL._fg.conf.width,
 		distance_trim = CONFIG.window.overflow.distance_trim,
@@ -117,6 +145,7 @@ end
 
 ---@param self Rabbit.Writeable
 local function writeable_save(self)
+	-- Vim doesn't trim functions, so we delete it and reinstate manually
 	local dest = self.__Dest
 	self.__Dest = nil
 	self.__Save = nil
