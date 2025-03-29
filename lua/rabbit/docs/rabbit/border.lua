@@ -121,7 +121,7 @@
 ---@class (exact) Rabbit.Config.Boxes
 ---@field rabbit Rabbit.Term.Border.Config Title box
 ---@field preview Rabbit.Term.Border.Config Preview box
----@field popup? Rabbit.Term.Border.Config Popup box
+---@field popup Rabbit.Term.Border.Config Popup box
 
 ---@class (exact) Rabbit.Term.Border.Chars
 ---@field rise string Left-side rise character.

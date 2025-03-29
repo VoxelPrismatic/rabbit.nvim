@@ -1,6 +1,7 @@
 local MSG = {
 	preview = require("rabbit.messages.preview"),
 	rename = require("rabbit.messages.rename"),
+	menu = require("rabbit.messages.menu"),
 }
 
 function MSG.Handle(data)

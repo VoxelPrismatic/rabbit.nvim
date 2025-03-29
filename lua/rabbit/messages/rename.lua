@@ -42,6 +42,7 @@ return function(data)
 		parent = UI._fg,
 		lines = { "", data.name, "" },
 		cursor = { 2, curpos },
+		many = true,
 		ns = "rabbit:rename",
 	})
 

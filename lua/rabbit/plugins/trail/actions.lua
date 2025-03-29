@@ -1,5 +1,6 @@
 local ENV = require("rabbit.plugins.trail.env")
 local LIST = require("rabbit.plugins.trail.list")
+local CONFIG = require("rabbit.config")
 
 ---@type Rabbit.Plugin.Actions
 local ACTIONS = {}
@@ -224,6 +225,7 @@ local function migrate_closing_buf(target)
 			end
 			vim.api.nvim_win_set_buf(winid, try_buf)
 			LIST.wins[winid].ctx.bufs:add(try_buf)
+			LIST.major.ctx.bufs:add(try_buf)
 			require("rabbit.term.listing")._hov[winid] = try_buf
 		end
 	end
@@ -244,6 +246,35 @@ function ACTIONS.delete(entry)
 		entry = entry --[[@as Rabbit*Trail.Buf]]
 		local parent = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
 		if not entry.closed then
+			if vim.bo[entry.bufid].modified then
+				return { ---@type Rabbit.Message.Menu
+					class = "message",
+					type = "menu",
+					title = "Unsaved Changes",
+					options = {
+						{
+							label = "Write",
+							icon = CONFIG.window.icons.file_write,
+							callback = function()
+								vim.api.nvim_buf_call(entry.bufid, vim.cmd.write)
+								migrate_closing_buf(entry.bufid)
+								vim.api.nvim_buf_delete(entry.bufid, { force = true })
+								return entry._env.parent
+							end,
+						},
+						{
+							label = "Discard",
+							icon = CONFIG.window.icons.file_delete,
+							color = "love",
+							callback = function()
+								migrate_closing_buf(entry.bufid)
+								vim.api.nvim_buf_delete(entry.bufid, { force = true })
+								return entry._env.parent
+							end,
+						},
+					},
+				}
+			end
 			assert(vim.bo[entry.bufid].modified == false, "modified buffer should never be deleted")
 
 			migrate_closing_buf(entry.bufid)

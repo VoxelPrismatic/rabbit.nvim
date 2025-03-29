@@ -59,11 +59,3 @@
 ---@field error Rabbit.Config.Window.Extras.Lsp.Callback LSP level 'Error'
 
 ---@alias Rabbit.Config.Window.Extras.Lsp.Callback boolean | fun(data: vim.Diagnostic): boolean
-
----@class (exact) Rabbit.Config.Window.Icons
----@field modified string Icon for modified buffers.
----@field readonly string Icon for read-only buffers.
----@field lsp_error string Icon for LSP errors.
----@field lsp_info string Icon for LSP info.
----@field lsp_warn string Icon for LSP warnings.
----@field lsp_hint string Icon for LSP help.

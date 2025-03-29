@@ -241,7 +241,7 @@ function buf_meta:__index(bufid)
 			path = true_path,
 			actions = {
 				select = true,
-				delete = false,
+				delete = true,
 				hover = type(bufid) == "number",
 				parent = true,
 				rename = false,
@@ -261,7 +261,6 @@ function buf_meta:__index(bufid)
 
 		ret.closed = not vim.api.nvim_buf_is_valid(bufid)
 		ret.actions.hover = true
-		ret.actions.delete = ret.closed or (vim.bo[bufid].modified == false)
 		if not ret.closed then
 			ret.ctx.listed = vim.fn.buflisted(bufid) == 1 or not CONFIG.ignore_unlisted
 		elseif vim.uv.fs_stat(ret.path) then

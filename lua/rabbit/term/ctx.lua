@@ -1,6 +1,44 @@
 local SET = require("rabbit.util.set")
+local HL = require("rabbit.term.highlight")
+
+---@class Rabbit.UI.Workspace
+local workspace = {
+	---@type integer
+	-- Window ID.
+	win = 0,
+
+	---@type integer
+	-- Buffer ID.
+	buf = 0,
+
+	---@type integer
+	-- Highlight namespace ID.
+	ns = 0,
+
+	---@type Rabbit.UI.Workspace[]
+	-- Child workspaces.
+	children = {},
+
+	---@type vim.api.keyset.win_config?
+	-- Window configuration.
+	conf = {},
+
+	---@type vim.fn.winsaveview.ret?
+	-- Window viewport details.
+	---@diagnostic disable-next-line: missing-fields
+	view = {},
+
+	---@type boolean
+	-- True if this workspace is a container (will not delete buffer upon close)
+	container = false,
+
+	---@type { [string]: string[] }
+	-- Keys mapped to this workspace.
+	keys = {},
+}
 
 local CTX = {
+	---@diagnostic disable-next-line: missing-fields
 	user = { ns = 0 }, ---@type Rabbit.UI.Workspace
 	stack = {}, ---@type Rabbit.UI.Workspace[]
 	used = {
@@ -10,11 +48,11 @@ local CTX = {
 	scratch_time = 0,
 }
 
--- Adds a parent workspace
+-- Adds a child to this workspace. If this workspace closes, all children will be closed too.
 ---@param self Rabbit.UI.Workspace
 ---@param child Rabbit.UI.Workspace
 ---@return Rabbit.UI.Workspace
-local function add_child(self, child)
+function workspace.add_child(self, child)
 	table.insert(self.children, child)
 	if #self.children == 1 then
 		vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete", "QuitPre" }, {
@@ -29,6 +67,112 @@ local function add_child(self, child)
 	end
 
 	return child
+end
+
+-- Binds a keymap to this workspace and returns a legend entry
+---@param self Rabbit.UI.Workspace
+---@param desc string Description/legend label
+---@param callback function Callback
+---@param shown? boolean Whether or not to show this in the legend
+---@param key string | string[] Keys to bind
+function workspace.bind(self, desc, key, callback, shown)
+	if type(key) == "string" then
+		key = { key }
+	end
+
+	for _, k in ipairs(self.keys[desc] or {}) do
+		_ = pcall(vim.keymap.del, "n", k, { buffer = self.buf })
+	end
+
+	if #key == 0 then
+		self.keys[desc] = nil
+		return
+	end
+
+	if shown or shown == nil then
+		self.keys[desc] = key
+	end
+
+	for _, k in ipairs(key) do
+		vim.keymap.set("n", k, callback, { buffer = self.buf, desc = desc })
+	end
+end
+
+-- Unbinds a keymap from this workspace
+---@param self Rabbit.UI.Workspace
+---@param desc string | string[] Description/legend label
+function workspace.unbind(self, desc)
+	if type(desc) == "string" then
+		desc = { desc }
+	end
+	for _, d in ipairs(desc) do
+		self:bind(d, {}, function() end)
+	end
+end
+
+-- Created a legend map for this workspace
+---@param self Rabbit.UI.Workspace
+---@return Rabbit.Term.HlLine[]
+function workspace.legend(self)
+	local actions = { SET.keys(self.keys) }
+
+	table.sort(actions, function(a, b)
+		return a < b
+	end)
+
+	local legend = {}
+	for _, action in ipairs(actions) do
+		table.insert(legend, {
+			{ text = " " },
+			{
+				text = action,
+				hl = { "rabbit.legend.action", "rabbit.types.plugin" },
+			},
+			{
+				text = ":",
+				hl = "rabbit.legend.separator",
+			},
+			{
+				text = self.keys[action][1],
+				hl = "rabbit.legend.key",
+			},
+		})
+	end
+
+	return legend
+end
+
+-- Sets the lines in the buffer
+---@param self Rabbit.UI.Workspace
+---@param lines (Rabbit.Term.HlLine | string)[]
+---@param opts? { many: boolean, start: number, strict: boolean }
+function workspace.set_lines(self, lines, opts)
+	if opts == nil then
+		opts = { strict = false, start = 0, many = true }
+	end
+
+	HL.set_lines({
+		bufnr = self.buf,
+		lineno = opts.start,
+		lines = lines,
+		ns = self.ns,
+		strict = opts.strict,
+		many = opts.many,
+		width = self.conf.width,
+	})
+end
+
+-- Sets the cursor position
+---@param self Rabbit.UI.Workspace
+---@param line integer
+---@param col integer
+function workspace.move_cur(self, line, col)
+	vim.api.nvim_win_set_cursor(self.win, { line, col })
+end
+
+-- Focuses the window
+function workspace.focus(self)
+	vim.api.nvim_set_current_win(self.win)
 end
 
 -- Adds a workspace to the stack, and binds the WinClosed and BufDelete events
@@ -62,12 +206,21 @@ function CTX.workspace(bufid, winid)
 	local ws = { ---@type Rabbit.UI.Workspace
 		buf = bufid or vim.api.nvim_get_current_buf(),
 		win = winid or vim.api.nvim_get_current_win(),
+		ns = 0,
 		view = vim.fn.winsaveview(),
 		children = {},
+		keys = {},
+		container = false,
+		close = CTX.close,
+		add_child = workspace.add_child,
+		set_lines = workspace.set_lines,
+		move_cur = workspace.move_cur,
+		focus = workspace.focus,
+		bind = workspace.bind,
+		legend = workspace.legend,
+		unbind = workspace.unbind,
 	}
 	ws.conf = CTX.win_config(ws.win)
-	ws.add_child = add_child
-	ws.close = CTX.close
 
 	CTX.used.buf:add(bufid)
 	CTX.used.win:add(winid)
@@ -118,6 +271,8 @@ function CTX.close(ws)
 		end
 	end
 end
+
+workspace.close = CTX.close
 
 -- Creates a scratch buffer and window and appends it to the stack
 ---@param opts Rabbit.Term.ScratchKwargs
@@ -184,8 +339,8 @@ end
 ---@field ns? string Highlight namespace
 ---@field wo? vim.wo Window options
 ---@field bo? vim.bo Buffer options
----@field autocmd? table<string, fun()> Buffer Autocmds
----@field lines? Rabbit.Term.HlLine[] Highlight line
+---@field autocmd? table<string, fun(evt: NvimEvent)> Buffer Autocmds
+---@field lines? (Rabbit.Term.HlLine | string)[] Highlight line
 ---@field many? boolean If true, the lines field will be treated as many lines
 ---@field cursor? integer[] Cursor position
 

@@ -54,7 +54,7 @@ C.colors = {
 	},
 
 	legend = {
-		action = { fg = ":rabbit.plugin", bold = true },
+		action = { fg = ":rabbit.types.plugin", bold = true },
 		separator = { fg = ":Comment" },
 		key = { fg = ":Normal" },
 	},
@@ -84,17 +84,35 @@ C.window = {
 		distance_trim = 3,
 	},
 
+	---@class Rabbit.Config.Window.Icons
 	icons = {
+		-- Icon for modified buffers
 		modified = "•",
+
+		-- Icon for read-only buffers
 		readonly = "",
+
+		-- Icon for LSP hints
 		lsp_hint = "󱐋",
+
+		-- Icon for LSP info
 		lsp_info = "",
+
+		-- Icon for LSP warnings
 		lsp_warn = "󰔶",
+
+		-- Icon for LSP errors
 		lsp_error = "",
+
+		-- Icon for writing files
+		file_write = "",
+
+		-- Icon for deleting files or ignoring changes
+		file_delete = "󰆴",
 	},
 
 	beacon = {
-		nrs = true,
+		nrs = false,
 		readonly = true,
 		modified = true,
 		lsp = {
@@ -161,6 +179,30 @@ C.boxes = {
 			left = {
 				parts = { "head", "dirname", "basename", "tail" },
 				join = "",
+			},
+		},
+		chars = {
+			rise = "║",
+			scroll = "║",
+			emphasis = "═",
+		},
+	},
+
+	popup = {
+		top_left = "╔",
+		top_right = "┓",
+		bot_right = "┛",
+		bot_left = "┗",
+		bot_side = "━",
+		right_side = "┃",
+		left_side = {
+			base = "┃",
+			left = { parts = "rise" },
+		},
+		top_side = {
+			base = "━",
+			left = {
+				parts = { "head", "title", "tail" },
 			},
 		},
 		chars = {

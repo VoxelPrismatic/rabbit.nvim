@@ -35,7 +35,10 @@ HL.overwrites = {}
 function HL.apply(groups)
 	if groups ~= nil then
 		HL.overwrites = vim.tbl_deep_extend("force", HL.overwrites, groups)
+	else
+		groups = {}
 	end
+
 	local colors = vim.deepcopy(require("rabbit.config").colors)
 	for pre, hl in pairs(colors) do
 		for k, v in pairs(hl) do
@@ -44,7 +47,12 @@ function HL.apply(groups)
 			local new = HL.gen_group(HL.overwrites[color] or {})
 			local kwargs = vim.tbl_deep_extend("force", old, new)
 			vim.api.nvim_set_hl(0, color, kwargs)
+			groups[color] = nil
 		end
+	end
+
+	for k, v in pairs(groups) do
+		vim.api.nvim_set_hl(0, k, HL.gen_group(v))
 	end
 end
 
@@ -62,15 +70,19 @@ end
 function HL.set_lines(kwargs)
 	if kwargs.many then
 		for i, v in ipairs(kwargs.lines) do
-			HL.set_lines({
-				bufnr = kwargs.bufnr,
-				lineno = kwargs.lineno + i - 1,
-				lines = v,
-				ns = kwargs.ns,
-				many = false,
-				strict = kwargs.strict,
-				width = kwargs.width,
-			})
+			if type(v) == "string" then
+				vim.api.nvim_buf_set_lines(kwargs.bufnr, kwargs.lineno + i - 1, kwargs.lineno + i, false, { v })
+			else
+				HL.set_lines({
+					bufnr = kwargs.bufnr,
+					lineno = kwargs.lineno + i - 1,
+					lines = v,
+					ns = kwargs.ns,
+					many = false,
+					strict = kwargs.strict,
+					width = kwargs.width,
+				})
+			end
 		end
 		return
 	end

@@ -7,11 +7,12 @@ local UI = {
 	_entries = {}, ---@type Rabbit.Entry[]
 	_parent = nil, ---@type Rabbit.Entry.Collection
 	_display = nil, ---@type Rabbit.Entry.Collection
-	_keys = {},
+	_keys = {}, ---@type Rabbit.Table.Set<string>
 	_pre = {}, ---@type { [string]: Rabbit.UI.Workspace }
 	_hov = {}, ---@type { [integer]: integer }
 	_legend = {},
 	_plugins = {},
+	_priority_legend = {},
 	_marquee = vim.uv.new_timer(),
 	_bg = nil, ---@type Rabbit.UI.Workspace
 	_fg = nil, ---@type Rabbit.UI.Workspace
@@ -171,6 +172,9 @@ function UI.list(collection)
 		error("Invalid children")
 	end
 
+	vim.api.nvim_set_current_win(UI._fg.win)
+
+	UI._priority_legend = {}
 	UI._entries = collection.actions.children(collection)
 	UI._display = collection
 
@@ -191,14 +195,14 @@ function UI.list(collection)
 		end
 
 		vim.bo[UI._fg.buf].modifiable = true
-		vim.api.nvim_win_set_cursor(UI._fg.win, { man_default or auto_default or 1, 0 })
+		UI._fg:move_cur(man_default or auto_default or 1, 0)
 		vim.api.nvim_buf_set_lines(UI._fg.buf, j, -1, false, {})
 	else
 		vim.bo[UI._fg.buf].modifiable = true
 		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.conf.width)
 		table.insert(lines, "")
-		vim.api.nvim_buf_set_lines(UI._fg.buf, 0, -1, false, lines)
-		vim.api.nvim_win_set_cursor(UI._fg.win, { #lines, 0 })
+		UI._fg:set_lines(lines)
+		UI._fg:move_cur(#lines, 0)
 	end
 
 	UI.draw_border(UI._bg)
@@ -264,20 +268,17 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		idx = ("—"):rep(idx_len + 1)
 	end
 
-	HL.set_lines({
-		bufnr = UI._fg.buf,
-		ns = UI._fg.ns,
-		lineno = j - 1,
-		strict = false,
-		width = UI._fg.conf.width,
-		lines = {
-			{
-				text = " " .. idx .. "\u{a0}",
-				hl = "rabbit.types.index",
-				align = "left",
-			},
-			UI.highlight(entry),
+	UI._fg:set_lines({
+		{
+			text = " " .. idx .. "\u{a0}",
+			hl = "rabbit.types.index",
+			align = "left",
 		},
+		UI.highlight(entry),
+	}, {
+		many = false,
+		strict = false,
+		start = j - 1,
 	})
 
 	vim.bo[UI._fg.buf].modifiable = false
@@ -479,9 +480,8 @@ function UI.apply_actions()
 	for _, key in ipairs(UI._keys) do
 		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf })
 	end
+
 	UI._keys = SET.new()
-	local legend = {}
-	UI._legend = {}
 	UI._plugins = {}
 	local all_actions = SET.new() ---@type Rabbit.Table.Set<string>
 
@@ -497,6 +497,8 @@ function UI.apply_actions()
 		})
 		:del("hover")
 
+	UI._fg:unbind(all_actions)
+
 	if e.actions.parent then
 		if UI.find_action("parent", e)(e) == UI._display then
 			all_actions:del("parent")
@@ -509,46 +511,15 @@ function UI.apply_actions()
 			goto continue
 		end
 
-		table.insert(legend, {
-			title = action,
-			keys = keys,
-		})
+		UI._keys:add(keys)
+		UI._fg:bind(action, keys, function()
+			UI.handle_callback(cb(e))
+		end)
 
-		for _, k in ipairs(keys) do
-			if type(k) == "string" then
-				UI._keys:add(k)
-				vim.keymap.set("n", k, function()
-					UI.handle_callback(cb(e))
-				end, { buffer = UI._fg.buf })
-			else
-				error("Invalid key: " .. vim.inspect(k))
-			end
-		end
 		::continue::
 	end
 
-	table.sort(legend, function(a, b)
-		return a.title < b.title
-	end)
-
-	for _, action in ipairs(legend) do
-		table.insert(UI._legend, {
-			{
-				text = " " .. action.title,
-				hl = "rabbit.legend.action",
-			},
-			{
-				text = ":",
-				hl = "rabbit.legend.separator",
-			},
-			{
-				text = action.keys[1],
-				hl = "rabbit.legend.key",
-			},
-		})
-	end
-
-	UI._legend = HL.split(UI._legend)
+	UI._legend = HL.split(UI._fg:legend())
 
 	for name, plugin in pairs(require("rabbit").plugins) do
 		if plugin == UI._plugin or plugin.opts.keys.switch == "" or plugin.opts.keys.switch == false then
@@ -557,11 +528,11 @@ function UI.apply_actions()
 
 		local switches = type(plugin.opts.keys.switch) == "string" and { tostring(plugin.opts.keys.switch) }
 			or plugin.opts.keys.switch --[[@as table<string>]]
-		for _, switch in ipairs(switches) do
-			vim.keymap.set("n", switch, function()
-				UI.spawn(plugin)
-			end, { buffer = UI._fg.buf })
-		end
+
+		UI._keys:add(switches)
+		UI._fg:bind(name, switches, function()
+			UI.spawn(plugin)
+		end, false)
 
 		HL.apply({
 			["rabbit.plugin." .. name] = { fg = tostring(plugin.opts.color) },
@@ -608,12 +579,15 @@ end
 -- Marquee legend
 function UI.marquee_legend()
 	local cur_plugin = { join = {}, split = {} }
-	if #UI._plugins > 0 then
-		local idx = (os.time() % #UI._plugins) + 1
-		cur_plugin = UI._plugins[idx]
-	end
+	local legend = vim.deepcopy(UI._priority_legend)
+	if #legend == 0 then
+		if #UI._plugins > 0 then
+			local idx = (os.time() % #UI._plugins) + 1
+			cur_plugin = UI._plugins[idx]
+		end
 
-	local legend = vim.deepcopy(UI._legend)
+		legend = vim.deepcopy(UI._legend)
+	end
 
 	local max_len = UI._bg.conf.width - #cur_plugin.split - #legend
 	if max_len < 0 then
@@ -639,7 +613,7 @@ function UI.marquee_legend()
 	HL.set_lines({
 		bufnr = UI._bg.buf,
 		lineno = UI._bg.conf.height - 1,
-		lines = legend,
+		lines = { legend, cur_plugin.join },
 		ns = ns,
 		many = false,
 		strict = true,

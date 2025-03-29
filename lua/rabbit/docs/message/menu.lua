@@ -1,4 +1,11 @@
 ---@class Rabbit.Message.Menu: Rabbit.Message
 ---@field type "menu"
 ---@field title string Menu title
----
+---@field options Rabbit.Message.Menu.Option[]
+
+---@class (exact) Rabbit.Message.Menu.Option
+---@field label string Label
+---@field callback fun(...): Rabbit.Response
+---@field args? any[] Arguments to pass to the callback
+---@field icon? string Icon
+---@field color? string Color of the label
