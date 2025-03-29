@@ -5,7 +5,7 @@ SET.Func = {}
 
 -- Creates a new set
 ---@generic T
----@param arr? `T`[]
+---@param arr? T[]
 ---@return Rabbit.Table.Set<T>
 function SET.new(arr)
 	---@type Rabbit.Table.Set
@@ -20,10 +20,10 @@ end
 
 -- Inserts an element (or elements) into the set
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param elem T
 ---@param idx? 1 | integer The index to insert the element at
----@return Rabbit.Table.Set<`T`> "Self for chaining"
+---@return Rabbit.Table.Set<T> "Self for chaining"
 ---@overload fun(self: Rabbit.Table.Set<`T`>, elem: `T`[], idx?: 1 | integer)
 function SET.Func:add(elem, idx)
 	if idx == nil then
@@ -45,16 +45,16 @@ end
 
 -- Pops an element from the set
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param idx 1 | integer The index of the element to pop
----@return `T` "The popped element"
+---@return T "The popped element"
 function SET.Func:pop(idx)
 	return table.remove(self, idx)
 end
 
 -- Removes an element (or elements) from the set
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param elem T | T[]
 ---@return integer "How many elements were removed (usually 1)"
 function SET.Func:del(elem)
@@ -75,9 +75,29 @@ function SET.Func:del(elem)
 	return count
 end
 
+-- Toggles an element
+---@generic T
+---@param self Rabbit.Table.Set<T>
+---@param elem T
+---@param include? boolean True = Force include; False = Force exclude; Nil = Toggle
+---@return boolean "Whether the element was added or removed"
+function SET.Func:tog(elem, include)
+	if include == nil then
+		include = SET.Func.idx(self, elem) == nil
+	end
+
+	if include then
+		SET.Func.add(self, elem)
+	else
+		SET.Func.del(self, elem)
+	end
+
+	return include
+end
+
 -- Returns the index of an element
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param elem T
 ---@return integer | nil
 function SET.Func:idx(elem)
@@ -91,7 +111,7 @@ end
 
 -- Replaces all instances of these elements with another
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param elem T | T[]
 ---@param new T
 ---@return Rabbit.Table.Set<T>
@@ -120,7 +140,7 @@ end
 
 -- Returns logical AND (intersection)
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param elem Rabbit.Table.Set<T>
 ---@return Rabbit.Table.Set<T>
 function SET.Func:AND(elem)
@@ -137,7 +157,7 @@ end
 
 -- Returns logical OR (union)
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param elem Rabbit.Table.Set<T>
 ---@return Rabbit.Table.Set<T>
 function SET.Func:OR(elem)
@@ -153,7 +173,7 @@ end
 
 -- Returns logical XOR (exclusive OR)
 ---@generic T
----@param self Rabbit.Table.Set<`T`>
+---@param self Rabbit.Table.Set<T>
 ---@param elem Rabbit.Table.Set<T>
 ---@return Rabbit.Table.Set<T>
 function SET.Func:XOR(elem)

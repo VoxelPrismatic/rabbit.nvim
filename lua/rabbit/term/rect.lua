@@ -6,6 +6,9 @@ local RECT = {}
 ---@return Rabbit.UI.Rect
 function RECT.calc(rect, win)
 	local conf = require("rabbit.term.ctx").win_config(win)
+	if conf == nil then
+		error("Invalid window ID: " .. win)
+	end
 
 	if rect.x < 0 then
 		rect.x = 0

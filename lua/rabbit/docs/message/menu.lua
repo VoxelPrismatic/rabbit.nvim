@@ -1,0 +1,4 @@
+---@class Rabbit.Message.Menu: Rabbit.Message
+---@field type "menu"
+---@field title string Menu title
+---

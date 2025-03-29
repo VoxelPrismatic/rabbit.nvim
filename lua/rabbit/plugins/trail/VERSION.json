@@ -1,20 +1,34 @@
 {
-	"latest": "r02",
+	"latest": "r00a3",
 	"changes": {
-		"r02": {
+		"r00a3": {
+			"date": "Mar 25, 2025",
+			"fixed": [],
+			"known": [
+				"Attempting to copy a closed window will crash"
+			],
+			"features": [
+				"You may now delete closed windows",
+				"You may now delete closed buffers",
+				"You may now close opened buffers"
+			]
+		},
+		"r00a2": {
 			"date": "Mar 19, 2025",
-			"bugs": [
+			"fixed": [
 				"Trail now ignores all events when Rabbit is open",
 				"Previewing buffers no longer breaks the buffer order"
 			],
+			"known": [],
 			"features": [
 				"Implemented Rename action, imitating Oil",
 				"Implemented Parent action; quickly jump to parent collection"
 			]
 		},
-		"r01": {
+		"r00a1": {
 			"date": "Mar 15, 2025",
-			"bugs": [],
+			"fixed": [],
+			"known": [],
 			"features": [
 				"Initial release",
 				"Legacy:History and Legacy:Reopen have been merged into Trail",
