@@ -1,9 +1,11 @@
 local MEM = require("rabbit.util.mem")
 local ENV = require("rabbit.plugins.harpoon.env")
+local SET = require("rabbit.util.set")
 local CONFIG = require("rabbit.plugins.harpoon.config")
 local TRAIL = require("rabbit.plugins.trail.list")
 
 ---@class (exact) Rabbit*Harpoon.Collection: Rabbit.Entry.Collection
+---@field label Rabbit.Term.HlLine | Rabbit.Term.HlLine[]
 ---@field ctx Rabbit*Harpoon.Collection.Ctx
 
 ---@class Rabbit*Harpoon.Collection.Ctx
@@ -49,6 +51,31 @@ local LIST = {
 ---@param path string File path
 function LIST.load(path)
 	LIST.harpoon = MEM.Read(path)
+	for _, collections in pairs(LIST.harpoon) do
+		if type(collections) ~= "table" then
+			goto continue
+		end
+		local to_delete = SET.new({ SET.keys(collections) })
+		to_delete:del("0")
+		local queue = SET.new({ "0" })
+		while #queue > 0 do
+			local id = tostring(queue:pop())
+			for _, value in ipairs(collections[id].list) do
+				if type(value) == "number" then
+					queue:add(tostring(value))
+					to_delete:del(tostring(value))
+				end
+			end
+		end
+
+		for _, id in ipairs(to_delete) do
+			collections[id] = nil
+		end
+
+		::continue::
+	end
+
+	LIST.harpoon:__Save()
 end
 
 ---@param bufid integer Buffer ID to show the collection for
@@ -96,13 +123,13 @@ local function create_collection(self, id)
 			},
 		},
 		actions = {
-			delete = false,
+			delete = true,
 			children = true,
 			select = true,
 			hover = false,
 			parent = collection.parent ~= 0,
 			rename = tostring(id) ~= "0",
-			insert = false,
+			insert = true,
 			collect = true,
 		},
 		ctx = {
@@ -135,7 +162,7 @@ setmetatable(LIST.files, {
 })
 
 -- Recently deleted entry
----@type integer | string
+---@type integer | string | table
 LIST.recent = 0
 
 return LIST

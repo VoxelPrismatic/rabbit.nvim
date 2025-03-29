@@ -46,10 +46,10 @@ end
 -- Pops an element from the set
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
----@param idx 1 | integer The index of the element to pop
+---@param idx? 1 | integer The index of the element to pop
 ---@return T "The popped element"
 function SET.Func:pop(idx)
-	return table.remove(self, idx)
+	return table.remove(self, idx or 1)
 end
 
 -- Removes an element (or elements) from the set

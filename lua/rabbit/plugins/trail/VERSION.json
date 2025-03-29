@@ -1,6 +1,16 @@
 {
-	"latest": "r00a3",
+	"latest": "r00a4",
 	"changes": {
+		"r00a4": {
+			"date": "Mar 29, 2025",
+			"fixed": [],
+			"known": [
+				"Attempting to copy a closed window will crash"
+			],
+			"features": [
+				"You are now prompted when trying to close an open window"
+			]
+		},
 		"r00a3": {
 			"date": "Mar 25, 2025",
 			"fixed": [],

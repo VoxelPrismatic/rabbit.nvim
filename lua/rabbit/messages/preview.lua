@@ -241,6 +241,7 @@ return function(data)
 			})
 			preview_ws = CTX.append(data.bufid, fakewin)
 			preview_ws.container = true
+			UI._fg:add_child(preview_ws)
 		end
 	end
 
@@ -250,7 +251,7 @@ return function(data)
 	UI._pre.l = CTX.scratch({
 		focus = false,
 		config = configs.l,
-		parent = UI._bg,
+		parent = { UI._bg, UI._fg },
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
 		lines = hl.l,
@@ -260,7 +261,7 @@ return function(data)
 	UI._pre.r = CTX.scratch({
 		focus = false,
 		config = configs.r,
-		parent = UI._pre.l,
+		parent = { UI._pre.l, UI._fg },
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
 		lines = hl.r,
@@ -270,7 +271,7 @@ return function(data)
 	UI._pre.t = CTX.scratch({
 		focus = false,
 		config = configs.t,
-		parent = UI._pre.r,
+		parent = { UI._pre.r, UI._fg },
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
 		lines = hl.t,
@@ -280,7 +281,7 @@ return function(data)
 	UI._pre.b = CTX.scratch({
 		focus = false,
 		config = configs.b,
-		parent = { UI._pre.t, UI._pre.l }, -- Circle so they all close simultaneously
+		parent = { UI._pre.t, UI._pre.l, UI._fg }, -- Circle so they all close simultaneously
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
 		lines = hl.b,

@@ -65,11 +65,13 @@ return function(data)
 		local valid_name = data.apply(entry, new_name)
 		vim.api.nvim_buf_clear_namespace(rename_ws.buf, rename_ws.ns, 0, -1)
 		if valid_name ~= new_name then
-			vim.api.nvim_buf_set_extmark(rename_ws.buf, rename_ws.ns, 1, 0, {
-				hl_group = "rabbit.paint.love",
-				end_line = 1,
-				end_col = #valid_name,
-			})
+			if #new_name ~= 0 then
+				vim.api.nvim_buf_set_extmark(rename_ws.buf, rename_ws.ns, 1, 0, {
+					hl_group = "rabbit.paint.love",
+					end_line = 1,
+					end_col = math.min(#valid_name, #new_name),
+				})
+			end
 			local _, _, copy = valid_name:find("%++([0-9]+)$")
 			if #valid_name < #new_name then
 				vim.api.nvim_buf_set_extmark(rename_ws.buf, rename_ws.ns, 1, #new_name, {

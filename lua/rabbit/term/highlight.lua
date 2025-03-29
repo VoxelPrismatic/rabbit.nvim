@@ -230,4 +230,6 @@ end
 ---@field text string The text to display
 ---@field hl? string | string[] | { [string]: boolean } The highlight group
 ---@field align? "left" | "right" | "center" The alignment of the text
+---@field [integer] Rabbit.Term.HlLine Nested lines
+
 return HL
