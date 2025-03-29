@@ -121,6 +121,7 @@ function UI.spawn(plugin)
 		config = r,
 		parent = UI._bg,
 		name = "Rabbit: " .. UI._plugin.name,
+		---@diagnostic disable-next-line: missing-fields
 		wo = {
 			cursorline = true,
 		},
@@ -263,13 +264,20 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		idx = ("—"):rep(idx_len + 1)
 	end
 
-	HL.nvim_buf_set_line(UI._fg.buf, j - 1, false, UI._fg.ns, UI._fg.conf.width, {
-		{
-			text = " " .. idx .. "\u{a0}",
-			hl = "rabbit.types.index",
-			align = "left",
+	HL.set_lines({
+		bufnr = UI._fg.buf,
+		ns = UI._fg.ns,
+		lineno = j - 1,
+		strict = false,
+		width = UI._fg.conf.width,
+		lines = {
+			{
+				text = " " .. idx .. "\u{a0}",
+				hl = "rabbit.types.index",
+				align = "left",
+			},
+			UI.highlight(entry),
 		},
-		UI.highlight(entry),
 	})
 
 	vim.bo[UI._fg.buf].modifiable = false
@@ -316,7 +324,7 @@ function UI.highlight(entry)
 				},
 				align = "left",
 			},
-			CONFIG.window.extras.nrs and {
+			CONFIG.window.beacon.nrs and {
 				text = tostring(entry.path):gsub(".*/(%d+):.*/(%w+)$", "%2/%1") .. " ",
 				hl = { "rabbit.types.tail" },
 				align = "right",
@@ -343,7 +351,7 @@ function UI.highlight(entry)
 				},
 				align = "left",
 			},
-			CONFIG.window.extras.nrs and {
+			CONFIG.window.beacon.nrs and {
 				text = tostring(entry.bufid) .. " ",
 				hl = { "rabbit.types.tail" },
 				align = "right",
@@ -354,7 +362,7 @@ function UI.highlight(entry)
 	local extras = {}
 
 	if vim.api.nvim_buf_is_valid(entry.bufid) then
-		local lsp_count = LSP.get_count(entry.bufid, CONFIG.window.extras.lsp)
+		local lsp_count = LSP.get_count(entry.bufid, CONFIG.window.beacon.lsp)
 		for k, v in pairs(lsp_count) do
 			if v > 0 then
 				table.insert(extras, {
@@ -364,13 +372,13 @@ function UI.highlight(entry)
 				})
 			end
 		end
-		if CONFIG.window.extras.modified and vim.bo[entry.bufid].modified then
+		if CONFIG.window.beacon.modified and vim.bo[entry.bufid].modified then
 			table.insert(extras, {
 				text = " " .. CONFIG.window.icons.modified,
 				hl = { "rabbit.files.modified" },
 				align = "left",
 			})
-		elseif CONFIG.window.extras.readonly and vim.bo[entry.bufid].readonly then
+		elseif CONFIG.window.beacon.readonly and vim.bo[entry.bufid].readonly then
 			table.insert(extras, {
 				text = " " .. CONFIG.window.icons.readonly .. " ",
 				hl = { "rabbit.files.readonly" },
@@ -412,7 +420,7 @@ function UI.highlight(entry)
 			align = "left",
 		},
 		extras,
-		(CONFIG.window.extras.nrs and not entry.closed) and {
+		(CONFIG.window.beacon.nrs and not entry.closed) and {
 			text = tostring(entry.bufid) .. " ",
 			hl = { "rabbit.types.tail" },
 			align = "right",
@@ -555,7 +563,7 @@ function UI.apply_actions()
 			end, { buffer = UI._fg.buf })
 		end
 
-		HL.set_group(0, {
+		HL.apply({
 			["rabbit.plugin." .. name] = { fg = tostring(plugin.opts.color) },
 		})
 
@@ -628,7 +636,15 @@ function UI.marquee_legend()
 		return
 	end
 
-	HL.nvim_buf_set_line(UI._bg.buf, UI._bg.conf.height - 1, false, ns, UI._bg.conf.width, { legend, cur_plugin.join })
+	HL.set_lines({
+		bufnr = UI._bg.buf,
+		lineno = UI._bg.conf.height - 1,
+		lines = legend,
+		ns = ns,
+		many = false,
+		strict = true,
+		width = UI._bg.conf.width,
+	})
 end
 
 function UI.handle_callback(data)
@@ -653,118 +669,56 @@ end
 -- Draws the border around the listing
 ---@param ws Rabbit.UI.Workspace
 function UI.draw_border(ws)
-	local titles = CONFIG.window.titles
-	local box = BOX.normalize(CONFIG.window.box)
+	local config = CONFIG.boxes.rabbit
 	local final_height = ws.conf.height - (CONFIG.window.legend and 1 or 0)
 
-	local sides ---@type Rabbit.Term.Border.Applied
-
-	local scroll_len = (final_height - 2) / vim.fn.line("$")
-	local scroll_top = scroll_len * (vim.fn.line(".") - 1)
-	scroll_len = math.max(1, math.ceil(scroll_len))
-	local scroll_func = { ---@type Rabbit.Term.Border.Side | nil
-		align = "en",
-		text = "",
-		pre = box.v:rep(scroll_top),
-		suf = (box.scroll or box.v):rep(scroll_len),
+	---@type { [string]: Rabbit.Term.Border.Config.Part }
+	local border_parts = {
+		rise = { (config.chars.rise):rep(final_height / 4), false },
+		rabbit = { CONFIG.system.name, true },
+		plugin = { UI._plugin.name, true },
+		head = { config.chars.emphasis, false },
+		scroll = { "", false },
 	}
 
-	if titles[1] == nil then
-		if
-			titles.title_pos == "es"
-			or titles.plugin_pos == "es"
-			or titles.title_pos == "e"
-			or titles.plugin_pos == "e"
-			or titles.title_pos == "en"
-			or titles.plugin_pos == "en"
-		then
-			scroll_func = nil
-		end
+	local tail = config.chars.emphasis
+	local join_char, _, text = BOX.join_for(config, border_parts, "rabbit", "plugin", "head")
+	local tail_len = (ws.conf.width - 2) / 2 - vim.api.nvim_strwidth(text) - vim.api.nvim_strwidth(join_char)
 
-		local title = case_func[titles.title_case](titles.title_text)
-		local plugin = case_func[titles.plugin_case](UI._plugin.name)
-
-		if titles.title_pos == titles.plugin_pos then
-			sides = BOX.make_sides(ws.conf.width, final_height, box, {
-				align = titles.title_pos,
-				pre = titles.title_emphasis.left,
-				text = title,
-				suf = titles.title_emphasis.right .. plugin .. titles.plugin_emphasis.right,
-			}, {
-				align = titles.title_pos,
-				pre = titles.title_emphasis.left .. title .. titles.title_emphasis.right,
-				text = plugin,
-				suf = titles.plugin_emphasis.right,
-			}, scroll_func)
-		else
-			sides = BOX.make_sides(ws.conf.width, final_height, box, {
-				align = titles.title_pos,
-				pre = titles.title_emphasis.left,
-				text = title,
-				suf = titles.title_emphasis.right,
-			}, {
-				align = titles.plugin_pos,
-				pre = titles.plugin_emphasis.left,
-				text = plugin,
-				suf = titles.plugin_emphasis.right,
-			})
-		end
-	else
-		sides = BOX.make_sides(ws.conf.width, final_height, box, scroll_func, unpack(titles))
+	if tail_len > 0 then
+		tail = tail:rep(tail_len)
 	end
 
-	local lines = {}
-	local st = box.nw .. table.concat(sides.t.txt, "") .. box.ne
-	table.insert(lines, st)
+	border_parts.tail = { tail, false }
 
-	for i = 1, final_height - 2 do
-		table.insert(lines, sides.l.txt[i] .. (" "):rep(ws.conf.width - 2) .. sides.r.txt[i])
+	if type(config.right_side) == "table" then
+		local base = config.right_side.base
+		local scroll_len = (final_height - 2) / vim.fn.line("$")
+		scroll_len = math.max(1, math.ceil(scroll_len))
+		local scroll_top = scroll_len * (vim.fn.line(".") - 1)
+		border_parts.scroll[1] = base:rep(scroll_top) .. (config.chars.scroll or base):rep(scroll_len)
 	end
-
-	table.insert(lines, box.sw .. table.concat(sides.b.txt, "") .. box.se)
-
-	if CONFIG.window.legend then
-		table.insert(lines, "")
-	end
-
-	vim.api.nvim_buf_set_lines(ws.buf, 0, -1, false, lines)
 
 	local c = UI._plugin.opts.color
-	HL.set_group(0, {
-		["rabbit.plugin"] = type(c) == "string" and { fg = c } or c,
-		["rabbit.plugin.inv"] = {
-			fg = ":rabbit.plugin",
-			bg = ":Folded",
-		},
+	HL.apply({
+		["rabbit.types.plugin"] = c,
 	})
-	HL.apply()
 
-	for i = 1, ws.conf.height do
-		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.plugin", i - 1, 0, -1)
-	end
+	local sides = BOX.make(ws.conf.width, final_height, config, border_parts)
+	local lines = sides:to_hl({
+		border_hl = "rabbit.types.plugin",
+		title_hl = "rabbit.types.title",
+	}).lines
 
-	for _, v in ipairs(sides.t.hl) do
-		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.types.title", 0, v + #box.nw - 1, v + #box.nw)
-	end
-
-	for _, v in ipairs(sides.b.hl) do
-		vim.api.nvim_buf_add_highlight(
-			ws.buf,
-			ws.ns,
-			"rabbit.types.title",
-			final_height - 1,
-			v + #box.sw - 1,
-			v + #box.sw
-		)
-	end
-
-	for _, v in ipairs(sides.l.hl) do
-		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.types.title", v, 0, 1)
-	end
-
-	for _, v in ipairs(sides.r.hl) do
-		vim.api.nvim_buf_add_highlight(ws.buf, ws.ns, "rabbit.types.title", v, ws.conf.width - 1, 1)
-	end
+	HL.set_lines({
+		bufnr = UI._bg.buf,
+		ns = UI._bg.ns,
+		lines = lines,
+		width = ws.conf.width,
+		lineno = 0,
+		strict = false,
+		many = true,
+	})
 end
 
 -- Creates the bounding box for the window

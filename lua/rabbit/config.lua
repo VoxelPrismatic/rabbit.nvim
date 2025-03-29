@@ -1,3 +1,5 @@
+local BOX = require("rabbit.term.border")
+
 ---@class Rabbit.Config
 local C = {}
 
@@ -12,6 +14,8 @@ C.colors = {
 		tail = { fg = ":Comment", italic = true },
 		head = { fg = ":NonText", bold = true },
 		collection = { fg = ":Constant", bold = true, italic = true },
+		preview = { fg = ":rabbit.types.plugin", bg = ":Folded" },
+		plugin = { fg = "#000000" },
 	},
 
 	files = {
@@ -66,30 +70,11 @@ C.colors = {
 -- Window settings
 ---@type Rabbit.Config.Window
 C.window = {
-	box = "┏┓╚┛━┃║",
-
 	spawn = {
 		mode = "float",
 		width = 64,
 		height = 24,
 		side = "se",
-	},
-
-	titles = {
-		{
-			align = "sw",
-			make = function(sz, _)
-				local name = require("rabbit.term.listing")._plugin.name:lower()
-				local suf = " " .. ("═"):rep(math.floor(sz / 2) - #name - 2)
-				return "═ ", name, suf
-			end,
-		},
-		{
-			align = "ws",
-			make = function(sz, _)
-				return "", "", ("║"):rep(math.floor(sz / 4))
-			end,
-		},
 	},
 
 	overflow = {
@@ -108,7 +93,7 @@ C.window = {
 		lsp_error = "",
 	},
 
-	extras = {
+	beacon = {
 		nrs = true,
 		readonly = true,
 		modified = true,
@@ -128,6 +113,62 @@ C.window = {
 
 	legend = true,
 	preview = true,
+}
+
+---@type Rabbit.Config.Boxes
+C.boxes = {
+	rabbit = {
+		top_left = "┏",
+		top_right = "┓",
+		bot_left = "╚",
+		bot_right = "┛",
+		top_side = "━",
+		right_side = {
+			base = "┃",
+			left = { parts = "scroll" },
+		},
+		left_side = {
+			base = "┃",
+			right = { parts = "rise" },
+		},
+		bot_side = {
+			base = "━",
+			left = {
+				parts = { "head", "rabbit", "plugin", "tail" },
+				case = "lower",
+			},
+		},
+		chars = {
+			rise = "║",
+			scroll = "║",
+			emphasis = "═",
+		},
+	},
+
+	preview = {
+		top_left = "┏",
+		top_right = "┓",
+		bot_left = "╚",
+		bot_right = "┛",
+		top_side = "━",
+		right_side = "┃",
+		left_side = {
+			base = "┃",
+			right = { parts = "rise" },
+		},
+		bot_side = {
+			base = "━",
+			left = {
+				parts = { "head", "dirname", "basename", "tail" },
+				join = "",
+			},
+		},
+		chars = {
+			rise = "║",
+			scroll = "║",
+			emphasis = "═",
+		},
+	},
 }
 
 -- Keymap settings
@@ -164,6 +205,10 @@ C.system = {
 	---@type string
 	-- The path to the data directory
 	data = vim.fn.stdpath("data") .. "/rabbit",
+
+	---@type string
+	-- Rename Rabbit to a custom name
+	name = "Rabbit",
 }
 
 function C.cwd()

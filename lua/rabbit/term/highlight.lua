@@ -28,42 +28,53 @@ function HL.gen_group(color, key)
 	return color
 end
 
--- Applies a table of highlight groups to the namespace
----@param ns integer Namespace
----@param hls { [string]: string | NvimHlKwargs }
-function HL.set_group(ns, hls)
-	if type(hls) ~= "table" then
-		error("Expected table, got " .. type(hls))
-	end
-
-	for k, v in pairs(hls) do
-		if type(v) == "string" then
-			v = { fg = v }
-		elseif type(v) ~= "table" then
-			error("Expected NvimHlKwargs, got " .. type(v))
-		end
-		vim.api.nvim_set_hl(ns, k, HL.gen_group(v))
-	end
-end
+HL.overwrites = {}
 
 -- Applies config colors
-function HL.apply()
+---@param groups? { [string]: string | NvimHlKwargs }
+function HL.apply(groups)
+	if groups ~= nil then
+		HL.overwrites = vim.tbl_deep_extend("force", HL.overwrites, groups)
+	end
 	local colors = vim.deepcopy(require("rabbit.config").colors)
 	for pre, hl in pairs(colors) do
 		for k, v in pairs(hl) do
-			vim.api.nvim_set_hl(0, "rabbit." .. pre .. "." .. k, HL.gen_group(v))
+			local color = "rabbit." .. pre .. "." .. k
+			local old = HL.gen_group(v)
+			local new = HL.gen_group(HL.overwrites[color] or {})
+			local kwargs = vim.tbl_deep_extend("force", old, new)
+			vim.api.nvim_set_hl(0, color, kwargs)
 		end
 	end
 end
 
 -- Copied from nvim_buf_set_lines, but we also handle highlighting here.
----@param buf integer Buffer ID.
----@param line integer Start line.
----@param strict boolean If true, the lines must be strictly between start and end.
----@param ns integer? Namespace
----@param width integer? Width
----@param lines Rabbit.Term.HlLine[] List of text.
-function HL.nvim_buf_set_line(buf, line, strict, ns, width, lines)
+---@class (exact) Rabbit.Term.HlLine.Kwargs
+---@field bufnr integer Buffer ID.
+---@field lineno integer Start line.
+---@field strict boolean If true, the lines must be strictly between start and end.
+---@field ns integer? Namespace
+---@field width integer Width
+---@field lines Rabbit.Term.HlLine[] List of text.
+---@field many? boolean If true, the lines field will be treated as many lines
+
+---@param kwargs Rabbit.Term.HlLine.Kwargs
+function HL.set_lines(kwargs)
+	if kwargs.many then
+		for i, v in ipairs(kwargs.lines) do
+			HL.set_lines({
+				bufnr = kwargs.bufnr,
+				lineno = kwargs.lineno + i - 1,
+				lines = v,
+				ns = kwargs.ns,
+				many = false,
+				strict = kwargs.strict,
+				width = kwargs.width,
+			})
+		end
+		return
+	end
+
 	local parts = {
 		left = {
 			text = "",
@@ -78,6 +89,13 @@ function HL.nvim_buf_set_line(buf, line, strict, ns, width, lines)
 			hl = {},
 		},
 	}
+
+	local lines = { kwargs.lines }
+	local width = kwargs.width
+	local strict = kwargs.strict
+	local lineno = kwargs.lineno
+	local buf = kwargs.bufnr
+	local ns = kwargs.ns
 
 	while #lines > 0 do
 		local v = table.remove(lines, 1)
@@ -125,20 +143,41 @@ function HL.nvim_buf_set_line(buf, line, strict, ns, width, lines)
 		.. (" "):rep(math.ceil(center_pad))
 		.. parts.right.text
 
-	vim.api.nvim_buf_set_lines(buf, line, line + 1, strict, { text })
+	local ok = pcall(vim.api.nvim_buf_set_lines, buf, lineno, lineno + 1, strict, { text })
+	if not ok then
+		local max = #vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+		local empty = {}
+		for _ = max, lineno + 1 do
+			table.insert(empty, "")
+		end
+		vim.api.nvim_buf_set_lines(buf, max - 1, lineno, false, empty)
+		vim.api.nvim_buf_set_lines(buf, lineno, lineno + 1, strict, { text })
+	end
 
 	for _, v in ipairs(parts.left.hl) do
-		vim.api.nvim_buf_add_highlight(buf, ns or -1, v.name, line, v.start, v.end_)
+		vim.api.nvim_buf_set_extmark(buf, ns or 0, lineno, v.start, {
+			hl_group = v.name,
+			end_line = lineno,
+			end_col = v.end_,
+		})
 	end
 
 	local offset = #parts.left.text + math.floor(center_pad)
 	for _, v in ipairs(parts.center.hl) do
-		vim.api.nvim_buf_add_highlight(buf, ns or -1, v.name, line, v.start + offset, v.end_ + offset)
+		vim.api.nvim_buf_set_extmark(buf, ns or 0, lineno, v.start + offset, {
+			hl_group = v.name,
+			end_line = lineno,
+			end_col = v.end_ + offset,
+		})
 	end
 
 	offset = #parts.left.text + math.floor(center_pad) + #parts.center.text + math.ceil(center_pad)
 	for _, v in ipairs(parts.right.hl) do
-		vim.api.nvim_buf_add_highlight(buf, ns or -1, v.name, line, v.start + offset, v.end_ + offset)
+		vim.api.nvim_buf_set_extmark(buf, ns or 0, lineno, v.start + offset, {
+			hl_group = v.name,
+			end_line = lineno,
+			end_col = v.end_ + offset,
+		})
 	end
 end
 

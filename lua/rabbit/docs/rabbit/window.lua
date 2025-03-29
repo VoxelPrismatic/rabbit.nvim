@@ -32,35 +32,6 @@
 
 ---@alias Rabbit.Config.Window.Mode Rabbit.Config.Window.Mode.Float | Rabbit.Config.Window.Mode.Split | Rabbit.Config.Window.Mode.Fullscreen
 
----@class (exact) Rabbit.Config.Window.Titles
----@field title_text string Title text.
----@field title_pos Rabbit.Config.Window.Titles.Position Where to place the title.
----@field title_emphasis Rabbit.Config.Window.Titles.Emphasis Emphasis characters to place around the title; if plugin and title use the same position, they are joined by title.right and end with plugin.right
----@field plugin_pos Rabbit.Config.Window.Titles.Position Where to place the plugin name.
----@field plugin_emphasis Rabbit.Config.Window.Titles.Emphasis Emphasis characters to place around the plugin name
----@field title_case "title" | "upper" | "lower" | "unchanged"
----@field plugin_case "title" | "upper" | "lower" | "unchanged" Unused if the plugin and title use the same position.
----@see Rabbit.Term.Border
-
----@alias Rabbit.Config.Window.Titles.Position # Where to place the title text
----| "ne" # Top right.
----| "n" # Top center.
----| "nw" # Top left.
----| "se" # Bottom right.
----| "s" # Bottom center.
----| "sw" # Bottom left.
----| "wn" # Left top. (Vertical text)
----| "w" # Left center. (Vertical text)
----| "ws" # Left bottom. (Vertical text)
----| "en" # Right top. (Vertical text)
----| "e" # Right center. (Vertical text)
----| "es" # Right bottom. (Vertical text)
----| "nil" # No title.
-
----@class (exact) Rabbit.Config.Window.Titles.Emphasis
----@field left string Left-hand (or top-side) emphasis string
----@field right string Right-hand (or bottom-side) emphasis string
-
 ---@class (exact) Rabbit.Config.Window.Overflow
 ---@field distance_char string String to use when a line overflows.
 ---@field dirname_trim integer Maximum directory name length before trimming with `dirname_char`.
@@ -68,9 +39,7 @@
 ---@field distance_trim integer Maximum distance between files before trimming with `distance_char`.
 
 ---@class (exact) Rabbit.Config.Window
----@field box Rabbit.Term.Border Border box style.
 ---@field spawn Rabbit.Config.Window.Mode Window position.
----@field titles Rabbit.Config.Window.Titles | Rabbit.Term.Border.Side[] Title positioning & whatnot.
 ---@field overflow Rabbit.Config.Window.Overflow How to handle overflow.
 ---@field legend boolean Show a quick legend at the bottom. Consumes one line.
 ---@field beacon Rabbit.Config.Window.Extras Extra info

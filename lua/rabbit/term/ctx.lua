@@ -39,8 +39,16 @@ end
 function CTX.append(bufid, winid, parent)
 	local ws = CTX.workspace(bufid, winid)
 	table.insert(CTX.stack, ws)
-	if parent ~= nil then
-		parent:add_child(ws)
+
+	local parents = { parent }
+	while #parents > 0 do
+		local p = table.remove(parents, 1)
+		for _, v in ipairs(p) do
+			table.insert(parents, v)
+		end
+		if p.add_child ~= nil then
+			p:add_child(ws)
+		end
 	end
 
 	return ws
@@ -135,9 +143,7 @@ function CTX.scratch(opts)
 		vim.api.nvim_buf_set_name(bufid, opts.name)
 	end
 
-	if opts.ns then
-		ws.ns = vim.api.nvim_create_namespace(opts.ns)
-	end
+	ws.ns = vim.api.nvim_create_namespace(opts.ns or tostring(winid .. ":" .. bufid))
 
 	for k, v in pairs(opts.wo or {}) do
 		vim.wo[winid][k] = v
@@ -152,7 +158,15 @@ function CTX.scratch(opts)
 	end
 
 	if opts.lines then
-		vim.api.nvim_buf_set_lines(bufid, 0, -1, false, opts.lines)
+		require("rabbit.term.highlight").set_lines({
+			bufnr = bufid,
+			lines = opts.lines,
+			width = ws.conf.width,
+			ns = ws.ns,
+			lineno = 0,
+			strict = false,
+			many = opts.many,
+		})
 	end
 
 	if opts.cursor then
@@ -166,12 +180,13 @@ end
 ---@field name? string Buffer name
 ---@field focus boolean Focus the window immediately after creation
 ---@field config vim.api.keyset.win_config Window configuration
----@field parent? Rabbit.UI.Workspace Will close this one if the parent is closed
+---@field parent? Rabbit.UI.Workspace | Rabbit.UI.Workspace[] Will close this one if the parent is closed
 ---@field ns? string Highlight namespace
----@field wo? table Window options
----@field bo? table Buffer options
+---@field wo? vim.wo Window options
+---@field bo? vim.bo Buffer options
 ---@field autocmd? table<string, fun()> Buffer Autocmds
----@field lines? string[] Initial lines
+---@field lines? Rabbit.Term.HlLine[] Highlight line
+---@field many? boolean If true, the lines field will be treated as many lines
 ---@field cursor? integer[] Cursor position
 
 return CTX

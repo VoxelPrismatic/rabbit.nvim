@@ -18,47 +18,32 @@ local preview_ws ---@type Rabbit.UI.Workspace | nil
 ---@param win_config vim.api.keyset.win_config
 ---@param path string
 local function make_border(path, win_config)
-	local box = BOX.normalize("┏┓╚┛━┃║")
-	local sides ---@type Rabbit.Term.Border.Applied
-
+	local config = CONFIG.boxes.preview
+	local is_dir = path:sub(-1) == "/"
 	local relpath = { dir = vim.fs.dirname(path), name = vim.fs.basename(path) }
-	if CONFIG.window.spawn.side == "sw" then
-		box = BOX.normalize("┏┓┗╝━┃║")
-		sides = BOX.make_sides(win_config.width, win_config.height, box, {
-			align = "se",
-			make = function(sz, _)
-				local name = relpath.name
-				local suf = ("═"):rep(math.floor(sz / 2) - #name - 2 - #relpath.dir) .. " "
-				return suf .. relpath.dir, name, " ═"
-			end,
-		}, {
-			align = "es",
-			make = function(sz, _)
-				return "", "", ("║"):rep(math.floor(sz / 4))
-			end,
-		})
-	else
-		sides = BOX.make_sides(win_config.width, win_config.height, box, {
-			align = "sw",
-			make = function(sz, _)
-				local name = relpath.name
-				local suf = " " .. ("═"):rep(math.floor(sz / 2) - #name - 2 - #relpath.dir)
-				return "═ " .. relpath.dir, name, suf
-			end,
-		}, {
-			align = "ws",
-			make = function(sz, _)
-				return "", "", ("║"):rep(math.floor(sz / 4))
-			end,
-		})
+	if is_dir then
+		local parts = vim.split(path, "/")
+		table.remove(parts, #parts)
+		relpath.name = table.remove(parts, #parts) .. "/"
+		relpath.dir = table.concat(parts, "/")
 	end
 
+	if relpath.dir ~= "" then
+		relpath.dir = relpath.dir .. "/"
+	end
+
+	local parts = {
+		dirname = { " " .. relpath.dir, false },
+		basename = { relpath.name .. " ", true },
+		rise = { (config.chars.rise):rep(win_config.height / 4), false },
+		head = { config.chars.emphasis, false },
+		tail = { config.chars.emphasis:rep(win_config.width / 2 - 2 - #path), false },
+	}
+
+	local sides = BOX.make(win_config.width, win_config.height, config, parts)
+
 	return sides:to_hl({
-		top_left = box.nw,
-		top_right = box.ne,
-		bot_left = box.sw,
-		bot_right = box.se,
-		border_hl = "rabbit.plugin.inv",
+		border_hl = "rabbit.types.preview",
 		title_hl = "rabbit.types.title",
 	})
 end
@@ -122,6 +107,16 @@ end
 
 ---@type { [integer]: Rabbit.Caching.Message.Preview.WinConfig }
 local real_cache = {}
+
+-- Clear all cache if the window is resized
+vim.api.nvim_create_autocmd("WinResized", {
+	callback = function()
+		for k, v in pairs(real_cache) do
+			v[0]:stop()
+			real_cache[k] = nil
+		end
+	end,
+})
 
 ---@type { [integer]: Rabbit.Caching.Message.Preview.WinConfig }
 local win_config_cache = setmetatable({}, {
@@ -258,7 +253,7 @@ return function(data)
 		parent = UI._bg,
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
-		hl_line = hl.l,
+		lines = hl.l,
 		ns = "rabbit:preview",
 	})
 
@@ -266,9 +261,9 @@ return function(data)
 		focus = false,
 		config = configs.r,
 		parent = UI._pre.l,
-		hl_line = hl.r,
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
+		lines = hl.r,
 		ns = "rabbit:preview",
 	})
 
@@ -278,7 +273,7 @@ return function(data)
 		parent = UI._pre.r,
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
-		hl_line = hl.t,
+		lines = hl.t,
 		ns = "rabbit:preview",
 	})
 
@@ -288,7 +283,7 @@ return function(data)
 		parent = { UI._pre.t, UI._pre.l }, -- Circle so they all close simultaneously
 		---@diagnostic disable-next-line: missing-fields
 		wo = { wrap = true },
-		hl_line = hl.b,
+		lines = hl.b,
 		ns = "rabbit:preview",
 	})
 end

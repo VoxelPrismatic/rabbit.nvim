@@ -168,7 +168,7 @@ function win_meta.__index(_, winid)
 		ret.actions.rename = false
 	end
 
-	if GLOBAL_CONFIG.window.extras.nrs then
+	if GLOBAL_CONFIG.window.beacon.nrs then
 		ret.tail = {
 			text = tostring(winid) .. " ",
 			hl = { "rabbit.types.tail" },

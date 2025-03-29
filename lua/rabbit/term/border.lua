@@ -1,216 +1,291 @@
+local SET = require("rabbit.util.set")
 local BOX = {}
 
-local border_flags = {
-	[tonumber("000000", 2)] = "┌┐└┘─│", -- Thin, Solid, Square
-	[tonumber("000001", 2)] = "┏┓┗┛━┃", -- Bold, Solid, Square
-	[tonumber("000010", 2)] = "╔╗╚╝═╦", -- Double, Solid, Square
-	[tonumber("000100", 2)] = "┌┐└┘┄┆", -- Thin, Dash, Square
-	[tonumber("000101", 2)] = "┏┓┗┛┅┇", -- Bold, Dash, Square
-	[tonumber("001000", 2)] = "┌┐└┘┈┊", -- Thin, Dot, Square
-	[tonumber("001001", 2)] = "┏┓┗┛┉┋", -- Bold, Dot, Square
-	[tonumber("010000", 2)] = "┌┐└┘╌╎", -- Thin, Double, Square
-	[tonumber("010001", 2)] = "┏┓┗┛╍╏", -- Bold, Double, Square
-	[tonumber("100000", 2)] = "╭╮╰╯─│", -- Thin, Solid, Round
-	[tonumber("100100", 2)] = "╭╮╰╯┄┆", -- Thin, Dash, Round
-	[tonumber("101000", 2)] = "╭╮╰╯┈┊", -- Thin, Dot, Round
-	[tonumber("110000", 2)] = "╭╮╰╯╌╎", -- Thin, Double, Round
-}
+---@class Rabbit.Term.Border.Applied.Hl: Rabbit.Term.Border.Generic<Rabbit.Term.HlLine[]>
+---@field lines Rabbit.Term.HlLine[][] Lines of highlighted lines
 
--- Returns the corresponding border based on a few parameters
----@see Rabbit.Term.Border.Custom.Kwargs
----@param kwargs Rabbit.Term.Border.Custom.Kwargs
----@return string The corresponding border string
-function BOX.flag(kwargs)
-	local f = 0
-	if kwargs.weight == "thin" then
-		-- Pass
-	elseif kwargs.weight == "bold" then
-		f = f + tonumber("000001", 2)
-		kwargs.corner = "square"
-	elseif kwargs.weight == "double" then
-		f = f + tonumber("000010", 2)
-		kwargs.corner = "square"
-		kwargs.stroke = "solid"
-	end
+---@class Rabbit.Term.Border.Applied.Hl.Kwargs
+---@field border_hl string Highlight group for the border.
+---@field title_hl string Highlight group for the title.
 
-	if kwargs.stroke == "solid" then
-		-- Pass
-	elseif kwargs.stroke == "dash" then
-		f = f + tonumber("000100", 2)
-	elseif kwargs.stroke == "dot" then
-		f = f + tonumber("001000", 2)
-	elseif kwargs.stroke == "double" then
-		f = f + tonumber("010000", 2)
-	end
-
-	if kwargs.corner == "square" then
-		-- Pass
-	elseif kwargs.corner == "round" then
-		f = f + tonumber("100000", 2)
-	end
-
-	local s = border_flags[f]
-	if s == nil then
-		error("Invalid border parameters")
-	end
-	return s
-end
-
--- Expands a border string to a border table
----@see Rabbit.Term.Border.Box
----@param border Rabbit.Term.Border.String The border string; Format: ╭╮╰╯─│┃
----@return Rabbit.Term.Border.Box
-function BOX.expand(border)
-	return { ---@type Rabbit.Term.Border.Box
-		nw = vim.fn.strcharpart(border, 0, 1),
-		ne = vim.fn.strcharpart(border, 1, 1),
-		sw = vim.fn.strcharpart(border, 2, 1),
-		se = vim.fn.strcharpart(border, 3, 1),
-		h = vim.fn.strcharpart(border, 4, 1),
-		v = vim.fn.strcharpart(border, 5, 1),
-		scroll = vim.fn.strcharpart(border, 6, 1),
-	}
-end
-
--- Creates a border box with the specified parameters
----@see Rabbit.Term.Border.Custom
----@param kwargs Rabbit.Term.Border.Custom
----@return Rabbit.Term.Border.Box
-function BOX.custom(kwargs)
-	if type(kwargs) ~= "table" then
-		error("Expected table, got " .. type(kwargs))
-	end
-
-	---@type Rabbit.Term.Border.Custom.Kwargs
-	kwargs = {
-		weight = kwargs.weight or kwargs[2] or "thin",
-		stroke = kwargs.stroke or kwargs[3] or "solid",
-		corner = kwargs.corner or kwargs[1] or "square",
-		scrollbar = kwargs.scrollbar or kwargs[5] or { "bold", "solid" },
+---@param self Rabbit.Term.Border.Applied
+---@param kwargs Rabbit.Term.Border.Applied.Hl.Kwargs
+---@return Rabbit.Term.Border.Applied.Hl
+local function to_hl(self, kwargs)
+	local ret = { ---@type Rabbit.Term.Border.Applied.Hl
+		t = { { hl = kwargs.border_hl, text = "" } },
+		b = { { hl = kwargs.border_hl, text = "" } },
+		l = { { hl = kwargs.border_hl, text = self.top_left } },
+		r = { { hl = kwargs.border_hl, text = self.top_right } },
+		lines = {},
 	}
 
-	if type(kwargs.scrollbar) == "string" then
-		return BOX.expand(BOX.flag(kwargs) .. kwargs.scrollbar)
+	for _, k in ipairs({ "t", "b", "l", "r" }) do
+		local v = self[k]
+
+		local hls = SET.new(v.hl)
+
+		local o = ret[k]
+		local s = ""
+		local in_title = false
+		local latest = o[#o]
+
+		for i, c in ipairs(v.txt) do
+			s = s .. c
+			local is_title = hls:idx(#s) ~= nil
+
+			if is_title and not in_title then
+				latest = { hl = kwargs.title_hl, text = "" }
+				table.insert(o, latest)
+				in_title = true
+			elseif not is_title and in_title then
+				latest = { hl = kwargs.border_hl, text = "" }
+				table.insert(o, latest)
+				in_title = false
+			end
+			latest.text = latest.text .. c
+
+			if o == ret.l or o == ret.r then
+				if ret.lines[i] == nil then
+					ret.lines[i] = {}
+				end
+
+				table.insert(ret.lines[i], {
+					hl = latest.hl,
+					text = c,
+					align = o == ret.l and "left" or "right",
+				})
+			end
+		end
 	end
 
-	kwargs.scrollbar = {
-		weight = kwargs.scrollbar.weight or kwargs.scrollbar[1] or "double",
-		stroke = kwargs.scrollbar.stroke or kwargs.scrollbar[2] or "solid",
-	}
+	table.insert(ret.l, { hl = kwargs.border_hl, text = self.bot_left })
+	table.insert(ret.r, { hl = kwargs.border_hl, text = self.bot_right })
 
-	---@diagnostic disable-next-line: param-type-mismatch
-	return BOX.expand(BOX.flag(kwargs) .. vim.fn.strcharpart(BOX.flag(kwargs.scrollbar), 6, 1))
+	table.insert(ret.lines, 1, {
+		{ text = self.top_left, hl = kwargs.border_hl, align = "left" },
+		ret.t,
+		{ text = self.top_right, hl = kwargs.border_hl, align = "right" },
+	})
+
+	table.insert(ret.lines, {
+		{ text = self.bot_left, hl = kwargs.border_hl, align = "left" },
+		ret.b,
+		{ text = self.bot_right, hl = kwargs.border_hl, align = "right" },
+	})
+
+	return ret
 end
 
--- Normalizes a border input
----@see Rabbit.Term.Border
----@param border Rabbit.Term.Border
----@return Rabbit.Term.Border.Box
-function BOX.normalize(border)
-	if type(border) == "string" then
-		return BOX.expand(border)
+---@param text string
+---@param hl boolean
+---@param case string
+---@param ret? ({[1]: string, [2]: boolean})[]
+---@param idx? integer
+---@return string
+local function hl_chars(ret, case, idx, text, hl)
+	if text == nil then
+		text = ""
 	end
 
-	if type(border) ~= "table" then
-		error("Expected string or table, got " .. type(border))
+	if ret == nil then
+		ret = {}
 	end
 
-	if border.nw ~= nil then
-		return border ---@type Rabbit.Term.Border.Box
+	if idx == nil then
+		idx = #ret + 1
+	elseif idx > #ret then
+		idx = #ret + 1
+	elseif idx < 1 then
+		idx = 1
 	end
 
-	---@diagnostic disable-next-line: param-type-mismatch
-	return BOX.custom(border)
+	if case == "upper" then
+		text = string.upper(text)
+	elseif case == "lower" then
+		text = string.lower(text)
+	elseif case == "title" then
+		text = text:gsub("(%w)(%w*)", function(a, b)
+			return string.upper(a) .. string.lower(b)
+		end)
+	end
+
+	for i, v in ipairs(vim.fn.str2list(text)) do
+		table.insert(ret, idx + i - 1, { vim.fn.list2str({ v }), hl })
+	end
+
+	return text
+end
+
+---@param config Rabbit.Term.Border.Config
+---@param ... string Part to find the joining character for. Will return the first match.
+---@return string "The joining character"
+---@return integer "Number of matches"
+---@return string "The joined text"
+function BOX.join_for(config, custom, ...)
+	local vararg = { ... }
+	---@param align Rabbit.Term.Border.Config.Align
+	---@return string | nil, integer, string
+	local function iter_align(align)
+		if align == nil then
+			return nil, 0, ""
+		end
+
+		local p = align.parts
+		if type(p) == "string" then
+			p = { p }
+		end
+
+		local count = 0
+		local text = {}
+		local ret = nil
+		for _, part in ipairs(vararg) do
+			for _, v in ipairs(p) do
+				if v == part then
+					ret = ret or align.join or " "
+					count = count + 1
+					local s = (config.parts or {})[v] or custom[v] or tostring(v)
+					if type(s) == "string" then
+						table.insert(text, s)
+					elseif type(s) == "function" then
+						local t, _ = s()
+						table.insert(text, t)
+					elseif type(s) == "table" then
+						local t, _ = unpack(s)
+						table.insert(text, t)
+					end
+				end
+			end
+		end
+		return ret, count, table.concat(text, ret or "")
+	end
+
+	for _, p in pairs(config) do
+		if type(p) == "table" then
+			for _, a in ipairs({ "left", "right", "center" }) do
+				local s, count, text = iter_align(p[a])
+				if s ~= nil then
+					return s, count, text
+				end
+			end
+		end
+	end
+	return " ", 0, "<no match found>"
 end
 
 -- Makes sides for a border
----@param w integer Border width
----@param h integer Border height
----@param box Rabbit.Term.Border.Box
----@param ... Rabbit.Term.Border.Side
+---@param w integer Window width
+---@param h integer Window height
+---@param config Rabbit.Term.Border.Config
+---@param parts { [string]: Rabbit.Term.Border.Config.Part } Custom parts
 ---@return Rabbit.Term.Border.Applied
-function BOX.make_sides(w, h, box, ...)
-	local sides = {
-		t = { txt = {}, hl = {} },
-		b = { txt = {}, hl = {} },
-		r = { txt = {}, hl = {} },
-		l = { txt = {}, hl = {} },
+function BOX.make(w, h, config, parts)
+	local sides = { ---@type Rabbit.Term.Border.Applied
+		t = { txt = {}, hl = SET.new() },
+		b = { txt = {}, hl = SET.new() },
+		r = { txt = {}, hl = SET.new() },
+		l = { txt = {}, hl = SET.new() },
+		top_left = config.top_left,
+		top_right = config.top_right,
+		bot_left = config.bot_left,
+		bot_right = config.bot_right,
+		to_hl = to_hl,
 	}
 
-	local targets = {
-		nw = { sides.t, "left" },
-		n = { sides.t, "center" },
-		ne = { sides.t, "right" },
-		en = { sides.r, "left" },
-		e = { sides.r, "center" },
-		es = { sides.r, "right" },
-		se = { sides.b, "right" },
-		s = { sides.b, "center" },
-		sw = { sides.b, "left" },
-		ws = { sides.l, "right" },
-		w = { sides.l, "center" },
-		wn = { sides.l, "left" },
-	}
-
-	box = BOX.normalize(box)
-
-	for i = 1, w - 2 do
-		sides.t.txt[i] = box.h
-		sides.b.txt[i] = box.h
-	end
-
-	for i = 1, h - 2 do
-		sides.l.txt[i] = box.v
-		sides.r.txt[i] = box.v
-	end
-
-	for _, side in ipairs({ ... }) do
-		if type(side) ~= "table" then
-			error("Expected table, got " .. type(side))
-		elseif side.align == "nil" then
-			goto continue
+	---@param size integer
+	---@param section Rabbit.Term.Border.Config.Align
+	---@return {[1]: string, [2]: boolean}[]
+	local function build_align(size, section)
+		local str_parts = {}
+		local cb_parts = {}
+		local ps = section.parts
+		if type(ps) == "string" then
+			ps = { ps }
 		end
 
-		local target, align = unpack(targets[side.align])
-		if target == nil then
-			error("Invalid alignment: " .. side.align)
-		elseif type(side.make) == "function" then
-			side.pre, side.text, side.suf = side.make(#target.txt, side.text)
-		end
+		local case = section.case or "unchanged"
 
-		side.pre = tostring(side.pre or "")
-		side.text = tostring(side.text or "")
-		side.suf = tostring(side.suf or "")
+		for i, v in ipairs(ps) do
+			local p = (config.parts or {})[v] or parts[v] or tostring(v)
+			if type(p) == "string" then
+				table.insert(cb_parts, hl_chars(str_parts, case, nil, p, true))
+			elseif type(p) == "function" then
+				local t = hl_chars(str_parts, case, nil, p())
+				table.insert(cb_parts, t)
+			elseif type(p) == "table" then
+				local t = hl_chars(str_parts, case, nil, unpack(p))
+				table.insert(cb_parts, t)
+			end
 
-		local strls = {}
-		for _, v in ipairs(vim.fn.str2list(side.pre .. side.text .. side.suf)) do
-			table.insert(strls, vim.fn.list2str({ v }))
-		end
-
-		local pre_end = vim.fn.strdisplaywidth(side.pre)
-		local text_end = vim.fn.strdisplaywidth(side.pre .. side.text)
-		local start, end_ = 0, 0
-
-		if align == "left" then
-			start, end_ = 1, #strls
-		elseif align == "center" then
-			start = math.max(1, math.ceil((#target.txt - #strls + 1) / 2))
-			end_ = math.min(#target.txt, start + #strls - 1)
-		else
-			start = #target.txt - #strls + 1
-			end_ = #target.txt
-		end
-
-		for i = start, end_ do
-			local j = i - start + 1
-			target.txt[i] = strls[j]
-			if pre_end < j and j <= text_end then
-				table.insert(target.hl, #table.concat(target.txt, "", 1, i))
+			if i < #ps then
+				hl_chars(str_parts, case, nil, section.join or " ", false)
+				table.insert(cb_parts, section.join or " ")
 			end
 		end
 
-		::continue::
+		if type(section.build) == "function" then
+			section.build(section, size, table.concat(cb_parts, ""))
+		end
+
+		hl_chars(str_parts, case, 1, section.prefix or "", false)
+		hl_chars(str_parts, case, nil, section.suffix or "", false)
+
+		return str_parts
 	end
+
+	---@param target { txt: string[], hl: Rabbit.Table.Set<integer> }
+	---@param align "left" | "right" | "center" Alignment
+	---@param section Rabbit.Term.Border.Config.Align
+	local function do_align(target, align, section)
+		if section == nil then
+			return
+		end
+		local size = #target.txt
+		local str_parts = build_align(size, section)
+
+		local start, end_ = 1, math.min(#str_parts, size)
+
+		if align == "center" then
+			start = math.max(1, math.ceil((size - end_ + 1) / 2))
+			end_ = math.min(size, start + size - 1)
+		elseif align == "right" then
+			start, end_ = size - end_ + 1, size
+		end
+
+		local txt = target.txt
+		local hl = target.hl
+		for i = start, end_ do
+			local j = i - start + 1
+			txt[i] = str_parts[j][1]
+			local strwidth = #table.concat(txt, "", 1, i)
+			hl:tog(strwidth, str_parts[j][2])
+		end
+	end
+
+	---@param target { txt: string[], hl: Rabbit.Table.Set<integer> }
+	---@param size integer
+	---@param side string | Rabbit.Term.Border.Config.Side
+	local function do_part(target, size, side)
+		if type(side) == "string" then
+			for i = 1, size do
+				target.txt[i] = side
+			end
+			return
+		end
+
+		for i = 1, size do
+			target.txt[i] = side.base
+		end
+
+		do_align(target, "left", side.left)
+		do_align(target, "center", side.center)
+		do_align(target, "right", side.right)
+	end
+
+	do_part(sides.t, w - 2, config.top_side)
+	do_part(sides.b, w - 2, config.bot_side)
+	do_part(sides.l, h - 2, config.left_side)
+	do_part(sides.r, h - 2, config.right_side)
 
 	return sides
 end
