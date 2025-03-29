@@ -4,15 +4,18 @@ local MEM = {}
 
 -- Split the paths into components
 ---@param path string
+---@return string[] Components
+---@return string Absolute path
 local function split_path(path)
 	local components = {}
-	if vim.fn.has("win") then
+	path = vim.fn.fnamemodify(path, ":p")
+	if vim.fn.has("win") == 1 then
 		path = path:gsub("\\", "/"):sub(2) -- C:\ --> /
 	end
 	for component in path:gmatch("[^/]+") do
 		table.insert(components, component)
 	end
-	return components
+	return components, path
 end
 
 ---@param source string
@@ -20,9 +23,14 @@ end
 ---@return string[]
 local function relative_filepath(source, target)
 	-- Split the paths into components
-	-- We do not care about the filename for the source
-	local src_path = split_path(vim.fs.dirname(source))
+	local src_path, source_path = split_path(source)
 	local dst_path = split_path(target)
+
+	-- We do not care about the file part
+	local stat = vim.uv.fs_stat(source_path)
+	if stat == nil or stat.type ~= "directory" then
+		table.remove(src_path, #src_path)
+	end
 
 	local same = 1
 	local max_len = math.min(#src_path, #dst_path)
@@ -117,6 +125,12 @@ local function dynamic_rel_path(self, new_width)
 		merge = dir .. name,
 	}
 
+	local stat = vim.uv.fs_stat(self.target)
+	if stat ~= nil and stat.type == "directory" then
+		ret.merge = ret.merge .. "/"
+		ret.name = ret.name .. "/"
+	end
+
 	target[new_width] = setmetatable(ret, { __index = dynamic_rel_path })
 
 	return ret
@@ -136,8 +150,6 @@ local function rel_path(source, target, max_width)
 		local UI = require("rabbit.term.listing")
 		max_width = UI._fg.conf.width
 	end
-
-	target = vim.fn.fnamemodify(tostring(target), ":p")
 
 	local ret = { ---@type Rabbit.Mem.RelPath
 		source = source,
@@ -192,11 +204,10 @@ local path_cache = setmetatable({}, {
 ---@return Rabbit.Mem.RelPath
 function MEM.rel_path(target)
 	local UI = require("rabbit.term.listing")
-	local source = vim.api.nvim_buf_get_name(CTX.user.buf)
-	if vim.uv.fs_stat(source) == nil then
+	local ok, source = pcall(vim.api.nvim_buf_get_name, CTX.user.buf)
+	if not ok or vim.uv.fs_stat(source) == nil then
 		source = vim.fn.getcwd()
 	end
-	source = vim.fs.dirname(source)
 
 	return path_cache[source][target][UI._fg.conf.width]
 end
