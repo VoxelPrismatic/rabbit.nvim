@@ -1,0 +1,95 @@
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 700;
+	font-style: italic;
+	src:
+		local("UbuntuMono Nerd Font Bold Italic"),
+		local("UbuntuMono NF Bold Italic"),
+		local("UbuntuSansMono Nerd Font Bold Italic"),
+		local("UbuntuSansMono NF Bold Italic"),
+		url("/rabbit.nvim/font/mono-bi") format("truetype");
+}
+
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 700;
+	font-style: normal;
+	src:
+		local("UbuntuMono Nerd Font Bold"),
+		local("UbuntuMono NF Bold"),
+		local("UbuntuSansMono Nerd Font Bold"),
+		local("UbuntuSansMono NF Bold"),
+		url("/rabbit.nvim/font/mono-bx") format("truetype");
+}
+
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 500;
+	font-style: italic;
+	src:
+		local("UbuntuMono Nerd Font Medium Italic"),
+		local("UbuntuMono NF Medium Italic"),
+		local("UbuntuSansMono Nerd Font Medium Italic"),
+		local("UbuntuSansMono NF Medium Italic"),
+		url("/rabbit.nvim/font/mono-mi") format("truetype");
+}
+
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 500;
+	font-style: normal;
+	src:
+		local("UbuntuMono Nerd Font Medium"),
+		local("UbuntuMono NF Medium"),
+		local("UbuntuSansMono Nerd Font Medium"),
+		local("UbuntuSansMono NF Medium"),
+		url("/rabbit.nvim/font/mono-mx") format("truetype");
+}
+
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 400;
+	font-style: italic;
+	src:
+		local("UbuntuMono Nerd Font Italic"),
+		local("UbuntuMono NF Italic"),
+		local("UbuntuSansMono Nerd Font Italic"),
+		local("UbuntuSansMono NF Italic"),
+		url("/rabbit.nvim/font/mono-ri") format("truetype");
+}
+
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 400;
+	font-style: normal;
+	src:
+		local("UbuntuMono Nerd Font"),
+		local("UbuntuMono NF"),
+		local("UbuntuSansMono Nerd Font"),
+		local("UbuntuSansMono NF"),
+		url("/rabbit.nvim/font/mono-rx") format("truetype");
+}
+
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 600;
+	font-style: italic;
+	src:
+		local("UbuntuMono Nerd Font SemiBold Italic"),
+		local("UbuntuMono NF SemiBold Italic"),
+		local("UbuntuSansMono Nerd Font SemiBold Italic"),
+		local("UbuntuSansMono NF SemiBold Italic"),
+		url("/rabbit.nvim/font/mono-si") format("truetype");
+}
+
+@font-face {
+	font-family: "UbuntuMono NerdFont";
+	font-weight: 600;
+	font-style: normal;
+	src:
+		local("UbuntuMono Nerd Font SemiBold"),
+		local("UbuntuMono NF SemiBold"),
+		local("UbuntuSansMono Nerd Font SemiBold"),
+		local("UbuntuSansMono NF SemiBold"),
+		url("/rabbit.nvim/font/mono-sx") format("truetype");
+}
