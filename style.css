@@ -1,27 +1,176 @@
-@import url("/rabbit.nvim/font/font.css");
+@import url("./font/font.css");
+@import url("./vim.css");
 
 :root {
-	--sakura-paint-gold: #b4b433;
+	--sakura-paint-rose: #d875a7;
 	--sakura-paint-love: #d87576;
+	--sakura-paint-gold: #b4b433;
+	--sakura-paint-tree: #33b473;
+	--sakura-paint-iris: #696ac2;
+	--sakura-paint-pine: #466481;
+	--sakura-paint-foam: #6996c2;
+
 	--sakura-text-subtle: #67669b;
 	--sakura-text-muted: #8983ad;
-	--sakura-paint-tree: #33b473;
-	--sakura-hl-low: #f4e8ef;
+	--sakura-text-norm: #464681;
+
+	--sakura-layer-inv: #3d1127;
+	--sakura-layer-base: #faedf3;
 	--sakura-layer-surface: #fff3f8;
 	--sakura-layer-overlay: #f2e1ea;
-	--sakura-text-norm: #464681;
-	--sakura-hl-med: #dfd9de;
-	--sakura-paint-iris: #696ac2;
-	--sakura-layer-inv: #3d1127;
-	--sakura-paint-foam: #6996c2;
-	--sakura-layer-base: #faedf3;
-	--sakura-paint-pine: #466481;
-	--sakura-paint-rose: #d875a7;
+
 	--sakura-hl-high: #cecacd;
+	--sakura-hl-med: #dfd9de;
+	--sakura-hl-low: #f4e8ef;
 }
 
 body {
-	color: var(--sakura-text-norm);
-	background-color: var(--sakura-layer-base);
+	--vim-fg: var(--sakura-text-norm);
+	--vim-bg: var(--sakura-layer-base);
+	color: var(--vim-fg);
+	background-color: var(--vim-bg);
 	font-family: "UbuntuMono NerdFont", "Ubuntu Mono", monospace;
+	max-width: 640px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 32px;
+	padding-right: 32px;
+	margin-top: 32px;
+	margin-bottom: 32px;
+	line-height: 1.5;
+	font-size: 16px;
+}
+
+table.hr {
+	width: 100%;
+	border-collapse: collapse;
+	--vim-fg: var(--sakura-paint-foam);
+	color: var(--sakura-paint-foam);
+
+	td:first-child,
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		width: min-content;
+	}
+
+	td:last-child {
+		width: 100%;
+	}
+
+	hr {
+		margin-left: 16px;
+		width: calc(100% - 18px);
+		border-color: var(--sakura-paint-foam);
+		border-width: 1px;
+		border-style: solid;
+	}
+}
+
+details {
+	summary {
+		--vim-fg: var(--sakura-paint-foam);
+		color: var(--sakura-paint-foam);
+	}
+
+	article {
+		margin-left: 3px;
+		border-left: 1px solid var(--sakura-layer-inv);
+		padding-left: 10px;
+	}
+}
+
+code {
+	--vim-bg: var(--sakura-layer-surface);
+	background-color: var(--sakura-layer-surface);
+	padding: 2px 4px;
+	border-radius: 4px;
+	font-size: 14px;
+}
+
+div.table-border {
+	border: 1px solid var(--sakura-hl-high);
+	border-radius: 8px;
+	width: min-content;
+	box-sizing: border-box;
+	min-width: 100%;
+	overflow: clip;
+}
+
+table:not(.hr) {
+	width: 100%;
+
+	display: table;
+	border-collapse: collapse;
+
+
+	td,
+	th {
+		padding: 4px 8px;
+
+		&:not(:last-child) {
+			border-right: 1px solid var(--sakura-hl-high);
+		}
+	}
+
+
+	tr:not(:first-child) {
+		border-top: 1px solid var(--sakura-hl-high);
+
+	}
+
+	tr:nth-child(even) {
+		background-color: var(--sakura-layer-overlay);
+		--vim-bg: var(--sakura-layer-overlay);
+	}
+}
+
+ul,
+ol {
+	margin-top: 0;
+	margin-bottom: 0;
+	margin-left: 16px;
+	padding-inline-start: 16px;
+}
+
+ul li::marker {
+	content: "— ";
+}
+
+li:not(:first-child) {
+	margin-top: 16px;
+}
+
+details {
+	margin-bottom: 16px;
+
+	&[open] {
+		margin-bottom: 32px;
+	}
+
+	& summary:target {
+		background-color: var(--sakura-layer-surface);
+		--vim-bg: var(--sakura-layer-surface);
+		border-radius: 8px;
+	}
+}
+
+a {
+	color: var(--sakura-paint-foam);
+	--vim-fg: var(--sakura-paint-foam);
+
+	&:visited {
+		color: var(--sakura-paint-foam);
+		--vim-fg: var(--sakura-paint-foam);
+	}
+}
+
+[title="Optional"]::after {
+	content: "?";
+	font-style: italic;
+	color: var(--sakura-text-muted);
+	--vim-fg: var(--sakura-paint-muted);
 }

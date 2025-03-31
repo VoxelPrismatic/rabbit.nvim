@@ -1,0 +1,306 @@
+[vim] {
+	--vim-strike: ;
+	--vim-line: ;
+	--vim-line-style: solid;
+	text-decoration-line: var(--vim-strike) var(--vim-line);
+	text-decoration-style: var(--vim-line-style);
+	text-decoration-color: var(--vim-sp);
+	background-color: var(--vim-bg);
+	color: var(--vim-fg);
+}
+
+/* Foreground */
+[vim~="fg:rose"] {
+	--vim-fg: var(--sakura-paint-rose);
+}
+
+[vim~="fg:love"] {
+	--vim-fg: var(--sakura-paint-love);
+}
+
+[vim~="fg:gold"] {
+	--vim-fg: var(--sakura-paint-gold);
+}
+
+[vim~="fg:tree"] {
+	--vim-fg: var(--sakura-paint-tree);
+}
+
+[vim~="fg:iris"] {
+	--vim-fg: var(--sakura-paint-iris);
+}
+
+[vim~="fg:pine"] {
+	--vim-fg: var(--sakura-paint-pine);
+}
+
+[vim~="fg:foam"] {
+	--vim-fg: var(--sakura-paint-foam);
+}
+
+[vim~="fg:T.subtle"] {
+	--vim-fg: var(--sakura-text-subtle);
+}
+
+[vim~="fg:T.muted"] {
+	--vim-fg: var(--sakura-text-muted);
+}
+
+[vim~="fg:T.norm"] {
+	--vim-fg: var(--sakura-text-norm);
+}
+
+[vim~="fg:hl.high"] {
+	--vim-fg: var(--sakura-hl-high);
+}
+
+[vim~="fg:hl.med"] {
+	--vim-fg: var(--sakura-hl-med);
+}
+
+[vim~="fg:hl.low"] {
+	--vim-fg: var(--sakura-hl-low);
+}
+
+[vim~="fg:L.inv"] {
+	--vim-fg: var(--sakura-layer-inv);
+}
+
+[vim~="fg:L.base"] {
+	--vim-fg: var(--sakura-layer-base);
+}
+
+[vim~="fg:L.surface"] {
+	--vim-fg: var(--sakura-layer-surface);
+}
+
+[vim~="fg:L.overlay"] {
+	--vim-fg: var(--sakura-layer-overlay);
+}
+
+/* Background */
+[vim~="bg:rose"] {
+	--vim-bg: var(--sakura-paint-rose);
+}
+
+[vim~="bg:love"] {
+	--vim-bg: var(--sakura-paint-love);
+}
+
+[vim~="bg:gold"] {
+	--vim-bg: var(--sakura-paint-gold);
+}
+
+[vim~="bg:tree"] {
+	--vim-bg: var(--sakura-paint-tree);
+}
+
+[vim~="bg:iris"] {
+	--vim-bg: var(--sakura-paint-iris);
+}
+
+[vim~="bg:pine"] {
+	--vim-bg: var(--sakura-paint-pine);
+}
+
+[vim~="bg:foam"] {
+	--vim-bg: var(--sakura-paint-foam);
+}
+
+[vim~="bg:T.subtle"] {
+	--vim-bg: var(--sakura-text-subtle);
+}
+
+[vim~="bg:T.muted"] {
+	--vim-bg: var(--sakura-text-muted);
+}
+
+[vim~="bg:T.norm"] {
+	--vim-bg: var(--sakura-text-norm);
+}
+
+[vim~="bg:hl.high"] {
+	--vim-bg: var(--sakura-hl-high);
+}
+
+[vim~="bg:hl.med"] {
+	--vim-bg: var(--sakura-hl-med);
+}
+
+[vim~="bg:hl.low"] {
+	--vim-bg: var(--sakura-hl-low);
+}
+
+[vim~="bg:L.inv"] {
+	--vim-bg: var(--sakura-layer-inv);
+}
+
+[vim~="bg:L.base"] {
+	--vim-bg: var(--sakura-layer-base);
+}
+
+[vim~="bg:L.surface"] {
+	--vim-bg: var(--sakura-layer-surface);
+}
+
+[vim~="bg:L.overlay"] {
+	--vim-bg: var(--sakura-layer-overlay);
+}
+
+/* Special colors */
+[vim~="sp:rose"] {
+	--vim-sp: var(--sakura-paint-rose);
+}
+
+[vim~="sp:love"] {
+	--vim-sp: var(--sakura-paint-love);
+}
+
+[vim~="sp:gold"] {
+	--vim-sp: var(--sakura-paint-gold);
+}
+
+[vim~="sp:tree"] {
+	--vim-sp: var(--sakura-paint-tree);
+}
+
+[vim~="sp:iris"] {
+	--vim-sp: var(--sakura-paint-iris);
+}
+
+[vim~="sp:pine"] {
+	--vim-sp: var(--sakura-paint-pine);
+}
+
+[vim~="sp:foam"] {
+	--vim-sp: var(--sakura-paint-foam);
+}
+
+[vim~="sp:T.subtle"] {
+	--vim-sp: var(--sakura-text-subtle);
+}
+
+[vim~="sp:T.muted"] {
+	--vim-sp: var(--sakura-text-muted);
+}
+
+[vim~="sp:T.norm"] {
+	--vim-sp: var(--sakura-text-norm);
+}
+
+[vim~="sp:hl.high"] {
+	--vim-sp: var(--sakura-hl-high);
+}
+
+[vim~="sp:hl.med"] {
+	--vim-sp: var(--sakura-hl-med);
+}
+
+[vim~="sp:hl.low"] {
+	--vim-sp: var(--sakura-hl-low);
+}
+
+[vim~="sp:L.inv"] {
+	--vim-sp: var(--sakura-layer-inv);
+}
+
+[vim~="sp:L.base"] {
+	--vim-sp: var(--sakura-layer-base);
+}
+
+[vim~="sp:L.surface"] {
+	--vim-sp: var(--sakura-layer-surface);
+}
+
+[vim~="sp:L.overlay"] {
+	--vim-sp: var(--sakura-layer-overlay);
+}
+
+/* Marks */
+[vim~="bold"] {
+	font-weight: bold;
+}
+
+[vim~="italic"] {
+	font-style: italic;
+}
+
+[vim~="strike"] {
+	--vim-strike: line-through;
+}
+
+[vim~="underline"] {
+	--vim-line: underline;
+	--vim-line-style: none;
+}
+
+[vim~="undercurl"] {
+	--vim-line: underline;
+	--vim-line-style: wavy;
+}
+
+[vim~="underdouble"] {
+	--vim-line: underline;
+	--vim-line-style: double;
+}
+
+[vim~="underdotted"] {
+	--vim-line: underline;
+	--vim-line-style: dotted;
+}
+
+[vim~="underdashed"] {
+	--vim-line: underline;
+	--vim-line-style: dashed;
+}
+
+[vim~="reverse"] {
+	color: var(--vim-bg);
+	background-color: var(--vim-fg);
+}
+
+[vim~="-line"] {
+	--vim-line: ;
+}
+
+[vim~="-bold"] {
+	font-weight: normal;
+}
+
+[vim~="-strike"] {
+	--vim-strike: ;
+}
+
+[vim~="-italic"] {
+	font-style: normal;
+}
+
+/* Types */
+[vim~="@str"] {
+	--vim-fg: var(--sakura-paint-gold);
+}
+
+[vim~="@builtin"] {
+	--vim-fg: var(--sakura-paint-rose);
+	font-weight: bold;
+}
+
+[vim~="@comment"] {
+	--vim-fg: var(--sakura-text-subtle);
+	font-style: italic;
+}
+
+[vim~="@keyword"] {
+	--vim-fg: var(--sakura-paint-pine);
+	font-weight: bold;
+}
+
+[vim~="@var"] {
+	--vim-fg: var(--sakura-text-norm);
+	font-style: italic;
+}
+
+[vim~="@prop"] {
+	--vim-fg: var(--sakura-paint-foam);
+	font-style: italic;
+}

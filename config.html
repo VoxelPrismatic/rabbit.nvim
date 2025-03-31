@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+	<meta charset="utf-8">
+	<title>Rabbit | Config</title>
+	<link rel="stylesheet" href="./style.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Configuration documentation for Rabbit.nvim">
+	<!-- Open Graph -->
+	<meta property="og:title" content="Rabbit | Config">
+	<meta property="og:description" content="Configuration documentation for Rabbit.nvim">
+	<meta property="og:image" content="./rabbit.png">
+	<meta property="og:image:type" content="image/png">
+	<meta property="twitter:image" content="./rabbit.png">
+	<meta property="twitter:card" content="summary">
+	<meta property="twitter:title" content="Rabbit | Config">
+	<meta property="twitter:description" content="Configuration documentation for Rabbit.nvim">
+</head>
+
+<body>
+	<table id="config" class="hr">
+		<tr>
+			<td>
+				<h1>Configuration</h1>
+			</td>
+			<td>
+				<hr>
+			</td>
+		</tr>
+	</table>
+	Rabbit is quite advanced, so please read types carefully.
+	<table id="types" class="hr">
+		<tr>
+			<td>
+				<h2>Types</h2>
+			</td>
+			<td>
+				<hr>
+			</td>
+		</tr>
+	</table>
+	<details>
+		<summary id="NvimHlColor">NvimHlColor<span vim="@comment">: string</span></summary>
+		<article>
+			This is a color string.
+			<ul>
+				<li>
+					<code>#<span vim="fg:love">RR</span><span vim="fg:tree">GG</span><span
+							vim="fg:iris">BB</span></code>
+					<br>
+					Hex color string
+				</li>
+				<li>
+					<code>name</code>
+					<br>
+					Neovim named color
+				</li>
+				<li>
+					<code>:<span vim="@var">HlGroupName</span></code>
+					<br>
+					Samples the color of a highlight group. Eg
+					<code vim="@var">:Normal</code>
+					will sample the foreground, background,
+					or special color of
+					<code vim="@var">Normal</code>
+				</li>
+				<li>
+					<code>:<span vim="@var">HlGroupName</span>#<span vim="@prop">prop</span></code>
+					<br>
+					Samples color
+					<code vim="@prop">prop</code>
+					of the highlight group. Eg
+					<code>:<span vim="@var">Normal</span>#<span vim="@prop">fg</span></code>
+					will sample the
+					property of the foreground color (<code vim="@prop">fg</code>) of
+					<code vim="@var">Normal</code>. This way, you can pass the foreground color of one color as the
+					background to another.
+				</li>
+			</ul>
+		</article>
+	</details>
+	<details>
+		<summary id="NvimHlKwargs">NvimHlKwargs</summary>
+		<article>
+			This mirrors
+			<code>vim.api.keyset.highlight</code>, but has some fancy features for dynamic coloring.
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>~</th>
+						<th>key</th>
+						<th>type</th>
+						<th>description</th>
+					</tr>
+					<tr>
+						<td rowspan="4" vim="bg:L.base">colors</td>
+						<td>fg</td>
+						<td>
+							<code><b><a href="#NvimHlColor" title="Optional">NvimHlColor</a></b></code>
+						</td>
+						<td>
+							<span vim="fg:gold">Foreground</span>
+							color. For the color inheritance, the default property will be
+							<code>fg</code>.
+						</td>
+					</tr>
+					<tr>
+						<td>bg</td>
+						<td>
+							<code><b><a href="#NvimHlColor" title="Optional">NvimHlColor</a></b></code>
+						</td>
+						<td>
+							<span vim="bg:gold">Background</span>
+							color. For the color inheritance, the default property will be
+							<code>bg</code>.
+						</td>
+					</tr>
+					<tr>
+						<td>sp</td>
+						<td>
+							<code><b><a href="#NvimHlColor" title="Optional">NvimHlColor</a></b></code>
+						</td>
+						<td>
+							Special color, eg for
+							<span vim="undercurl sp:gold">underlines</span>.
+							For the color inheritance, the default property will be
+							<code>sp</code>.
+						</td>
+					</tr>
+					<tr>
+						<td>blend</td>
+						<td><code vim="@builtin" title="Optional">integer</code></td>
+						<td>
+							Blend factor (opacity) for background color, from 0%-100%
+						</td>
+					</tr>
+					<tr>
+						<td rowspan="3">others</td>
+						<td>link</td>
+						<td><code vim="@builtin" title="Optional">string</code></td>
+						<td>Link/alias to another highlight group</td>
+					</tr>
+					<tr>
+						<td>default</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>If set, the existing highlight group will NOT be changed</td>
+					</tr>
+					<tr>
+						<td>force</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>If set, all attributes from the existing highlight group will be cleared</td>
+					</tr>
+					<tr>
+						<td rowspan="11">styles</td>
+						<td>bold</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<b>Bold</b>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>italic</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<i>Italic</i>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>strikethrough</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<s>Strikethrough</s>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>underline</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<u>Underline</u>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>undercurl</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<span vim="undercurl">Undercurl</span>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>underdouble</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<span vim="underdouble">Underdouble</span>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>underdotted</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<span vim="underdotted">Underdotted</span>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>underdashed</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<span vim="underdashed">Underdashed</span>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>reverse</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>
+							<span vim="reverse">Reversed</span>
+							text
+						</td>
+					</tr>
+					<tr>
+						<td>standout</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>Standout text. Normally displayed as reverse text.</td>
+					</tr>
+					<tr>
+						<td>nocombine</td>
+						<td><code vim="@builtin" title="Optional">boolean</code></td>
+						<td>Do not combine special text decorations (underlines &amp; strikes)</td>
+					</tr>
+					<tr>
+						<td rowspan="3">legacy</td>
+						<td>cterm</td>
+						<td><code vim="@builtin" title="Optional">string<span vim="fg:T.norm">[]</span></code></td>
+						<td>
+							An array of the following styles:
+							<code vim="bold">bold</code>,
+							<code vim="italic">italic</code>,
+							<code vim="strike">strikethrough</code>,
+							<code vim="underline">underline</code>,
+							<code vim="undercurl">undercurl</code>,
+							<code vim="underdouble">underdouble</code>,
+							<code vim="underdotted">underdotted</code>,
+							<code vim="underdashed">underdashed</code>,
+							<code vim="reverse">inverse</code>,
+							<code vim="reverse">reverse</code>,
+							<code vim="reverse">standout</code>,
+							<code>nocombine</code>,
+							<code>altfont</code>.
+							This is a legacy option, and it is recommended you use the above boolean options instead.
+						</td>
+					</tr>
+					<tr>
+						<td>ctermfg</td>
+						<td><code vim="@builtin" title="Optional">integer</code></td>
+						<td>ANSI foreground color, as specified by the user's terminal emulator</td>
+					</tr>
+					<tr>
+						<td>ctermbg</td>
+						<td><code vim="@builtin" title="Optional">integer</code></td>
+						<td>ANSI background color, as specified by the user's terminal emulator</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+</body>
+
+</html>
