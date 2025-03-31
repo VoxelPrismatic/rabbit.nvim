@@ -1,0 +1,27 @@
+@import url("/rabbit.nvim/font/font.css");
+
+:root {
+	--sakura-paint-gold: #b4b433;
+	--sakura-paint-love: #d87576;
+	--sakura-text-subtle: #67669b;
+	--sakura-text-muted: #8983ad;
+	--sakura-paint-tree: #33b473;
+	--sakura-hl-low: #f4e8ef;
+	--sakura-layer-surface: #fff3f8;
+	--sakura-layer-overlay: #f2e1ea;
+	--sakura-text-norm: #464681;
+	--sakura-hl-med: #dfd9de;
+	--sakura-paint-iris: #696ac2;
+	--sakura-layer-inv: #3d1127;
+	--sakura-paint-foam: #6996c2;
+	--sakura-layer-base: #faedf3;
+	--sakura-paint-pine: #466481;
+	--sakura-paint-rose: #d875a7;
+	--sakura-hl-high: #cecacd;
+}
+
+body {
+	color: var(--sakura-text-norm);
+	background-color: var(--sakura-layer-base);
+	font-family: "UbuntuMono NerdFont", "Ubuntu Mono", monospace;
+}
