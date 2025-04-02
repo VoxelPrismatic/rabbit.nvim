@@ -1,5 +1,6 @@
 local UI = require("rabbit.term.listing")
 local CTX = require("rabbit.term.ctx")
+local TERM = require("rabbit.util.term")
 
 local rename_ws ---@type Rabbit.UI.Workspace
 
@@ -104,7 +105,7 @@ return function(data)
 			curpos = vim.fn.col(".")
 			return
 		elseif vim.fn.line("$") > 3 then
-			vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, true, true), "n")
+			TERM.feed("<Esc>")
 			return
 		end
 
@@ -113,7 +114,7 @@ return function(data)
 
 		local new_entry = entry._env.siblings[idx + dx]
 		if new_entry == nil then
-			vim.fn.feedkeys(vim.api.nvim_replace_termcodes(opposite_key, true, true, true), "n")
+			TERM.feed(opposite_key)
 			return
 		end
 
@@ -133,7 +134,7 @@ return function(data)
 			vim.defer_fn(function()
 				rename_ws:close()
 				vim.api.nvim_set_current_win(UI._fg.win)
-				vim.fn.feedkeys(vim.api.nvim_replace_termcodes(continue_key, true, true, true), "n")
+				TERM.feed(continue_key)
 			end, 25)
 		end
 	end
@@ -163,9 +164,9 @@ return function(data)
 	if vim.fn.mode() == "i" then
 		curpos = curpos + 1
 	elseif append then
-		vim.fn.feedkeys("a", "n")
+		TERM.feed("a")
 	else
-		vim.fn.feedkeys("i", "n")
+		TERM.feed("i")
 	end
 
 	text_changed()
