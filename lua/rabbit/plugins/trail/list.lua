@@ -4,6 +4,7 @@ local GLOBAL_CONFIG = require("rabbit.config")
 local LIST = {
 	wins = {}, ---@type Rabbit*Trail.Win.User[]
 	bufs = {}, ---@type Rabbit*Trail.Buf[]
+	yank = SET.new(), ---@type Rabbit.Table.Set<integer>
 	real = {
 		wins = {}, ---@type Rabbit*Trail.Win.User[]
 		bufs = {}, ---@type Rabbit*Trail.Buf[]
@@ -68,6 +69,10 @@ LIST.major = {
 		rename = false,
 		insert = false,
 		collect = false,
+		visual = false,
+		yank = false,
+		cut = false,
+		paste = false,
 	},
 	ctx = {
 		wins = SET.new(),
@@ -146,6 +151,10 @@ function win_meta.__index(_, winid)
 				rename = true,
 				insert = false,
 				collect = false,
+				visual = false,
+				yank = false,
+				cut = false,
+				paste = false,
 			},
 			ctx = {
 				winid = winid,
@@ -247,6 +256,10 @@ function buf_meta:__index(bufid)
 				rename = false,
 				insert = false,
 				collect = false,
+				visual = true,
+				cut = true,
+				yank = true,
+				paste = false,
 			},
 			ctx = {
 				listed = true_listed,
@@ -278,8 +291,9 @@ setmetatable(LIST.bufs, buf_meta)
 -- Remove buffers that are not referenced anywhere
 ---@param bufs_to_del integer[]
 function LIST.clean_bufs(bufs_to_del)
+	local actions = require("rabbit.plugins.trail.actions")
 	for _, bufid in ipairs(bufs_to_del) do
-		if LIST.major.ctx.bufs:idx(bufid) then
+		if LIST.major.ctx.bufs:idx(bufid) or LIST.yank:idx(bufid) then
 			goto referenced
 		end
 
@@ -389,7 +403,7 @@ function LIST.traverse_layout(winlayout)
 		if node[1] == "leaf" then
 			ret:add(node[2])
 		else
-			local children = node--[[@as Rabbit*Trail.SaveFile.Layout.Split]][2]
+			local children = node --[[@as Rabbit*Trail.SaveFile.Layout.Split]][2]
 			for _, child in ipairs(children) do
 				traverse(child)
 			end

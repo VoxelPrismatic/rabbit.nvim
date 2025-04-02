@@ -1,6 +1,17 @@
 {
-	"latest": "r00a4",
+	"latest": "r00a5",
 	"changes": {
+		"r00a5": {
+			"date": "Apr 02, 2025",
+			"fixed": [
+				"Attempting to copy a closed window will crash"
+			],
+			"known": [],
+			"features": [
+				"You may now copy specific parts of history to new windows",
+				"Visual selection"
+			]
+		},
 		"r00a4": {
 			"date": "Mar 29, 2025",
 			"fixed": [],

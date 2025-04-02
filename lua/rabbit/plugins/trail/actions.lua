@@ -1,8 +1,11 @@
 local ENV = require("rabbit.plugins.trail.env")
 local LIST = require("rabbit.plugins.trail.list")
 local CONFIG = require("rabbit.config")
+local TERM = require("rabbit.util.term")
+local SET = require("rabbit.util.set")
 
 ---@type Rabbit.Plugin.Actions
+---@diagnostic disable-next-line: missing-fields
 local ACTIONS = {}
 
 local default = 0
@@ -28,12 +31,16 @@ local function cb_copy_win(source_winid)
 		actions = {
 			select = true,
 			delete = false,
-			children = false,
+			children = true,
 			parent = true,
 			hover = true,
 			rename = false,
 			insert = false,
 			collect = false,
+			paste = #LIST.yank > 0,
+			yank = false,
+			cut = false,
+			visual = false,
 		},
 		ctx = {
 			source = source_winid,
@@ -46,6 +53,7 @@ end
 ---@return Rabbit.Entry[]
 function ACTIONS.children(entry)
 	local entries = {} ---@type Rabbit.Entry[]
+	local can_paste = #LIST.yank > 0
 	if entry.ctx.source ~= nil then
 		entry = entry --[[@as Rabbit*Trail.Win.Copy]]
 		local source = LIST.wins[entry.ctx.source]
@@ -54,12 +62,13 @@ function ACTIONS.children(entry)
 		LIST.major.ctx.wins:del(entry.ctx.source)
 		LIST.major.ctx.wins:add(ENV.winid)
 		LIST.real.wins[entry.ctx.source] = nil
-		entries = target.actions.children(target)
+		entries = ACTIONS.children(target)
 	elseif entry.ctx.winid == nil then
 		entry = entry --[[@as Rabbit*Trail.Win.Major]]
 		local wins_to_del, bufs_to_del = {}, {}
 		for _, winid in ipairs(entry.ctx.wins) do
 			local win = LIST.wins[winid]
+			win.actions.paste = can_paste
 			if win == nil then
 				-- pass
 			elseif win:Len() >= 1 then
@@ -79,6 +88,8 @@ function ACTIONS.children(entry)
 			local buf = LIST.bufs[bufid]:as(ENV.winid)
 			if buf.ctx.listed then
 				buf.idx = true
+				buf.actions.visual = true
+				buf.actions.paste = can_paste
 				table.insert(entries, buf)
 			else
 				table.insert(bufs_to_del, bufid)
@@ -91,6 +102,10 @@ function ACTIONS.children(entry)
 		LIST.clean_bufs(bufs_to_del)
 	else
 		entry = entry --[[@as Rabbit*Trail.Win.User]]
+		if #LIST.yank == 1 and LIST.yank[1] == entry.ctx.bufs[1] then
+			can_paste = false
+		end
+		LIST.major.actions.paste = can_paste
 		table.insert(entries, LIST.major:as(entry.label.text))
 		if entry.ctx.killed then
 			table.insert(entries, cb_copy_win(entry.ctx.winid))
@@ -100,6 +115,8 @@ function ACTIONS.children(entry)
 		for i, bufid in ipairs(entry.ctx.bufs) do
 			local buf = LIST.bufs[bufid]:as(entry.ctx.winid)
 			buf.idx = i ~= 1
+			buf.actions.visual = buf.idx
+			buf.actions.paste = can_paste
 			if buf.ctx.listed then
 				table.insert(entries, buf)
 			else
@@ -292,6 +309,79 @@ function ACTIONS.delete(entry)
 	end
 
 	return entry._env.parent
+end
+
+function ACTIONS.yank(entry)
+	TERM.feed("<Esc>")
+	local start_idx = vim.fn.getpos("v")[2]
+	local end_idx = vim.fn.getpos(".")[2]
+	if start_idx > end_idx then
+		start_idx, end_idx = end_idx, start_idx
+	end
+
+	LIST.clean_bufs(LIST.yank)
+	LIST.yank = SET.new()
+	local siblings = entry._env.siblings --[[@as Rabbit*Trail.Buf[]=]]
+	for i = start_idx, end_idx do
+		local sibling = siblings[i]
+		assert(sibling.type == "file", "only files can be yanked")
+		table.insert(LIST.yank, sibling.bufid)
+	end
+
+	default = start_idx
+
+	return { class = "message" }
+end
+
+function ACTIONS.cut(entry)
+	TERM.feed("<Esc>")
+	local start_idx = vim.fn.getpos("v")[2]
+	local end_idx = vim.fn.getpos(".")[2]
+	if start_idx > end_idx then
+		start_idx, end_idx = end_idx, start_idx
+	end
+
+	LIST.clean_bufs(LIST.yank)
+	LIST.yank = SET.new()
+	local siblings = entry._env.siblings --[[@as Rabbit*Trail.Buf[]=]]
+	for i = end_idx, start_idx, -1 do
+		local sibling = siblings[i]
+		assert(sibling.type == "file", "only files can be yanked")
+		table.insert(LIST.yank, 1, sibling.bufid)
+		entry._env.parent.ctx.bufs:del(sibling.bufid)
+	end
+
+	default = start_idx
+
+	return entry._env.parent
+end
+
+function ACTIONS.paste(entry)
+	local target = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
+	local target_bufs = target.ctx.bufs
+	local siblings = entry._env.siblings
+	assert(siblings ~= nil, "no siblings")
+
+	local first = 1
+	while first < #siblings and (siblings[first].type ~= "file" or siblings[first].actions.visual == false) do
+		first = first + 1
+	end
+
+	default = math.max(entry._env.idx or 0, first)
+
+	local idx = default - first + 1
+	local y = vim.deepcopy(LIST.yank)
+	if target ~= LIST.major then
+		y:del(target_bufs[1])
+		if idx == 1 then
+			idx = 2
+			default = default + 1
+		end
+	end
+
+	target_bufs:add(y, idx)
+
+	return target
 end
 
 return ACTIONS

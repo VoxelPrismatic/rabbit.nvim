@@ -136,7 +136,7 @@
 ---@class Rabbit.Event.Invalid: NvimEvent
 ---@field buf integer Buffer ID (rabbit.user.buf)
 ---@field event "RabbitInvalid" Event type
----@field file? string Buffer ID or file name, depending on `match`
+---@field file? string Buffer ID or filename, depending on `match`
 ---@field id integer Event ID
 ---@field match? "bufnr" | "filename" How to interpret `event`
 
@@ -153,3 +153,17 @@
 ---@field file string Plugin name
 ---@field id integer Window ID
 ---@field match string Current working directory
+
+---@class NvimEvent.TextYankPost: NvimEvent
+---@field buf integer Buffer ID
+---@field event "TextYankPost" Event type
+---@field file "" Always empty string
+---@field id integer Event ID
+---@field match string Same as `file`
+
+---@class NvimEvent.TextChanged: NvimEvent
+---@field buf integer Buffer ID
+---@field event "TextChanged" Event type
+---@field file string File name
+---@field id integer Event ID
+---@field match string Same as `file`

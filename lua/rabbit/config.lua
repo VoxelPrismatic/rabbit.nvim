@@ -294,6 +294,18 @@ C.keys = {
 	-- Enter visual-line mode, so you can yank/paste entries
 	---@type string | string[]
 	visual = { "v", "V", "<C-v>" },
+
+	-- Paste entries from visual-line mode
+	---@type string | string[]
+	paste = { "p", "P" },
+
+	-- Yank entries from visual-line mode
+	---@type string | string[]
+	yank = { "y", "Y" },
+
+	-- Cut entries from visual-line mode
+	---@type string | string[]
+	cut = { "x", "X", "<Del>", "d" },
 }
 
 -- Plugin settings

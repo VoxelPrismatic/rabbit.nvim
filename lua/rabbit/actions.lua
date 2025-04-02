@@ -1,10 +1,13 @@
 local CTX = require("rabbit.term.ctx")
 local UI = require("rabbit.term.listing")
+local TERM = require("rabbit.util.term")
 
 ---@param action string
 ---@return fun(...)
 local function not_implemented(action)
-	return function() error("Action '" .. action .. "' not implemented by plugin") end
+	return function()
+		error("Action '" .. action .. "' not implemented by plugin")
+	end
 end
 
 ---@class Rabbit.Plugin.Actions
@@ -90,10 +93,40 @@ ACTIONS.parent = not_implemented("parent")
 ---@type Rabbit.Action.Collect
 ACTIONS.collect = not_implemented("collect")
 
----@alias Rabbit.Action.Visual fun(entry: Rabbit.Entry): nil
+---@alias Rabbit.Action.Visual fun(entry: Rabbit.Entry): Rabbit.Response
 ---@type Rabbit.Action.Visual
 ACTIONS.visual = function(_)
-	vim.fn.feedkeys("V", "n")
+	vim.bo[UI._fg.buf].modifiable = true
+
+	TERM.feed("V<Left>" .. (vim.fn.col(".") == 1 and "" or "<Right>"))
+
+	UI._fg:listen("ModeChanged", {
+		buffer = UI._fg.buf,
+		callback = function(evt)
+			if evt.match:sub(3) ~= "n" then
+				return true
+			end
+
+			vim.bo[UI._fg.buf].modifiable = false
+			return false
+		end,
+		desc = "Disable changes once user exits visual mode",
+	})
+	return {
+		class = "message",
+	}
 end
+
+---@alias Rabbit.Action.Yank fun(entry: Rabbit.Entry): Rabbit.Response
+---@type Rabbit.Action.Yank
+ACTIONS.yank = not_implemented("yank")
+
+---@alias Rabbit.Action.Cut fun(entry: Rabbit.Entry): Rabbit.Response
+---@type Rabbit.Action.Cut
+ACTIONS.cut = not_implemented("cut")
+
+---@alias Rabbit.Action.Paste fun(entry: Rabbit.Entry): Rabbit.Response
+---@type Rabbit.Action.Paste
+ACTIONS.paste = not_implemented("paste")
 
 return ACTIONS

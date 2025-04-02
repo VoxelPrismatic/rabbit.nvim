@@ -5,7 +5,9 @@ local MSG = {
 }
 
 function MSG.Handle(data)
-	if MSG[data.type] then
+	if data.type == nil then
+		return
+	elseif MSG[data.type] then
 		return MSG[data.type](data)
 	end
 

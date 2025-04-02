@@ -13,3 +13,7 @@
 ---@field rename Rabbit.Action.Callback<Rabbit.Action.Rename>
 ---@field insert Rabbit.Action.Callback<Rabbit.Action.Insert>
 ---@field collect Rabbit.Action.Callback<Rabbit.Action.Collect>
+---@field yank Rabbit.Action.Callback<Rabbit.Action.Yank>
+---@field cut Rabbit.Action.Callback<Rabbit.Action.Cut>
+---@field visual Rabbit.Action.Callback<Rabbit.Action.Visual>
+---@field paste Rabbit.Action.Callback<Rabbit.Action.Paste>

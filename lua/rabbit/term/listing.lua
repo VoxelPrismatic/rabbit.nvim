@@ -38,18 +38,7 @@ local function _K(key)
 	return type(key) ~= "table" and { tostring(key) } or key --[[@as table<string>]]
 end
 
-local case_func = {
-	upper = string.upper,
-	lower = string.lower,
-	unchanged = function(s)
-		return s
-	end,
-	title = function(s)
-		return s:gsub("(%w)(%w*)", function(a, b)
-			return string.upper(a) .. string.lower(b)
-		end)
-	end,
-}
+local last_mode = ""
 
 vim.api.nvim_create_autocmd("VimResized", {
 	callback = function()
@@ -129,6 +118,7 @@ function UI.spawn(plugin)
 		autocmd = {
 			CursorMoved = redraw,
 			BufLeave = UI.maybe_close,
+			ModeChanged = UI.marquee_legend,
 		},
 	})
 
@@ -377,13 +367,13 @@ function UI.highlight(entry)
 			table.insert(extras, {
 				text = " " .. CONFIG.window.icons.modified,
 				hl = { "rabbit.files.modified" },
-				align = "left",
+				align = "right",
 			})
 		elseif CONFIG.window.beacon.readonly and vim.bo[entry.bufid].readonly then
 			table.insert(extras, {
 				text = " " .. CONFIG.window.icons.readonly .. " ",
 				hl = { "rabbit.files.readonly" },
-				align = "left",
+				align = "right",
 			})
 		end
 	end
@@ -516,6 +506,11 @@ function UI.apply_actions()
 			shown = shown[action]
 		end
 
+		local mode = "n"
+		if action == "yank" or action == "cut" then
+			mode = "v"
+		end
+
 		UI._keys:add(keys)
 		UI._fg:bind({
 			label = action,
@@ -523,14 +518,12 @@ function UI.apply_actions()
 			callback = function()
 				UI.handle_callback(cb(e))
 			end,
-			mode = "n",
+			mode = mode,
 			shown = shown,
 		})
 
 		::continue::
 	end
-
-	UI._legend = HL.split(UI._fg:legend("rabbit.types.plugin", "left"))
 
 	local hls = {}
 
@@ -563,6 +556,11 @@ function UI.apply_actions()
 
 	HL.apply(hls)
 
+	if vim.fn.mode() ~= "n" and not UI._fg:bound("visual") then
+		TERM.feed("<Esc>")
+	end
+
+	last_mode = ""
 	UI.marquee_legend()
 	if not UI._marquee:is_active() then
 		UI._marquee:start(100, 100, vim.schedule_wrap(UI.marquee_legend))
@@ -578,9 +576,14 @@ end
 -- Marquee legend
 function UI.marquee_legend()
 	local cur_plugin = { join = {}, split = {} }
+	if vim.fn.mode() ~= last_mode then
+		UI._legend = HL.split(UI._fg:legend("rabbit.types.plugin", "left"))
+		last_mode = vim.fn.mode()
+	end
+
 	local legend = vim.deepcopy(UI._priority_legend)
 	if #legend == 0 then
-		legend = UI._fg:legend("rabbit.types.plugin", "left")
+		legend = UI._legend
 		if #UI._plugins > 0 then
 			local idx = (os.time() % #UI._plugins) + 1
 			cur_plugin = UI._plugins[idx]

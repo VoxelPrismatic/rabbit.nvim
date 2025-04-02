@@ -3,11 +3,18 @@ local HL = require("rabbit.term.highlight")
 
 ---@class Rabbit.UI.Workspace.Keybind
 ---@field label string Description/legend label.
----@field keys string[] Key sequence.
+---@field keys Rabbit.Table.Set<string> Key sequence.
 ---@field mode string Keymap mode.
 ---@field space string Highlight name.
 ---@field shown boolean Whether or not to show this in the legend.
 ---@field legend fun(self: Rabbit.UI.Workspace.Keybind, align?: "left" | "right" | "center"): Rabbit.Term.HlLine[]
+
+---@class Rabbit.UI.Workspace.Autocmd
+---@field event string Autocmd event.
+---@field kwargs vim.api.keyset.create_autocmd Kwargs passed to vim.api.nvim_create_autocmd
+---@field id integer Autocmd ID
+---@field target Rabbit.UI.Workspace
+---@field del fun(self: Rabbit.UI.Workspace.Autocmd) Deletes the autocmd
 
 ---@class Rabbit.UI.Workspace
 local workspace = {
@@ -43,6 +50,10 @@ local workspace = {
 	---@type Rabbit.UI.Workspace.Keybind[]
 	-- Keys mapped to this workspace.
 	keys = {},
+
+	---@type { [string]: Rabbit.UI.Workspace.Autocmd[] }
+	-- Autocmds mapped to this workspace.
+	autocmds = {},
 }
 
 local CTX = {
@@ -147,21 +158,47 @@ function workspace.bind(self, kwargs)
 
 	assert(callback ~= nil, "Callback can only be nil if there are no keys")
 	for _, m in ipairs(mode) do
+		for _, k in ipairs(key) do
+			-- Unbind duplicate keymaps
+			for i = #self.keys, 1, -1 do
+				local v = self.keys[i]
+				if v.mode == m then
+					if v.keys:idx(k) ~= nil then
+						v.keys:del(k)
+					end
+					if #v.keys == 0 then
+						table.remove(self.keys, i)
+					end
+				end
+			end
+
+			vim.keymap.set(m, k, callback, { buffer = self.buf, desc = label })
+		end
+
 		table.insert(self.keys, {
 			label = label,
-			keys = key,
+			keys = SET.new(key),
 			mode = m,
 			shown = shown,
 			space = space,
 			legend = keybind_build,
 		})
-
-		for _, k in ipairs(key) do
-			vim.keymap.set(m, k, callback, { buffer = self.buf, desc = label })
-		end
 	end
 
 	return self.keys[#self.keys]:legend(kwargs.align)
+end
+
+-- Returns true if a label is bound to a keymap
+---@param self Rabbit.UI.Workspace
+---@param label string
+---@return boolean
+function workspace.bound(self, label)
+	for _, key in ipairs(self.keys) do
+		if key.label == label then
+			return true
+		end
+	end
+	return false
 end
 
 -- Unbinds a keymap from this workspace
@@ -193,7 +230,7 @@ function workspace.legend(self, space, align)
 
 	local actions = {}
 
-	local mode = vim.fn.mode()
+	local mode = vim.fn.mode():lower()
 	for _, key in ipairs(self.keys) do
 		if key.shown and key.mode == mode then
 			if space == nil or space == key.space then
@@ -238,6 +275,58 @@ function workspace.focus(self)
 	vim.api.nvim_set_current_win(self.win)
 end
 
+---@param self Rabbit.UI.Workspace.Autocmd
+local function autocmd_del(self)
+	vim.api.nvim_del_autocmd(self.id)
+	local arr = self.target.autocmds[self.event]
+	for i = #arr, 1, -1 do
+		if arr[i] == self then
+			table.remove(arr, i)
+			return
+		end
+	end
+	error("Unreachable: Autocmd must be found")
+end
+
+-- Adds an autocmd listener
+---@param self Rabbit.UI.Workspace
+---@param event string Event name
+---@param kwargs vim.api.keyset.create_autocmd Kwargs
+---@return Rabbit.UI.Workspace.Autocmd
+function workspace.listen(self, event, kwargs)
+	if self.autocmds[event] == nil then
+		self.autocmds[event] = {}
+	end
+
+	if kwargs.buffer == nil then
+		kwargs.buffer = self.buf
+	end
+
+	---@type Rabbit.UI.Workspace.Autocmd
+	local ret = {
+		event = event,
+		kwargs = kwargs,
+		del = autocmd_del,
+		target = self,
+		id = 0,
+	}
+
+	if kwargs.callback ~= nil then
+		local cb = kwargs.callback or function() end
+		kwargs.callback = function(evt)
+			local v = cb(evt)
+			if v == false or kwargs.once then
+				ret:del()
+			end
+		end
+	end
+
+	ret.id = vim.api.nvim_create_autocmd(event, kwargs)
+
+	table.insert(self.autocmds[event], ret)
+	return ret
+end
+
 -- Adds a workspace to the stack, and binds the WinClosed and BufDelete events
 ---@param bufid integer
 ---@param winid integer
@@ -275,6 +364,7 @@ function CTX.workspace(bufid, winid)
 		keys = {},
 		container = false,
 		close = CTX.close,
+		autocmds = {},
 		add_child = workspace.add_child,
 		set_lines = workspace.set_lines,
 		move_cur = workspace.move_cur,
@@ -282,6 +372,8 @@ function CTX.workspace(bufid, winid)
 		bind = workspace.bind,
 		legend = workspace.legend,
 		unbind = workspace.unbind,
+		listen = workspace.listen,
+		bound = workspace.bound,
 	}
 	ws.conf = CTX.win_config(ws.win)
 
@@ -372,7 +464,7 @@ function CTX.scratch(opts)
 	end
 
 	for k, v in pairs(opts.autocmd or {}) do
-		vim.api.nvim_create_autocmd(k, { buffer = bufid, callback = v })
+		ws:listen(k, { buffer = bufid, callback = v })
 	end
 
 	if opts.lines then
@@ -402,7 +494,7 @@ end
 ---@field ns? string Highlight namespace
 ---@field wo? vim.wo Window options
 ---@field bo? vim.bo Buffer options
----@field autocmd? table<string, fun(evt: NvimEvent)> Buffer Autocmds
+---@field autocmd? table<string, fun(evt: NvimEvent): nil | boolean> Buffer Autocmds
 ---@field lines? (Rabbit.Term.HlLine | string)[] Highlight line
 ---@field many? boolean If true, the lines field will be treated as many lines
 ---@field cursor? integer[] Cursor position
