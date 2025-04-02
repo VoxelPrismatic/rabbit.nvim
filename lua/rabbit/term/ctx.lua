@@ -1,6 +1,14 @@
 local SET = require("rabbit.util.set")
 local HL = require("rabbit.term.highlight")
 
+---@class Rabbit.UI.Workspace.Keybind
+---@field label string Description/legend label.
+---@field keys string[] Key sequence.
+---@field mode string Keymap mode.
+---@field space string Highlight name.
+---@field shown boolean Whether or not to show this in the legend.
+---@field legend fun(self: Rabbit.UI.Workspace.Keybind, align?: "left" | "right" | "center"): Rabbit.Term.HlLine[]
+
 ---@class Rabbit.UI.Workspace
 local workspace = {
 	---@type integer
@@ -32,7 +40,7 @@ local workspace = {
 	-- True if this workspace is a container (will not delete buffer upon close)
 	container = false,
 
-	---@type { [string]: string[] }
+	---@type Rabbit.UI.Workspace.Keybind[]
 	-- Keys mapped to this workspace.
 	keys = {},
 }
@@ -50,11 +58,9 @@ local CTX = {
 
 -- Adds a child to this workspace. If this workspace closes, all children will be closed too.
 ---@param self Rabbit.UI.Workspace
----@param child Rabbit.UI.Workspace
----@return Rabbit.UI.Workspace
-function workspace.add_child(self, child)
-	table.insert(self.children, child)
-	if #self.children == 1 then
+---@param ... Rabbit.UI.Workspace
+function workspace.add_child(self, ...)
+	if #self.children == 0 then
 		vim.api.nvim_create_autocmd({ "WinClosed", "BufDelete", "QuitPre" }, {
 			buffer = self.buf,
 			callback = function()
@@ -65,81 +71,138 @@ function workspace.add_child(self, child)
 			end,
 		})
 	end
+	for _, child in ipairs({ ... }) do
+		table.insert(self.children, child)
+	end
+end
 
-	return child
+---@class Rabbit.UI.Workspace.BindKwargs
+---@field mode? "n" | string | string[] Keymap mode
+---@field shown? true | boolean Whether or not to show this in the legend
+---@field key string | string[] Keys to bind
+---@field label string Description/legend label
+---@field callback? function Callback
+---@field space? string Namespace when building the legend
+---@field align? "left" | "right" | "center" Alignment when returning this legend
+
+---@param self Rabbit.UI.Workspace.Keybind
+---@param align? "left" | "right" | "center" Alignment
+local function keybind_build(self, align)
+	local ret = {
+		{
+			text = self.label,
+			hl = { "rabbit.legend.action", self.space },
+			align = align,
+		},
+		{
+			text = ":",
+			hl = "rabbit.legend.separator",
+			align = align,
+		},
+		{
+			text = self.keys[1],
+			hl = "rabbit.legend.key",
+			align = align,
+		},
+	}
+
+	table.insert(ret, align == "right" and #ret + 1 or 1, { text = " ", align = align })
+	return ret
 end
 
 -- Binds a keymap to this workspace and returns a legend entry
 ---@param self Rabbit.UI.Workspace
----@param desc string Description/legend label
----@param callback function Callback
----@param shown? boolean Whether or not to show this in the legend
----@param key string | string[] Keys to bind
-function workspace.bind(self, desc, key, callback, shown)
+---@param kwargs Rabbit.UI.Workspace.BindKwargs
+---@return Rabbit.Term.HlLine[] "Legend entry"
+function workspace.bind(self, kwargs)
+	local mode = kwargs.mode or "n"
+	local label = kwargs.label
+	local key = kwargs.key
+	local callback = kwargs.callback
+	local shown = kwargs.shown == nil and true or kwargs.shown
+	local space = kwargs.space or "rabbit.types.plugin"
+
 	if type(key) == "string" then
 		key = { key }
 	end
 
-	for _, k in ipairs(self.keys[desc] or {}) do
-		_ = pcall(vim.keymap.del, "n", k, { buffer = self.buf })
+	if type(mode) == "string" then
+		mode = { mode }
+	end
+	mode = SET.new(mode)
+
+	for i = #self.keys, 1, -1 do
+		local bound = self.keys[i]
+		if bound.label == label and mode:idx(bound.mode) ~= nil then
+			table.remove(self.keys, i)
+			for _, k in ipairs(bound.keys) do
+				_ = pcall(vim.keymap.del, bound.mode, k, { buffer = self.buf })
+			end
+		end
 	end
 
 	if #key == 0 then
-		self.keys[desc] = nil
-		return
+		return {}
 	end
 
-	if shown or shown == nil then
-		self.keys[desc] = key
+	assert(callback ~= nil, "Callback can only be nil if there are no keys")
+	for _, m in ipairs(mode) do
+		table.insert(self.keys, {
+			label = label,
+			keys = key,
+			mode = m,
+			shown = shown,
+			space = space,
+			legend = keybind_build,
+		})
+
+		for _, k in ipairs(key) do
+			vim.keymap.set(m, k, callback, { buffer = self.buf, desc = label })
+		end
 	end
 
-	for _, k in ipairs(key) do
-		vim.keymap.set("n", k, callback, { buffer = self.buf, desc = desc })
-	end
+	return self.keys[#self.keys]:legend(kwargs.align)
 end
 
 -- Unbinds a keymap from this workspace
 ---@param self Rabbit.UI.Workspace
----@param desc string | string[] Description/legend label
-function workspace.unbind(self, desc)
-	if type(desc) == "string" then
-		desc = { desc }
+---@param labels string | string[] Description/legend label
+function workspace.unbind(self, labels)
+	if type(labels) == "string" then
+		labels = { labels }
 	end
-	for _, d in ipairs(desc) do
-		self:bind(d, {}, function() end)
+	for _, label in ipairs(labels) do
+		self:bind({
+			mode = { "n", "i", "v", "x" },
+			label = label,
+			callback = nil,
+			key = {},
+		})
 	end
 end
 
 -- Created a legend map for this workspace
 ---@param self Rabbit.UI.Workspace
+---@param space? string Legend namespace
+---@param align? "left" | "right" | "center" Legend alignment
 ---@return Rabbit.Term.HlLine[]
-function workspace.legend(self)
-	local actions = { SET.keys(self.keys) }
-
-	table.sort(actions, function(a, b)
-		return a < b
+function workspace.legend(self, space, align)
+	table.sort(self.keys, function(a, b)
+		return a.label < b.label
 	end)
 
-	local legend = {}
-	for _, action in ipairs(actions) do
-		table.insert(legend, {
-			{ text = " " },
-			{
-				text = action,
-				hl = { "rabbit.legend.action", "rabbit.types.plugin" },
-			},
-			{
-				text = ":",
-				hl = "rabbit.legend.separator",
-			},
-			{
-				text = self.keys[action][1],
-				hl = "rabbit.legend.key",
-			},
-		})
+	local actions = {}
+
+	local mode = vim.fn.mode()
+	for _, key in ipairs(self.keys) do
+		if key.shown and key.mode == mode then
+			if space == nil or space == key.space then
+				table.insert(actions, key:legend(align))
+			end
+		end
 	end
 
-	return legend
+	return actions
 end
 
 -- Sets the lines in the buffer

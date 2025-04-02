@@ -21,16 +21,6 @@
 ---@field open? boolean Whether Rabbit is currently open
 ---@field bufid? integer User's current Buffer ID
 
----@class (exact) Rabbit.Plugin.Actions
----@field select? Rabbit.Action.Select
----@field children? Rabbit.Action.Children
----@field close? Rabbit.Action.Close
----@field hover? Rabbit.Action.Hover
----@field parent? Rabbit.Action.Parent
----@field rename? Rabbit.Action.Rename
----@field insert? Rabbit.Action.Insert
----@field collect? Rabbit.Action.Collect
----@field delete? Rabbit.Action.Delete
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory
@@ -57,18 +47,6 @@
 ---@field RabbitEnter? fun(evt: Rabbit.Event.Enter, ctx: Rabbit.Plugin.Environment)
 ---@field [string] fun(evt: NvimEvent, ctx: Rabbit.Plugin.Environment)
 
----@class Rabbit.Plugin.Keymap
----@field select? _Str Select an entry; Open a file or open a collection.
----@field close? _Str Close Rabbit.
----@field delete? _Str Delete an entry; Remove a file or cut a collection.
----@field collect? _Str Create a collection.
----@field parent? _Str Move to the parent collection.
----@field insert? _Str Insert the current file or previously deleted file.
----@field help? _Str Open the keymap legend.
----@field debug? _Str Open the debug dialog.
----@field rename? _Str Rename an entry.
----@field switch _Str Open this plugin after Rabbit is open. Set to "" to disable.
----@field [string] _Str Keybindings
 
 ---@class (exact) Rabbit.Plugin.Options
 ---@field color Color.Nvim Default border color.
@@ -76,5 +54,3 @@
 ---@field keys Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
 ---@field cwd? string | fun(): string Current working directory function. (leave blank to use global cwd)
 ---@field default? boolean Default plugin to open upon Rabbit opening
-
----@alias _Str string | string[]

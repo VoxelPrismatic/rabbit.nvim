@@ -511,15 +511,28 @@ function UI.apply_actions()
 			goto continue
 		end
 
+		local shown = CONFIG.window.legend
+		if type(shown) ~= "boolean" then
+			shown = shown[action]
+		end
+
 		UI._keys:add(keys)
-		UI._fg:bind(action, keys, function()
-			UI.handle_callback(cb(e))
-		end)
+		UI._fg:bind({
+			label = action,
+			key = keys,
+			callback = function()
+				UI.handle_callback(cb(e))
+			end,
+			mode = "n",
+			shown = shown,
+		})
 
 		::continue::
 	end
 
-	UI._legend = HL.split(UI._fg:legend())
+	UI._legend = HL.split(UI._fg:legend("rabbit.types.plugin", "left"))
+
+	local hls = {}
 
 	for name, plugin in pairs(require("rabbit").plugins) do
 		if plugin == UI._plugin or plugin.opts.keys.switch == "" or plugin.opts.keys.switch == false then
@@ -530,39 +543,25 @@ function UI.apply_actions()
 			or plugin.opts.keys.switch --[[@as table<string>]]
 
 		UI._keys:add(switches)
-		UI._fg:bind(name, switches, function()
-			UI.spawn(plugin)
-		end, false)
-
-		HL.apply({
-			["rabbit.plugin." .. name] = { fg = tostring(plugin.opts.color) },
+		local part = UI._fg:bind({
+			label = name,
+			key = switches,
+			callback = function()
+				UI.spawn(plugin)
+			end,
+			mode = "n",
+			space = "rabbit.plugin." .. name,
+			align = "right",
 		})
 
-		local part = {
-			{
-				text = name,
-				hl = {
-					"rabbit.legend.action",
-					"rabbit.plugin." .. name,
-				},
-				align = "right",
-			},
-			{
-				text = ":",
-				hl = "rabbit.legend.separator",
-				align = "right",
-			},
-			{
-				text = switches[1] .. " ",
-				hl = "rabbit.legend.key",
-				align = "right",
-			},
-		}
+		hls["rabbit.plugin." .. name] = { fg = tostring(plugin.opts.color) }
 
 		table.insert(UI._plugins, { join = part, split = HL.split(part) })
 
 		::continue::
 	end
+
+	HL.apply(hls)
 
 	UI.marquee_legend()
 	if not UI._marquee:is_active() then
@@ -581,6 +580,7 @@ function UI.marquee_legend()
 	local cur_plugin = { join = {}, split = {} }
 	local legend = vim.deepcopy(UI._priority_legend)
 	if #legend == 0 then
+		legend = UI._fg:legend("rabbit.types.plugin", "left")
 		if #UI._plugins > 0 then
 			local idx = (os.time() % #UI._plugins) + 1
 			cur_plugin = UI._plugins[idx]

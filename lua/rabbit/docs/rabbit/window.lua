@@ -38,15 +38,7 @@
 ---@field dirname_char string Character to use when trimming dir names.
 ---@field distance_trim integer Maximum distance between files before trimming with `distance_char`.
 
----@class (exact) Rabbit.Config.Window
----@field spawn Rabbit.Config.Window.Mode Window position.
----@field overflow Rabbit.Config.Window.Overflow How to handle overflow.
----@field legend boolean Show a quick legend at the bottom. Consumes one line.
----@field beacon Rabbit.Config.Window.Extras Extra info
----@field preview true Whether or not to display a preview of the buffer about to be opened
----@field icons Rabbit.Config.Window.Icons Icons for various things
-
----@class (exact) Rabbit.Config.Window.Extras
+---@class (exact) Rabbit.Config.Window.Beacon
 ---@field nrs boolean Whether or not to show BufIDs, WinIDs, term PIDs, etc.
 ---@field readonly boolean Whether or not to show if the buffer is read-only.
 ---@field lsp Rabbit.Config.Window.Extras.Lsp | Rabbit.Config.Window.Extras.Lsp.Callback Whether or not to show lsp info.

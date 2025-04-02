@@ -68,8 +68,11 @@ C.colors = {
 }
 
 -- Window settings
----@type Rabbit.Config.Window
+---@class Rabbit.Config.Window
+---@field legend boolean | Rabbit.Config.Window.Legend
 C.window = {
+	---@type Rabbit.Config.Window.Mode
+	-- Rabbit window spawn position
 	spawn = {
 		mode = "float",
 		width = 64,
@@ -77,6 +80,8 @@ C.window = {
 		side = "se",
 	},
 
+	---@type Rabbit.Config.Window.Overflow
+	-- How to handle overflows and name trimming
 	overflow = {
 		distance_char = ":::",
 		dirname_trim = 12,
@@ -85,6 +90,7 @@ C.window = {
 	},
 
 	---@class Rabbit.Config.Window.Icons
+	-- Icons for various things
 	icons = {
 		-- Icon for modified buffers
 		modified = "•",
@@ -111,6 +117,8 @@ C.window = {
 		file_delete = "󰆴",
 	},
 
+	---@type Rabbit.Config.Window.Beacon
+	-- Extra file info
 	beacon = {
 		nrs = false,
 		readonly = true,
@@ -129,7 +137,42 @@ C.window = {
 		},
 	},
 
-	legend = true,
+	---@class Rabbit.Config.Window.Legend
+	legend = {
+		-- Display the close key
+		---@type boolean
+		close = false,
+
+		-- Display the selection key
+		---@type boolean
+		select = false,
+
+		-- Display the rename key
+		---@type boolean
+		rename = true,
+
+		-- Display the delete key
+		---@type boolean
+		delete = true,
+
+		-- Display the parent key
+		---@type boolean
+		parent = true,
+
+		-- Display the collect key
+		---@type boolean
+		collect = true,
+
+		-- Display the insert key
+		---@type boolean
+		insert = true,
+
+		-- Display the visual key
+		---@type boolean
+		visual = true,
+	},
+
+	---@type boolean Whether or not to display a preview of the buffer about to be opened
 	preview = true,
 }
 
@@ -152,7 +195,7 @@ C.boxes = {
 		bot_side = {
 			base = "━",
 			left = {
-				parts = { "head", "rabbit", "plugin", "tail" },
+				parts = { "head", "plugin", "tail" },
 				case = "lower",
 			},
 		},
@@ -214,18 +257,43 @@ C.boxes = {
 }
 
 -- Keymap settings
----@type Rabbit.Plugin.Keymap
+---@class Rabbit.Plugin.Keymap
 C.keys = {
+	-- Open Rabbit and spawn the default plugin
+	---@type string | string[]
 	switch = { "<leader>r" },
+
+	-- Select the current entry
+	---@type string | string[]
 	select = { "<CR>", "g" },
+
+	-- Close Rabbit and focus the previous buffer/window
+	---@type string | string[]
 	close = { "q", "<Esc>", "<leader>" },
+
+	-- Delete the current entry
+	---@type string | string[]
 	delete = { "x", "d", "<Del>" },
+
+	-- Create a collection
+	---@type string | string[]
 	collect = { "A" },
+
+	-- Move to the parent collection
+	---@type string | string[]
 	parent = { "-", "<BS>" },
+
+	-- Insert the current file or previously deleted file
+	---@type string | string[]
 	insert = { "a" },
-	help = { "?", "h" },
+
+	-- Rename the current entry
+	---@type string | string[]
 	rename = { "i" },
-	["debug"] = { "D" },
+
+	-- Enter visual-line mode, so you can yank/paste entries
+	---@type string | string[]
+	visual = { "v", "V", "<C-v>" },
 }
 
 -- Plugin settings
