@@ -28,15 +28,19 @@ end
 function SET.Func:add(elem, idx)
 	if idx == nil then
 		idx = 1
-	elseif idx == -1 then
-		idx = #self + 1
+	elseif idx < 1 then
+		idx = idx + #self + 2
 	elseif type(idx) ~= "number" or math.floor(idx) ~= idx then
 		error("Expected integer, got " .. type(idx))
 	end
 
 	local to_add = type(elem) == "table" and elem or { elem }
+
+	SET.Func.del(self, to_add)
+
+	idx = math.min(math.max(1, idx), #self + 1)
+
 	for i = #to_add, 1, -1 do
-		SET.Func.del(self, to_add[i])
 		table.insert(self, idx, to_add[i])
 	end
 
