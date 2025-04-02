@@ -47,4 +47,10 @@ function TERM.wrap(text, width)
 	return lines
 end
 
+-- Shorthand for vim.fn.feedkeys(vim.api.nvim_replace_termcodes(...), "n")
+---@param keys string The text to feed
+function TERM.feed(keys)
+	vim.fn.feedkeys(vim.api.nvim_replace_termcodes(keys, true, true, true), "n")
+end
+
 return TERM
