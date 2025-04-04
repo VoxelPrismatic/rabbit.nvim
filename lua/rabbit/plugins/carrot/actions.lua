@@ -1,5 +1,5 @@
-local ENV = require("rabbit.plugins.harpoon.env")
-local LIST = require("rabbit.plugins.harpoon.list")
+local ENV = require("rabbit.plugins.carrot.env")
+local LIST = require("rabbit.plugins.carrot.list")
 local SET = require("rabbit.util.set")
 local CONFIG = require("rabbit.config")
 
@@ -8,14 +8,13 @@ local selection = 10000
 ---@type Rabbit.Plugin.Actions
 local ACTIONS = {}
 
----@param entry Rabbit*Harpoon.Collection
+---@param entry Rabbit*Carrot.Collection
 function ACTIONS.children(entry)
 	local entries = {}
 	local env = entry._env
 	entry = LIST.collections[entry.ctx.id]
 	entry._env = env
 	LIST.buffers[0] = entry
-	LIST.buffers[ENV.bufid] = entry
 
 	if entry._env == nil then
 		entry._env = { cwd = ENV.cwd.value }
@@ -24,11 +23,11 @@ function ACTIONS.children(entry)
 	local real = entry.ctx.real
 	local parent_idx = 0
 
-	assert(real ~= nil, "Unreachable: Rabbit Collection should have a Harpoon Collection")
+	assert(real ~= nil, "Unreachable: Rabbit Collection should have a Twig Collection")
 	if type(LIST.recent) == "table" and entry.ctx.id == LIST.recent.id then
 		LIST.recent = 0
 	end
-	require("rabbit.plugins.harpoon").empty.actions.insert = LIST.recent ~= 0
+	require("rabbit.plugins.carrot.init").empty.actions.insert = LIST.recent ~= 0
 
 	if real.parent ~= -1 then
 		local c = vim.deepcopy(LIST.collections[real.parent])
@@ -109,13 +108,13 @@ function ACTIONS.children(entry)
 	return entries
 end
 
----@param entry Rabbit*Harpoon.Collection
+---@param entry Rabbit*Carrot.Collection
 function ACTIONS.insert(entry)
 	if LIST.recent == 0 then
 		return
 	end
 
-	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Harpoon.Collection
+	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Carrot.Collection
 
 	if entry._env == nil then
 		entry._env = { idx = 1, cwd = ENV.cwd.value }
@@ -127,7 +126,7 @@ function ACTIONS.insert(entry)
 	if type(LIST.recent) == "string" then
 		SET.Func.add(collection.ctx.real.list, LIST.recent, idx)
 	elseif type(LIST.recent) == "table" then
-		local folder = LIST.harpoon[ENV.cwd.value]
+		local folder = LIST.carrot[ENV.cwd.value]
 		local target = folder[tostring(LIST.recent.id)]
 		local parent = folder[tostring(target.parent)]
 		local current = folder[tostring(collection.ctx.id)]
@@ -145,14 +144,14 @@ function ACTIONS.insert(entry)
 
 	selection = entry._env.idx
 
-	LIST.harpoon:__Save()
+	LIST.carrot:__Save()
 
 	return collection
 end
 
 ---
 function ACTIONS.collect(entry)
-	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Harpoon.Collection
+	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Carrot.Collection
 	if entry._env ~= nil then
 		collection = LIST.collections[entry._env.parent.ctx.id]
 	end
@@ -170,7 +169,7 @@ function ACTIONS.collect(entry)
 	c.ctx.real.parent = collection.ctx.id
 	SET.Func.add(collection.ctx.real.list, idx, pt)
 	selection = entry._env.idx
-	LIST.harpoon:__Save()
+	LIST.carrot:__Save()
 
 	vim.defer_fn(function()
 		require("rabbit.term.listing").handle_callback(ACTIONS.rename(c))
@@ -180,11 +179,11 @@ function ACTIONS.collect(entry)
 end
 
 function ACTIONS.parent(_)
-	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Harpoon.Collection
+	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Carrot.Collection
 	return LIST.collections[collection.ctx.real.parent]
 end
 
----@param entry Rabbit*Harpoon.Collection
+---@param entry Rabbit*Carrot.Collection
 ---@param new_name string
 local function apply_rename(entry, new_name)
 	if new_name == "" then
@@ -192,7 +191,7 @@ local function apply_rename(entry, new_name)
 	end
 
 	for _, collection in pairs(entry._env.siblings) do
-		collection = collection --[[@as Rabbit*Harpoon.Collection]]
+		collection = collection --[[@as Rabbit*Carrot.Collection]]
 		if collection.type ~= "collection" then
 			-- pass
 		elseif collection ~= entry and collection.ctx.real.name == new_name then
@@ -209,7 +208,7 @@ local function apply_rename(entry, new_name)
 	end
 	entry.label.text = new_name
 	entry.ctx.real.name = new_name
-	LIST.harpoon:__Save()
+	LIST.carrot:__Save()
 	return new_name
 end
 
@@ -227,7 +226,7 @@ function ACTIONS.rename(entry)
 	}
 end
 
----@param entry Rabbit*Harpoon.Collection | Rabbit*Trail.Buf
+---@param entry Rabbit*Carrot.Collection | Rabbit*Trail.Buf
 function ACTIONS.delete(entry)
 	if entry.type == "file" then
 		entry = entry --[[@as Rabbit*Trail.Buf]]
@@ -238,7 +237,7 @@ function ACTIONS.delete(entry)
 		assert(entry.idx ~= false, "Cannot delete the move-up collection")
 		entry = LIST.collections[entry.ctx.id]
 		local to_delete = SET.new({ entry.ctx.id })
-		local folder = LIST.harpoon[ENV.cwd.value]
+		local folder = LIST.carrot[ENV.cwd.value]
 
 		LIST.recent = { id = entry.ctx.id, [entry.ctx.id] = entry.ctx.real }
 
@@ -259,7 +258,7 @@ function ACTIONS.delete(entry)
 		error("Unreachable")
 	end
 
-	LIST.harpoon:__Save()
+	LIST.carrot:__Save()
 	if selection == #entry._env.siblings then
 		selection = selection - 1
 	end

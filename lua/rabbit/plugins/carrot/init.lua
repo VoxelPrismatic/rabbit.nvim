@@ -1,13 +1,15 @@
 local GLOBAL_CONFIG = require("rabbit.config")
-local LIST = require("rabbit.plugins.harpoon.list")
+local LIST = require("rabbit.plugins.carrot.list")
 local TRAIL = require("rabbit.plugins.trail.list")
 
----@class (exact) Rabbit*Harpoon: Rabbit.Plugin
+---@class (exact) Rabbit*Carrot: Rabbit.Plugin
+---@field opts Rabbit*Carrot.Options
 
----@type Rabbit*Harpoon
+---@type Rabbit*Carrot
 local PLUG = {
+	synopsis = "Save and organize your files for quick access, like a Rabbit saving carrots",
 	empty = {
-		msg = "There's nowhere to aim! Get started by adding a file or collection",
+		msg = "There's nowhere to jump to! Get started by adding a file or collection",
 		actions = {
 			children = false,
 			delete = false,
@@ -17,14 +19,18 @@ local PLUG = {
 			select = false,
 			insert = true,
 			collect = true,
+			yank = false,
+			cut = false,
+			visual = false,
+			paste = false,
 		},
 	},
-	name = "harpoon",
-	actions = require("rabbit.plugins.harpoon.actions"),
-	events = require("rabbit.plugins.harpoon.autocmd"),
-	save = "harpoon.json",
-	_env = require("rabbit.plugins.harpoon.env"),
-	opts = require("rabbit.plugins.harpoon.config"),
+	name = "carrot",
+	actions = require("rabbit.plugins.carrot.actions"),
+	events = require("rabbit.plugins.carrot.autocmd"),
+	save = "carrot.json",
+	_env = require("rabbit.plugins.carrot.env"),
+	opts = require("rabbit.plugins.carrot.config"),
 	requires = {
 		"trail",
 	},
@@ -46,7 +52,7 @@ function PLUG.list()
 		end
 	end
 
-	return LIST.buffers[PLUG._env.bufid]
+	return LIST.buffers[LIST.scope()]
 end
 
 return PLUG

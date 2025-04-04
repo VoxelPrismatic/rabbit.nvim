@@ -1,57 +1,60 @@
 local MEM = require("rabbit.util.mem")
-local ENV = require("rabbit.plugins.harpoon.env")
+local ENV = require("rabbit.plugins.carrot.env")
 local SET = require("rabbit.util.set")
-local CONFIG = require("rabbit.plugins.harpoon.config")
+local CONFIG = require("rabbit.plugins.carrot.config")
 local TRAIL = require("rabbit.plugins.trail.list")
 
----@class (exact) Rabbit*Harpoon.Collection: Rabbit.Entry.Collection
+---@class (exact) Rabbit*Carrot.Collection: Rabbit.Entry.Collection
 ---@field label Rabbit.Term.HlLine | Rabbit.Term.HlLine[]
----@field ctx Rabbit*Harpoon.Collection.Ctx
+---@field ctx Rabbit*Carrot.Collection.Ctx
 
----@class Rabbit*Harpoon.Collection.Ctx
+---@class Rabbit*Carrot.Collection.Ctx
 ---@field id integer Real collection ID
 ---@field bufid integer Target Buffer ID
 ---@field winid integer Target Window ID
----@field real Rabbit*Harpoon.Collection.Dump
+---@field real Rabbit*Carrot.Collection.Dump
 
----@class (exact) Rabbit*Harpoon.Collection.Dump
+---@class (exact) Rabbit*Carrot.Collection.Dump
 ---@field name string Collection name
 ---@field color Rabbit.Colors.Paint Collection color
 ---@field parent integer Parent collection (or 0 for root)
 ---@field list (string | integer)[] String: File path; Integer: Collection ID
 
----@class (exact) Rabbit*Harpoon.Dump
----@field [string] Rabbit*Harpoon.Collection.Dump
+---@class (exact) Rabbit*Carrot.Dump
+---@field [string] Rabbit*Carrot.Collection.Dump
 
----@class Rabbit*Harpoon.Writeable: Rabbit.Writeable
----@field [string] Rabbit*Harpoon.Dump
+---@class Rabbit*Carrot.Writeable: Rabbit.Writeable
+---@field [string] Rabbit*Carrot.Dump
 
----@class Rabbit*Harpoon.Listing
+---@class Rabbit*Carrot.Listing
 local LIST = {
-	---@type Rabbit*Harpoon.Writeable
+	---@type Rabbit*Carrot.Writeable
 	-- { path: Collection }
-	harpoon = { __Dest = "harpoon.json", __Save = MEM.Write },
+	carrot = { __Dest = "twig.json", __Save = MEM.Write },
 
-	---@type table<string, Rabbit*Harpoon.Collection>
+	---@type table<string, Rabbit*Carrot.Collection>
 	-- Memory pointers to collections to prevent duplicates
 	slots = {},
 
-	---@type table<integer, Rabbit*Harpoon.Collection>
+	---@type table<integer, Rabbit*Carrot.Collection>
 	-- { collection id: Collection }
 	collections = {},
 
-	---@type table<integer, Rabbit*Harpoon.Collection>
+	---@type table<integer, Rabbit*Carrot.Collection>
 	-- { buffer id: Collection }
 	buffers = {},
 
 	files = {},
+
+	---@type table<string, table<integer, Rabbit*Carrot.Collection>>
+	real = {},
 }
 
 -- Loads collection data from disk
 ---@param path string File path
 function LIST.load(path)
-	LIST.harpoon = MEM.Read(path)
-	for _, collections in pairs(LIST.harpoon) do
+	LIST.carrot = MEM.Read(path)
+	for _, collections in pairs(LIST.carrot) do
 		if type(collections) ~= "table" then
 			goto continue
 		end
@@ -75,43 +78,59 @@ function LIST.load(path)
 		::continue::
 	end
 
-	LIST.harpoon:__Save()
+	LIST.carrot:__Save()
 end
 
 ---@param bufid integer Buffer ID to show the collection for
 local function buffer_collection(self, bufid)
-	if not CONFIG.by_buffer and bufid ~= 0 then
-		return self[0]
-	end
-
 	self[bufid] = LIST.collections[0]
 	return self[bufid]
 end
 
+---@return integer "0, bufid, or winid based on the current settings"
+function LIST.scope()
+	if CONFIG.separate == "buffer" then
+		return ENV.bufid or 0
+	elseif CONFIG.separate == "window" then
+		return ENV.winid or 0
+	end
+	return 0
+end
+
 ---@param id integer Collection ID
 local function create_collection(self, id)
-	if rawget(self, tostring(id)) ~= nil then
-		return self[tostring(id)]
+	local real_target = LIST.real[ENV.cwd.value]
+	if real_target == nil then
+		real_target = {}
+		LIST.real[ENV.cwd.value] = real_target
 	end
 
-	if LIST.harpoon[ENV.cwd.value] == nil then
-		LIST.harpoon[ENV.cwd.value] = {}
+	local str_id = tostring(id)
+	if rawget(real_target, str_id) ~= nil then
+		return real_target[str_id]
 	end
 
-	if LIST.harpoon[ENV.cwd.value][tostring(id)] == nil then
-		---@type Rabbit*Harpoon.Collection.Dump
-		LIST.harpoon[ENV.cwd.value][tostring(id)] = {
+	local carrot_target = LIST.carrot[ENV.cwd.value]
+	if carrot_target == nil then
+		carrot_target = {}
+		LIST.carrot[ENV.cwd.value] = carrot_target
+	end
+
+	local collection = carrot_target[str_id]
+	if collection == nil then
+		---@type Rabbit*Carrot.Collection.Dump
+		collection = {
 			name = id == 0 and "Root" or "",
 			color = "rose",
 			parent = -1,
 			list = {},
 		}
+
+		carrot_target[str_id] = collection
 	end
 
-	local collection = LIST.harpoon[ENV.cwd.value][tostring(id)]
-
-	---@type Rabbit*Harpoon.Collection
-	self[tostring(id)] = {
+	---@type Rabbit*Carrot.Collection
+	real_target[str_id] = {
 		class = "entry",
 		type = "collection",
 		idx = true,
@@ -128,7 +147,7 @@ local function create_collection(self, id)
 			select = true,
 			hover = false,
 			parent = collection.parent ~= 0,
-			rename = tostring(id) ~= "0",
+			rename = str_id ~= "0",
 			insert = true,
 			collect = true,
 		},
