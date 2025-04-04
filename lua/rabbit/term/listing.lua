@@ -148,6 +148,7 @@ function UI.spawn(plugin)
 	UI._plugin._env.cwd = cwd
 	UI._plugin._env.open = true
 	UI._plugin._env.bufid = CTX.user.buf
+	UI._plugin._env.hov = UI._hov
 
 	UI.handle_callback(UI._plugin.list())
 end
@@ -256,6 +257,7 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		end
 	else
 		idx = ("—"):rep(idx_len + 1)
+		man_default = entry.default and (man_default or j) or man_default
 	end
 
 	UI._fg:set_lines({
@@ -353,6 +355,22 @@ function UI.highlight(entry)
 	local extras = {}
 
 	if vim.api.nvim_buf_is_valid(entry.bufid) then
+		if CONFIG.window.beacon.modified and vim.bo[entry.bufid].modified then
+			table.insert(extras, {
+				text = CONFIG.window.icons.modified .. " ",
+				hl = { "rabbit.files.modified" },
+				align = "right",
+			})
+		end
+
+		if CONFIG.window.beacon.readonly and vim.bo[entry.bufid].readonly then
+			table.insert(extras, {
+				text = CONFIG.window.icons.readonly .. " ",
+				hl = { "rabbit.files.readonly" },
+				align = "right",
+			})
+		end
+
 		local lsp_count = LSP.get_count(entry.bufid, CONFIG.window.beacon.lsp)
 		for k, v in pairs(lsp_count) do
 			if v > 0 then
@@ -362,19 +380,6 @@ function UI.highlight(entry)
 					align = "right",
 				})
 			end
-		end
-		if CONFIG.window.beacon.modified and vim.bo[entry.bufid].modified then
-			table.insert(extras, {
-				text = " " .. CONFIG.window.icons.modified,
-				hl = { "rabbit.files.modified" },
-				align = "right",
-			})
-		elseif CONFIG.window.beacon.readonly and vim.bo[entry.bufid].readonly then
-			table.insert(extras, {
-				text = " " .. CONFIG.window.icons.readonly .. " ",
-				hl = { "rabbit.files.readonly" },
-				align = "right",
-			})
 		end
 	end
 
@@ -624,6 +629,8 @@ function UI.marquee_legend()
 	})
 end
 
+-- Handles callback data
+---@param data? Rabbit.Response
 function UI.handle_callback(data)
 	if data == nil then
 		return UI.close()
@@ -769,8 +776,8 @@ function UI.close()
 		return
 	end
 
-	vim.api.nvim_set_current_win(CTX.user.win or 0)
-	pcall(vim.api.nvim_set_current_buf, CTX.user.buf or 0)
+	_ = pcall(vim.api.nvim_set_current_win, CTX.user.win or 0)
+	_ = pcall(vim.api.nvim_set_current_buf, CTX.user.buf or 0)
 	if UI._bg ~= nil then
 		UI.cancel_hover()
 		UI._bg:close()

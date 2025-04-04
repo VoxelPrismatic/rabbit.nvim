@@ -137,11 +137,33 @@ local win_config_cache = setmetatable({}, {
 	end,
 })
 
+---@type string[][]
+local binary_sz_cache = {}
+
 ---@param width integer
 ---@param height integer
 local function gen_binary_preview(width, height)
+	local hash = width * 37 + height
+
+	if binary_sz_cache[hash] ~= nil then
+		return binary_sz_cache[hash]
+	end
+
 	local h = math.floor(height / 3)
 	local w = math.floor(width / 3)
+
+	if h < 8 then
+		h = height
+	elseif h < 16 then
+		h = math.floor(height / 2)
+	end
+
+	if w < 48 then
+		w = width
+	elseif w < 96 then
+		w = math.floor(width / 2)
+	end
+
 	local grid = {}
 	local lines = {}
 	local diagonal = ("╱"):rep(w)
@@ -158,42 +180,47 @@ local function gen_binary_preview(width, height)
 	grid[msg_h + 1] = grid[msg_h - 1]
 
 	for i = 1, h do
-		lines[i] = grid[i] .. grid[i] .. grid[i] .. extra
-		lines[i + 1 * h] = lines[i]
-		lines[i + 2 * h] = lines[i]
+		local line = grid[i] .. grid[i] .. grid[i] .. extra
+
+		lines[i + 0 * h] = line
+		lines[i + 1 * h] = line
+		lines[i + 2 * h] = line
 	end
 
 	for i = 3 * h, height do
 		lines[i] = lines[1]
 	end
 
+	binary_sz_cache[hash] = lines
 	return lines
 end
 
 ---@param data Rabbit.Message.Preview
 local function possibly_closed(data)
-	if not vim.api.nvim_buf_is_valid(data.bufid) and vim.uv.fs_stat(data.file or "") ~= nil then
-		local bufid = vim.api.nvim_create_buf(false, true)
-		data.bufid = bufid
-		vim.api.nvim_create_autocmd("BufLeave", {
-			buffer = bufid,
-			callback = function()
-				vim.api.nvim_buf_delete(bufid, { force = true })
-			end,
-		})
-		local ok = pcall(vim.api.nvim_buf_set_lines, bufid, 0, -1, false, vim.fn.readfile(data.file))
-		if not ok then
-			local config = CTX.win_config(data.winid)
-			if config == nil then
-				data.bufid = nil
-			else
-				vim.api.nvim_buf_set_lines(bufid, 0, -1, false, gen_binary_preview(config.width, config.height))
-			end
-		else
-		end
-		vim.bo[bufid].filetype = vim.filetype.match({ filename = data.file }) or "text"
-		vim.bo[bufid].readonly = true
+	if vim.api.nvim_buf_is_valid(data.bufid) or vim.uv.fs_stat(data.file or "") == nil then
+		return
 	end
+
+	local bufid = vim.api.nvim_create_buf(false, true)
+	data.bufid = bufid
+	vim.api.nvim_create_autocmd("BufLeave", {
+		buffer = bufid,
+		callback = function()
+			vim.api.nvim_win_set_buf(data.winid, UI._hov[data.winid])
+			vim.api.nvim_buf_delete(bufid, { force = true })
+		end,
+	})
+	local ok = pcall(vim.api.nvim_buf_set_lines, bufid, 0, -1, false, vim.fn.readfile(data.file))
+	if not ok then
+		local config = CTX.win_config(data.winid)
+		if config == nil then
+			data.bufid = nil
+		else
+			vim.api.nvim_buf_set_lines(bufid, 0, -1, false, gen_binary_preview(config.width, config.height))
+		end
+	end
+	vim.bo[bufid].filetype = vim.filetype.match({ filename = data.file }) or "text"
+	vim.bo[bufid].readonly = true
 end
 
 ---@param data Rabbit.Message.Preview

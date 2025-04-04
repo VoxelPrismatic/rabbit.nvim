@@ -313,12 +313,10 @@ C.keys = {
 C.plugins = {
 	---@type Rabbit*Trail.Options
 	---@diagnostic disable-next-line: missing-fields
-	trail = {
-		default = true,
-	},
+	trail = {},
 
 	---@diagnostic disable-next-line: missing-fields
-	harpoon = {}, ---@type Rabbit*Harpoon.Options
+	carrot = {}, ---@type Rabbit*Carrot.Options
 }
 
 -- Other rabbit system settings

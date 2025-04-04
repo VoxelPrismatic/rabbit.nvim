@@ -9,6 +9,7 @@
 ---@field list? fun(): Rabbit.Entry.Collection Create a listing
 ---@field requires? string[] List of other required plugins
 ---@field empty Rabbit.Plugin.Empty What to do when the listing is empty
+---@field synopsis string Plugin description
 
 ---@class (exact) Rabbit.Plugin.Empty
 ---@field msg string Message to display when the listing is empty
@@ -20,7 +21,7 @@
 ---@field cwd? Rabbit.Plugin.Context.Directory Working directory, according to `opts.cwd`
 ---@field open? boolean Whether Rabbit is currently open
 ---@field bufid? integer User's current Buffer ID
-
+---@field hov? { [integer]: integer } Window:Buffer IDs
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory
@@ -46,7 +47,6 @@
 ---@field RabbitFileRename? fun(evt: Rabbit.Event.FileRename, ctx: Rabbit.Plugin.Environment)
 ---@field RabbitEnter? fun(evt: Rabbit.Event.Enter, ctx: Rabbit.Plugin.Environment)
 ---@field [string] fun(evt: NvimEvent, ctx: Rabbit.Plugin.Environment)
-
 
 ---@class (exact) Rabbit.Plugin.Options
 ---@field color Color.Nvim Default border color.
