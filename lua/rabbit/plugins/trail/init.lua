@@ -1,9 +1,12 @@
 local LIST = require("rabbit.plugins.trail.list")
 
 ---@class (exact) Rabbit*Trail: Rabbit.Plugin
+---@field opts Rabbit*Trail.Options
+---@field _env Rabbit*Trail.Environment
 
 ---@type Rabbit*Trail
 local PLUG = {
+	synopsis = "Navigate the trail of previously visited buffers",
 	empty = {
 		msg = "There's nowhere to jump to! Get started by opening a buffer",
 		actions = {
@@ -15,6 +18,10 @@ local PLUG = {
 			select = false,
 			insert = false,
 			collect = false,
+			yank = false,
+			cut = false,
+			visual = false,
+			paste = false,
 		},
 	},
 	name = "trail",
@@ -30,6 +37,7 @@ function PLUG.setup(opts)
 end
 
 function PLUG.list()
+	PLUG._env.from_major = false
 	if PLUG._env.winid == nil then
 		return LIST.major
 	end

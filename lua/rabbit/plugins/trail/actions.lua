@@ -65,6 +65,7 @@ function ACTIONS.children(entry)
 		entries = ACTIONS.children(target)
 	elseif entry.ctx.winid == nil then
 		entry = entry --[[@as Rabbit*Trail.Win.Major]]
+		ENV.from_major = true
 		local wins_to_del, bufs_to_del = {}, {}
 		for _, winid in ipairs(entry.ctx.wins) do
 			local win = LIST.wins[winid]
@@ -114,7 +115,7 @@ function ACTIONS.children(entry)
 		local bufs_to_del = {}
 		for i, bufid in ipairs(entry.ctx.bufs) do
 			local buf = LIST.bufs[bufid]:as(entry.ctx.winid)
-			buf.idx = i ~= 1
+			buf.idx = i ~= 1 or ENV.from_major
 			buf.actions.visual = buf.idx
 			buf.actions.paste = can_paste
 			if buf.ctx.listed then
@@ -131,10 +132,15 @@ function ACTIONS.children(entry)
 
 	if default ~= 0 then
 		if entries[default] ~= nil then
+			vim.print("default: " .. default)
 			entries[default] = vim.deepcopy(entries[default])
 			entries[default].default = true
+		else
+			vim.print("default index out of range: " .. default .. ">" .. #entries)
 		end
 		default = 0
+	else
+		vim.print("no default")
 	end
 
 	return entries
@@ -227,24 +233,29 @@ end
 local function migrate_closing_buf(target)
 	local blank = -1
 	for _, winid in ipairs(LIST.major.ctx.wins) do
-		if vim.api.nvim_win_is_valid(winid) and vim.api.nvim_win_get_buf(winid) == target then
-			local try_bufs = LIST.wins[winid].ctx.bufs
-			local try_buf = blank
-			for _, b in ipairs(try_bufs) do
-				if b ~= target and vim.api.nvim_buf_is_valid(b) then
-					try_buf = b
-					break
-				end
-			end
-			if try_buf == -1 then
-				blank = vim.api.nvim_create_buf(true, false)
-				try_buf = blank
-			end
-			vim.api.nvim_win_set_buf(winid, try_buf)
-			LIST.wins[winid].ctx.bufs:add(try_buf)
-			LIST.major.ctx.bufs:add(try_buf)
-			require("rabbit.term.listing")._hov[winid] = try_buf
+		if not vim.api.nvim_win_is_valid(winid) or vim.api.nvim_win_get_buf(winid) ~= target then
+			goto continue
 		end
+
+		local try_bufs = LIST.wins[winid].ctx.bufs
+		local try_buf = blank
+		for _, b in ipairs(try_bufs) do
+			if b ~= target and vim.api.nvim_buf_is_valid(b) then
+				try_buf = b
+				break
+			end
+		end
+
+		if try_buf == -1 then
+			blank = vim.api.nvim_create_buf(true, false)
+			try_buf = blank
+		end
+
+		vim.api.nvim_win_set_buf(winid, try_buf)
+		LIST.wins[winid].ctx.bufs:add(try_buf)
+		LIST.major.ctx.bufs:add(try_buf)
+		ENV.hov[winid] = try_buf
+		::continue::
 	end
 end
 
@@ -256,59 +267,64 @@ function ACTIONS.delete(entry)
 		assert(entry.ctx.killed == true, "non-killed window should never be deleted")
 
 		LIST.major.ctx.wins:del(entry.ctx.winid)
-		if default == #entry._env.siblings then
-			default = default - 1
+		if default >= #entry._env.siblings then
+			default = #entry._env.siblings - 1
 		end
-	elseif entry.type == "file" then
-		entry = entry --[[@as Rabbit*Trail.Buf]]
-		local parent = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
-		if not entry.closed then
-			if vim.bo[entry.bufid].modified then
-				return { ---@type Rabbit.Message.Menu
-					class = "message",
-					type = "menu",
-					title = "Unsaved Changes",
-					options = {
-						{
-							label = "Write",
-							icon = CONFIG.window.icons.file_write,
-							callback = function()
-								vim.api.nvim_buf_call(entry.bufid, vim.cmd.write)
-								migrate_closing_buf(entry.bufid)
-								vim.api.nvim_buf_delete(entry.bufid, { force = true })
-								return entry._env.parent
-							end,
-						},
-						{
-							label = "Discard",
-							icon = CONFIG.window.icons.file_delete,
-							color = "love",
-							callback = function()
-								migrate_closing_buf(entry.bufid)
-								vim.api.nvim_buf_delete(entry.bufid, { force = true })
-								return entry._env.parent
-							end,
-						},
-					},
-				}
-			end
-			assert(vim.bo[entry.bufid].modified == false, "modified buffer should never be deleted")
 
-			migrate_closing_buf(entry.bufid)
-
-			vim.api.nvim_buf_delete(entry.bufid, { force = true })
-		else
-			parent.ctx.bufs:del(entry.bufid)
-			LIST.clean_bufs({ entry.bufid })
-			if default == #entry._env.siblings then
-				default = default - 1
-			end
-		end
-	else
-		error("unknown entry type")
+		return entry._env.parent
 	end
 
-	return entry._env.parent
+	entry = entry --[[@as Rabbit*Trail.Buf]]
+	assert(entry.type == "file", "unknown entry type")
+	local parent = entry._env.parent --[[@as Rabbit*Trail.Win.User | Rabbit*Trail.Win.Major]]
+
+	if entry.closed then
+		parent.ctx.bufs:del(entry.bufid)
+		LIST.clean_bufs({ entry.bufid })
+		if default >= #entry._env.siblings then
+			default = #entry._env.siblings - 1
+		end
+		return entry._env.parent
+	end
+
+	-- Closes the associated buffer
+	---@param write? boolean
+	---@return Rabbit.Entry.Collection
+	local function close(write)
+		migrate_closing_buf(entry.bufid)
+
+		if write then
+			vim.api.nvim_buf_call(entry.bufid, vim.cmd.write)
+		end
+
+		vim.api.nvim_buf_delete(entry.bufid, { force = true })
+		return entry._env.parent
+	end
+
+	if vim.bo[entry.bufid].modified == false then
+		return close()
+	end
+
+	return { ---@type Rabbit.Message.Menu
+		class = "message",
+		type = "menu",
+		title = "Unsaved Changes",
+		options = {
+			{
+				label = "Write",
+				icon = CONFIG.window.icons.file_write,
+				callback = function()
+					return close(true)
+				end,
+			},
+			{
+				label = "Discard",
+				icon = CONFIG.window.icons.file_delete,
+				color = "love",
+				callback = close,
+			},
+		},
+	}
 end
 
 function ACTIONS.yank(entry)

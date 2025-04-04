@@ -207,7 +207,8 @@ function buf_meta:__index(bufid)
 	if type(bufid) == "string" then
 		for _, obj in pairs(LIST.real.bufs) do
 			if obj.path == bufid then
-				return obj
+				-- Update actions and whatnot
+				return self[obj.bufid]
 			end
 		end
 	elseif type(bufid) ~= "number" or math.floor(bufid) ~= bufid then

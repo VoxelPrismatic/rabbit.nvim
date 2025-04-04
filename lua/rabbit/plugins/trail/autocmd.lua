@@ -37,6 +37,14 @@ function EVT.BufDelete(evt, _)
 	LIST.clean_bufs({ evt.buf })
 end
 
+function EVT.BufAdd(evt, _)
+	if ENV.open then
+		return -- Ignore everything that happens when Rabbit is open
+	end
+
+	_ = LIST.bufs[evt.buf]
+end
+
 function EVT.WinEnter(evt, ctx)
 	if CTX.win_config(ctx.winid).relative ~= "" then
 		-- Ignore nested windows
