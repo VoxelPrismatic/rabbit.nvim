@@ -42,6 +42,7 @@ local PLUGIN_CONFIG = {
     - When navigating from the window selection screen, the window's most recent
     buffer will be selected by default, instead of the second-most recent buffer
     - You may now sort windows by display name
+    - Cut, Yank, & Paste
 - `r00a5`: Apr 02, 2025
   - Fixed Bugs
     - Attempting to copy a closed window will crash

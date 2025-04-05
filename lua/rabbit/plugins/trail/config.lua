@@ -10,7 +10,7 @@ local PLUGIN_CONFIG = {
 	},
 
 	ignore_unlisted = true,
-	sort_wins = true,
+	sort_wins = false,
 }
 
 return PLUGIN_CONFIG
