@@ -43,6 +43,7 @@ function EVT.BufAdd(evt, _)
 	end
 
 	_ = LIST.bufs[evt.buf]
+	LIST.major.ctx.bufs:add(evt.buf, -1)
 end
 
 function EVT.WinEnter(evt, ctx)

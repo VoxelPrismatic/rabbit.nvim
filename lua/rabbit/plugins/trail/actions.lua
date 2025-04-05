@@ -3,6 +3,7 @@ local LIST = require("rabbit.plugins.trail.list")
 local CONFIG = require("rabbit.config")
 local TERM = require("rabbit.util.term")
 local SET = require("rabbit.util.set")
+local PLUGIN_CONFIG = require("rabbit.plugins.trail.config")
 
 ---@type Rabbit.Plugin.Actions
 ---@diagnostic disable-next-line: missing-fields
@@ -85,6 +86,12 @@ function ACTIONS.children(entry)
 			end
 		end
 
+		if PLUGIN_CONFIG.sort_wins then
+			table.sort(entries --[[@as Rabbit*Trail.Win.User[]=]], function(a, b)
+				return a.label.text < b.label.text
+			end)
+		end
+
 		for _, bufid in ipairs(entry.ctx.bufs) do
 			local buf = LIST.bufs[bufid]:as(ENV.winid)
 			if buf.ctx.listed then
@@ -132,15 +139,10 @@ function ACTIONS.children(entry)
 
 	if default ~= 0 then
 		if entries[default] ~= nil then
-			vim.print("default: " .. default)
 			entries[default] = vim.deepcopy(entries[default])
 			entries[default].default = true
-		else
-			vim.print("default index out of range: " .. default .. ">" .. #entries)
 		end
 		default = 0
-	else
-		vim.print("no default")
 	end
 
 	return entries

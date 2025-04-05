@@ -218,6 +218,35 @@ function workspace.unbind(self, labels)
 	end
 end
 
+---@class Rabbit.UI.Workspace.ExtKwargs
+---@field ns? integer | string Highlight namespace
+---@field line integer Start line number
+---@field col integer Start column number
+---@field opts vim.api.keyset.set_extmark
+
+-- Shorthand for vim.api.nvim_buf_set_extmark
+---@param self Rabbit.UI.Workspace
+---@param kwargs Rabbit.UI.Workspace.ExtKwargs
+function workspace.set_extmark(self, kwargs)
+	local ns = kwargs.ns or self.ns
+	if type(ns) == "string" then
+		ns = vim.api.nvim_create_namespace(ns)
+	end
+
+	return vim.api.nvim_buf_set_extmark(self.buf, ns, kwargs.line, kwargs.col, kwargs.opts)
+end
+
+---@param self Rabbit.UI.Workspace
+---@param ns? integer | string Highlight namespace
+function workspace.clear_extmarks(self, ns)
+	if ns == nil then
+		ns = self.ns
+	elseif type(ns) == "string" then
+		ns = vim.api.nvim_create_namespace(ns)
+	end
+	vim.api.nvim_buf_clear_namespace(self.buf, ns, 0, -1)
+end
+
 -- Created a legend map for this workspace
 ---@param self Rabbit.UI.Workspace
 ---@param space? string Legend namespace
@@ -262,6 +291,15 @@ function workspace.set_lines(self, lines, opts)
 	})
 end
 
+-- Returns the lines in the buffer
+---@param self Rabbit.UI.Workspace
+---@param start? integer
+---@param end_? integer
+---@param strict? boolean
+function workspace.get_lines(self, start, end_, strict)
+	return vim.api.nvim_buf_get_lines(self.buf, start or 0, end_ or -1, strict or false)
+end
+
 -- Sets the cursor position
 ---@param self Rabbit.UI.Workspace
 ---@param line integer
@@ -270,9 +308,18 @@ function workspace.move_cur(self, line, col)
 	vim.api.nvim_win_set_cursor(self.win, { line, col })
 end
 
+-- Gets the cursor position
+---@param self Rabbit.UI.Workspace
+function workspace.get_cur(self)
+	return vim.api.nvim_win_get_cursor(self.win)
+end
+
 -- Focuses the window
+---@param self Rabbit.UI.Workspace
+---@return Rabbit.UI.Workspace "Itself for chaining"
 function workspace.focus(self)
 	vim.api.nvim_set_current_win(self.win)
+	return self
 end
 
 ---@param self Rabbit.UI.Workspace.Autocmd
@@ -291,14 +338,29 @@ end
 -- Adds an autocmd listener
 ---@param self Rabbit.UI.Workspace
 ---@param event string Event name
----@param kwargs vim.api.keyset.create_autocmd Kwargs
+---@param kwargs vim.api.keyset.create_autocmd | fun(evt: NvimEvent) Kwargs
 ---@return Rabbit.UI.Workspace.Autocmd
+---@overload fun(self: Rabbit.UI.Workspace, events: table<string, vim.api.keyset.create_autocmd | fun(evt: NvimEvent)>): table<string, Rabbit.UI.Workspace.Autocmd>
 function workspace.listen(self, event, kwargs)
+	if type(event) == "table" then
+		local ret = {}
+		for k, v in pairs(event) do
+			ret[k] = self:listen(k, v)
+		end
+		return ret
+	end
+
 	if self.autocmds[event] == nil then
 		self.autocmds[event] = {}
 	end
 
-	if kwargs.buffer == nil then
+	if type(kwargs) == "function" then
+		kwargs = {
+			callback = kwargs,
+			buffer = self.buf,
+			desc = "Rabbit Autocmd",
+		}
+	elseif kwargs.buffer == nil and kwargs.pattern == nil then
 		kwargs.buffer = self.buf
 	end
 
@@ -325,6 +387,25 @@ function workspace.listen(self, event, kwargs)
 
 	table.insert(self.autocmds[event], ret)
 	return ret
+end
+
+-- Removes all autocmd listeners of a certain type
+-- @param self Rabbit.UI.Workspace
+---@param ... string
+function workspace.unlisten(self, ...)
+	local varargs = { ... }
+	if #varargs == 0 then
+		for k, _ in pairs(self.autocmds) do
+			self:unlisten(k)
+		end
+		return
+	end
+
+	for _, event in ipairs(varargs) do
+		for _, v in ipairs(self.autocmds[event] or {}) do
+			v:del()
+		end
+	end
 end
 
 -- Adds a workspace to the stack, and binds the WinClosed and BufDelete events
@@ -367,13 +448,18 @@ function CTX.workspace(bufid, winid)
 		autocmds = {},
 		add_child = workspace.add_child,
 		set_lines = workspace.set_lines,
+		get_lines = workspace.get_lines,
 		move_cur = workspace.move_cur,
+		get_cur = workspace.get_cur,
 		focus = workspace.focus,
 		bind = workspace.bind,
 		legend = workspace.legend,
 		unbind = workspace.unbind,
 		listen = workspace.listen,
+		unlisten = workspace.unlisten,
 		bound = workspace.bound,
+		set_extmark = workspace.set_extmark,
+		clear_extmarks = workspace.clear_extmarks,
 	}
 	ws.conf = CTX.win_config(ws.win)
 

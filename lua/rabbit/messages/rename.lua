@@ -1,8 +1,48 @@
 local UI = require("rabbit.term.listing")
+local HL = require("rabbit.term.highlight")
 local CTX = require("rabbit.term.ctx")
 local TERM = require("rabbit.util.term")
 
 local rename_ws ---@type Rabbit.UI.Workspace
+
+local priority_legend = {
+	{
+		{ text = " " },
+		{
+			text = "apply",
+			hl = { "rabbit.legend.action", "rabbit.types.plugin" },
+			align = "left",
+		},
+		{
+			text = ":",
+			hl = { "rabbit.legend.separator" },
+			align = "left",
+		},
+		{
+			text = "<CR>",
+			hl = { "rabbit.legend.key" },
+			align = "left",
+		},
+	},
+	{
+		{ text = " " },
+		{
+			text = "cancel",
+			hl = { "rabbit.legend.action", "rabbit.types.plugin" },
+			align = "left",
+		},
+		{
+			text = ":",
+			hl = { "rabbit.legend.separator" },
+			align = "left",
+		},
+		{
+			text = "<Esc>",
+			hl = { "rabbit.legend.key" },
+			align = "left",
+		},
+	},
+}
 
 ---@param data Rabbit.Message.Rename
 return function(data)
@@ -52,48 +92,70 @@ return function(data)
 	end
 
 	local ignore_leave = false
+	local rename_success = false
 
 	local function text_changed()
-		local lines = vim.api.nvim_buf_get_lines(rename_ws.buf, 0, -1, false)
+		local lines = rename_ws:get_lines()
 		local new_name = table.concat(lines, "")
 
 		if #lines < 3 then
 			local col = vim.fn.col(".")
-			vim.api.nvim_buf_set_lines(rename_ws.buf, 0, -1, false, { "", new_name, "" })
-			vim.api.nvim_win_set_cursor(rename_ws.win, { 2, col - 1 })
+			rename_ws:set_lines({ "", new_name, "" })
+			rename_ws:move_cur(2, col - 1)
 		end
 
 		local valid_name = data.apply(entry, new_name)
-		vim.api.nvim_buf_clear_namespace(rename_ws.buf, rename_ws.ns, 0, -1)
-		if valid_name ~= new_name then
-			if #new_name ~= 0 then
-				vim.api.nvim_buf_set_extmark(rename_ws.buf, rename_ws.ns, 1, 0, {
+		rename_ws:clear_extmarks()
+
+		if valid_name == new_name then
+			return
+		end
+
+		if #new_name ~= 0 then
+			rename_ws:set_extmark({
+				line = 1,
+				col = 0,
+				opts = {
 					hl_group = "rabbit.paint.love",
 					end_line = 1,
 					end_col = math.min(#valid_name, #new_name),
-				})
-			end
-			local _, _, copy = valid_name:find("%++([0-9]+)$")
-			if #valid_name < #new_name then
-				vim.api.nvim_buf_set_extmark(rename_ws.buf, rename_ws.ns, 1, #new_name, {
+				},
+			})
+		end
+
+		local _, _, copy = valid_name:find("%++([0-9]+)$")
+
+		if #valid_name < #new_name then
+			rename_ws:set_extmark({
+				line = 1,
+				col = #new_name,
+				opts = {
 					virt_text = { { valid_name, "rabbit.types.index" } },
 					virt_text_pos = "right_align",
-				})
-			elseif copy ~= nil then
-				local _, _, exist = new_name:find("%++([0-9]+)$")
-				local c = #new_name - #copy + (exist == nil and 1 or 0)
+				},
+			})
+		elseif copy ~= nil then
+			local _, _, exist = new_name:find("%++([0-9]+)$")
+			local c = #new_name - #copy + (exist == nil and 1 or 0)
 
-				vim.api.nvim_buf_set_extmark(rename_ws.buf, rename_ws.ns, 1, c, {
+			rename_ws:set_extmark({
+				line = 1,
+				col = c,
+				opts = {
 					virt_text = { { copy, "rabbit.types.index" } },
 					virt_text_pos = "overlay",
 					priority = 1000,
-				})
-			else
-				vim.api.nvim_buf_set_extmark(rename_ws.buf, rename_ws.ns, 1, #new_name, {
+				},
+			})
+		else
+			rename_ws:set_extmark({
+				line = 1,
+				col = #new_name,
+				opts = {
 					virt_text = { { valid_name:sub(#new_name + 1), "rabbit.types.index" } },
 					virt_text_pos = "inline",
-				})
-			end
+				},
+			})
 		end
 	end
 
@@ -105,12 +167,12 @@ return function(data)
 			curpos = vim.fn.col(".")
 			return
 		elseif vim.fn.line("$") > 3 then
+			rename_success = true
 			TERM.feed("<Esc>")
 			return
 		end
 
-		local continue_key = dx == -1 and "<Up>" or "<Down>"
-		local opposite_key = dx == -1 and "<Down>" or "<Up>"
+		local continue_key, opposite_key = unpack(dx == -1 and { "<Up>", "<Down>" } or { "<Down>", "<Up>" })
 
 		local new_entry = entry._env.siblings[idx + dx]
 		if new_entry == nil then
@@ -118,47 +180,47 @@ return function(data)
 			return
 		end
 
+		rename_success = true
 		local new_rename = UI.find_action("rename", entry._env.siblings[idx + dx])
 		if new_rename ~= nil then
 			ignore_leave = true
 			entry.default = false
 			new_entry.default = true
-			local old_cur = vim.api.nvim_win_get_cursor(UI._fg.win)
-			vim.api.nvim_win_set_cursor(UI._fg.win, { old_cur[1] + dx, curpos + startcol })
+			local old_cur = UI._fg:get_cur()
 			UI.place_entry(entry, idx, entry._env.real, #tostring(#UI._entries))
+			UI._fg:move_cur(old_cur[1] + dx, curpos + startcol)
 			UI.apply_actions()
-			UI.handle_callback(new_rename(new_entry))
+			rename_ws:unlisten()
+			vim.defer_fn(function()
+				UI.handle_callback(new_rename(new_entry))
+			end, 5)
 		else
 			vim.cmd("stopinsert")
-			vim.api.nvim_set_current_win(UI._bg.win)
+			UI._bg:focus()
 			vim.defer_fn(function()
 				rename_ws:close()
-				vim.api.nvim_set_current_win(UI._fg.win)
+				UI._fg:focus()
 				TERM.feed(continue_key)
-			end, 25)
+			end, 5)
 		end
 	end
 
-	vim.api.nvim_create_autocmd("InsertLeave", {
-		buffer = rename_ws.buf,
-		callback = function()
-			rename_ws:close()
+	rename_ws:listen({
+		TextChangedI = text_changed,
+		CursorMovedI = cursor_moved,
+		InsertLeave = function()
+			UI._priority_legend = {}
 			if not ignore_leave then
+				rename_ws:close()
 				UI.list(UI._parent)
-				vim.api.nvim_win_set_cursor(UI._fg.win, { linenr, startcol + curpos })
-				vim.api.nvim_set_current_win(UI._fg.win)
+				UI._fg:focus():move_cur(linenr, startcol + curpos)
+			end
+
+			if not rename_success then
+				data.apply(entry, data.name)
+				UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))
 			end
 		end,
-	})
-
-	vim.api.nvim_create_autocmd("TextChangedI", {
-		buffer = rename_ws.buf,
-		callback = text_changed,
-	})
-
-	vim.api.nvim_create_autocmd("CursorMovedI", {
-		buffer = rename_ws.buf,
-		callback = cursor_moved,
 	})
 
 	if vim.fn.mode() == "i" then
@@ -169,5 +231,6 @@ return function(data)
 		TERM.feed("i")
 	end
 
+	UI._priority_legend = HL.split(priority_legend)
 	text_changed()
 end

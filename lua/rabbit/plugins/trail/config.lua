@@ -1,5 +1,6 @@
 ---@class (exact) Rabbit*Trail.Options: Rabbit.Plugin.Options
 ---@field ignore_unlisted boolean Ignore unlisted buffers
+---@field sort_wins boolean Sort by Window Name
 
 ---@type Rabbit*Trail.Options
 local PLUGIN_CONFIG = {
@@ -9,6 +10,7 @@ local PLUGIN_CONFIG = {
 	},
 
 	ignore_unlisted = true,
+	sort_wins = true,
 }
 
 return PLUGIN_CONFIG

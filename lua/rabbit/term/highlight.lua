@@ -226,7 +226,9 @@ end
 ---@field end_ integer Where the highlight ends
 ---@field name string The highlight group
 
----@class Rabbit.Term.HlLine
+---@alias Rabbit.Term.HlLine Rabbit.Term.HlLine.Enum | Rabbit.Term.HlLine.Enum[]
+
+---@class Rabbit.Term.HlLine.Enum
 ---@field text string The text to display
 ---@field hl? string | string[] | { [string]: boolean } The highlight group
 ---@field align? "left" | "right" | "center" The alignment of the text
