@@ -223,9 +223,11 @@ local function writeable_save(self)
 	self.__Save = writeable_save
 end
 
--- Tries to read a file. If the file isn't found, it returns an empty table.
+-- Tries to read a file. If the file isn't found, it returns an empty table
+-- under the assumption that it has yet to be created.
 ---@param src string The path to the file to read.
----@return Rabbit.Writeable
+---@return Rabbit.Writeable "The contents of the file"
+---@return boolean "true if the file exists"
 function MEM.Read(src)
 	local data, msg, errno = io.open(src, "r")
 	local ret = {}
@@ -244,7 +246,7 @@ function MEM.Read(src)
 	ret.__Dest = src
 	ret.__Save = writeable_save
 
-	return ret
+	return ret, errno == 0
 end
 
 -- Tries to save a file. If the file doesn't exist, it is created.
@@ -253,6 +255,19 @@ end
 ---@param dest string The path to the file to save.
 ---@param data table The data to save.
 function MEM.Write(data, dest)
+	local stack = {}
+	for dir in vim.fs.parents(dest) do
+		if vim.uv.fs_stat(dir) ~= nil then
+			break
+		end
+		-- vim.fs.parents goes from source->root, but we need root->source
+		table.insert(stack, 1, dir)
+	end
+
+	while #stack > 0 do
+		vim.uv.fs_mkdir(table.remove(stack, 1), 493)
+	end
+
 	local serial = vim.fn.json_encode(data)
 	local writer, msg = io.open(dest, "w")
 	if writer == nil then
