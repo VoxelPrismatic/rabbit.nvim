@@ -1,9 +1,3 @@
-[rabbit.trail]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Ftrail%2FVERSION.json&query=%24.latest&style=flat&label=trail&labelColor=white&color=yellow
-[wiki.trail]: ./lua/rabbit/plugins/trail
-
-[rabbit.trail]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Fcarrot%2FVERSION.json&query=%24.latest&style=flat&label=carrot&labelColor=white&color=yellow
-[wiki.trail]: ./lua/rabbit/plugins/carrot
-
 <div align="center">
     <img src="/rabbit.png" width="368" alt="logo"/>
     <h2 id="rabbitnvim">Jump between buffers faster than ever before</h2>
@@ -42,8 +36,14 @@
   - [Configuration](#configuration)
   - [Preview](#preview)
 - [Plugins](/lua/rabbit/plugins)
-  - [![trail][rabbit.trail]][wiki.history]
+  - [![trail][rabbit.trail]][wiki.trail]
   - [![carrot][rabbit.carrot]][wiki.carrot]
+
+[rabbit.trail]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Ftrail%2FVERSION.json&query=%24.latest&style=flat&label=trail&labelColor=white&color=yellow
+[wiki.trail]: ./lua/rabbit/plugins/trail
+
+[rabbit.carrot]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Fcarrot%2FVERSION.json&query=%24.latest&style=flat&label=carrot&labelColor=white&color=yellow
+[wiki.carrot]: ./lua/rabbit/plugins/carrot
 
 ---
 
