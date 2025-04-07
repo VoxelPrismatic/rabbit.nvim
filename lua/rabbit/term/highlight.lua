@@ -1,10 +1,14 @@
 local HL = {}
 
 -- Will create a new highlight group
----@param color Color | NvimHlKwargs The color to use for the highlight group. If a string, it will create a new table with [key] = color
+---@param color Rabbit.Color The color to use for the highlight group. If a string, it will create a new table with [key] = color
 ---@param key? "fg" | "bg" The key to use for the color. If [color] is a table, this is ignored.
 ---@return vim.api.keyset.highlight The highlight group
 function HL.gen_group(color, key)
+	while type(color) == "function" do
+		color = color()
+	end
+
 	if type(color) == "string" then
 		color = { [key or "fg"] = color }
 	end
@@ -31,7 +35,7 @@ end
 HL.overwrites = {}
 
 -- Applies config colors
----@param groups? { [string]: string | NvimHlKwargs }
+---@param groups? { [string]: Rabbit.Color }
 function HL.apply(groups)
 	if groups ~= nil then
 		HL.overwrites = vim.tbl_deep_extend("force", HL.overwrites, groups)
@@ -40,7 +44,15 @@ function HL.apply(groups)
 	end
 
 	local colors = vim.deepcopy(require("rabbit.config").colors)
+
+	while type(colors) == "function" do
+		colors = colors()
+	end
 	for pre, hl in pairs(colors) do
+		while type(hl) == "function" do
+			hl = hl()
+		end
+
 		for k, v in pairs(hl) do
 			local color = "rabbit." .. pre .. "." .. k
 			local old = HL.gen_group(v)

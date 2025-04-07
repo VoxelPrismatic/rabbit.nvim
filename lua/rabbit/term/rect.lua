@@ -1,5 +1,17 @@
 local RECT = {}
 
+---@class Rabbit.UI.Rect
+---@field x number X position.
+---@field y number Y position.
+---@field w number Width.
+---@field h number Height.
+---@field T? number Y position of top border.
+---@field B? number Y position of bottom border.
+---@field L? number X position of left border.
+---@field R? number X position of right border.
+---@field split? string
+---@field z? number Z-index
+
 -- Creates a bounding box
 -- @param rect Rabbit.UI.Rect
 -- @param win? integer Window ID (default: current window)

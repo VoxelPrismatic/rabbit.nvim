@@ -49,8 +49,7 @@
 ---@field [string] fun(evt: NvimEvent, ctx: Rabbit.Plugin.Environment)
 
 ---@class (exact) Rabbit.Plugin.Options
----@field color Color.Nvim Default border color.
----@field border? Rabbit.Term.Border Default border style. (leave blank to use global border)
+---@field color Rabbit.Color Default border color.
 ---@field keys Rabbit.Plugin.Keymap Any keys used to bind to function names in `plugin.func`
 ---@field cwd? string | fun(): string Current working directory function. (leave blank to use global cwd)
 ---@field default? boolean Default plugin to open upon Rabbit opening

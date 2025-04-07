@@ -1,11 +1,8 @@
-[rabbit.history]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.history&label=History&labelColor=white&color=yellow
-[rabbit.oxide]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.oxide&label=Oxide&labelColor=white&color=yellow
-[rabbit.harpoon]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.harpoon&label=Harpoon&labelColor=white&color=yellow
-[rabbit.reopen]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Fmain%2Flua%2Frabbit%2Fplugins%2FVERSION.json&query=%24.reopen&label=Reopen&labelColor=white&color=yellow
-[wiki.harpoon]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-Harpoon
-[wiki.history]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-History
-[wiki.reopen]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-Reopen
-[wiki.oxide]: https://github.com/VoxelPrismatic/rabbit.nvim/wiki/Plugin:-Oxide
+[rabbit.trail]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Ftrail%2FVERSION.json&query=%24.latest&style=flat&label=trail&labelColor=white&color=yellow
+[wiki.trail]: ./lua/rabbit/plugins/trail
+
+[rabbit.trail]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Fcarrot%2FVERSION.json&query=%24.latest&style=flat&label=carrot&labelColor=white&color=yellow
+[wiki.trail]: ./lua/rabbit/plugins/carrot
 
 <div align="center">
     <img src="/rabbit.png" width="368" alt="logo"/>
@@ -14,7 +11,7 @@
         src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FVoxelPrismatic%2Frabbit.nvim%2Freleases%2Flatest&query=%24.tag_name&style=flat&label=Rabbit&labelColor=white&logo=vowpalwabbit&logoColor=black"
     /></a>
     <a href="https://neovim.io/" target="_blank"><img
-        src="https://img.shields.io/badge/Neovim-v0.10.4-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"
+        src="https://img.shields.io/badge/Neovim-v0.11.0-brightgreen?style=flat&labelColor=white&logo=neovim&logoColor=black"
     /></a>
     <a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img
         src="https://img.shields.io/github/downloads/voxelprismatic/rabbit.nvim/total?style=flat&logo=github&logoColor=black&label=Downloads&labelColor=white"
@@ -45,15 +42,78 @@
   - [Configuration](#configuration)
   - [Preview](#preview)
 - [Plugins](/lua/rabbit/plugins)
-  - [![history][rabbit.history]][wiki.history]
-  - [![reopen][rabbit.reopen]][wiki.reopen]
-  - [![oxide][rabbit.oxide]][wiki.oxide]
-  - [![harpoon][rabbit.harpoon]][wiki.harpoon]
-- [API](https://github.com/voxelprismatic/rabbit.nvim/wiki/API-Documentation)
-- [Custom Plugin](https://github.com/voxelprismatic/rabbit.nvim/wiki/Custom-Plugin)
+  - [![trail][rabbit.trail]][wiki.history]
+  - [![carrot][rabbit.carrot]][wiki.carrot]
 
 ---
 
 > [!WARNING]
 > This is the rewrite branch. All changes will be merged once I am confident in
 > feature parity. Please use the original branch for now.
+
+# Rabbit.nvim
+A plugin that allows you to switch between buffers faster than ever before, featuring a much more
+intuitive experience. You can customize almost every part of it so it fits right into your workflow.
+
+## Why
+- **Telescope**
+  1. Consumes your screen; switch context
+     - Rabbit takes up a small spot in the corner of your screen
+  2. Previews aren't literally where they would appear, making you switch contexts multiple times for a single action
+     - Rabbit shows previews in the window you're about to open it. When you select a file, the only thing that happens is the borders disappear
+  3. No warnings for missing dependencies
+     - Rabbit warns you if tools like `rg` or `fzf` are not installed
+  4. Does not order by recency or split by window
+     - Rabbit does both
+- **Harpoon**
+  1. Built for @ThePrimeagen, meaning it's very basic and not intuitive
+     - Rabbit shows a legend of actions you are able to perform
+  2. You have to remember where you are and where you were
+     - Rabbit allows you to forget about both
+- **:b #**
+  1. You have to remember buffer numbers
+     - Rabbit obviously does this for you
+  2. You can't open closed buffers
+     - Rabbit allows you to open closed buffers
+
+## Install
+```lua
+---@type LazyPluginSpec
+return {
+    "voxelprismatic/rabbit.nvim",
+
+    -- Important! The master branch is the previous version
+    branch = "rewrite",
+
+    -- Important! Rabbit should launch on startup to track buffers properly
+    lazy = false,
+
+
+    ---@type Rabbit.Config
+    opts = {},
+    config = true,
+}
+```
+
+## Configuration
+Because Rabbit is expansive & modular, the config may look jarring and complex, but is fully documented
+in [config.lua](./lua/rabbit/config.lua). Feel free to simply use the `---@type Rabbit.Config` directive
+or use the extremely sane defaults.
+
+tl;dr:
+```lua
+---@type Rabbit.Config
+{
+    plugins = {
+        [plugin_name] = {
+            -- Open this plugin by default. If there are no default plugins, the generic selector is shown
+            default = false,
+
+
+            -- plugin options,
+        },
+    },
+}
+```
+
+

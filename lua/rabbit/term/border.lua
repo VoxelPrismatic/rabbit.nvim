@@ -117,14 +117,14 @@ local function hl_chars(ret, case, idx, text, hl)
 	return text
 end
 
----@param config Rabbit.Term.Border.Config
+---@param config Rabbit.Cls.Box
 ---@param ... string Part to find the joining character for. Will return the first match.
 ---@return string "The joining character"
 ---@return integer "Number of matches"
 ---@return string "The joined text"
 function BOX.join_for(config, custom, ...)
 	local vararg = { ... }
-	---@param align Rabbit.Term.Border.Config.Align
+	---@param align Rabbit.Cls.Box.Align
 	---@return string | nil, integer, string
 	local function iter_align(align)
 		if align == nil then
@@ -176,7 +176,7 @@ end
 -- Makes sides for a border
 ---@param w integer Window width
 ---@param h integer Window height
----@param config Rabbit.Term.Border.Config
+---@param config Rabbit.Cls.Box
 ---@param parts { [string]: Rabbit.Term.Border.Config.Part } Custom parts
 ---@return Rabbit.Term.Border.Applied
 function BOX.make(w, h, config, parts)
@@ -193,7 +193,7 @@ function BOX.make(w, h, config, parts)
 	}
 
 	---@param size integer
-	---@param section Rabbit.Term.Border.Config.Align
+	---@param section Rabbit.Cls.Box.Align
 	---@return {[1]: string, [2]: boolean}[]
 	local function build_align(size, section)
 		local str_parts = {}
@@ -235,7 +235,7 @@ function BOX.make(w, h, config, parts)
 
 	---@param target { txt: string[], hl: Rabbit.Table.Set<integer> }
 	---@param align "left" | "right" | "center" Alignment
-	---@param section Rabbit.Term.Border.Config.Align
+	---@param section Rabbit.Cls.Box.Align
 	local function do_align(target, align, section)
 		if section == nil then
 			return
@@ -264,7 +264,7 @@ function BOX.make(w, h, config, parts)
 
 	---@param target { txt: string[], hl: Rabbit.Table.Set<integer> }
 	---@param size integer
-	---@param side string | Rabbit.Term.Border.Config.Side
+	---@param side string | Rabbit.Cls.Box.Side
 	local function do_part(target, size, side)
 		if type(side) == "string" then
 			for i = 1, size do
