@@ -10,6 +10,7 @@
 ---@field requires? string[] List of other required plugins
 ---@field empty Rabbit.Plugin.Empty What to do when the listing is empty
 ---@field synopsis string Plugin description
+---@field version string Plugin version
 
 ---@class (exact) Rabbit.Plugin.Empty
 ---@field msg string Message to display when the listing is empty

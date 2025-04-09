@@ -1,23 +1,3 @@
----@class Rabbit.UI.Listing
-local UI = {
-	-- Last plugin called
-	---@type Rabbit.Plugin
-	---@diagnostic disable-next-line: missing-fields
-	_plugin = {}, ---@type Rabbit.Plugin
-	_entries = {}, ---@type Rabbit.Entry[]
-	_parent = nil, ---@type Rabbit.Entry.Collection
-	_display = nil, ---@type Rabbit.Entry.Collection
-	_keys = {}, ---@type Rabbit.Table.Set<string>
-	_pre = {}, ---@type { [string]: Rabbit.Stack.Workspace }
-	_hov = {}, ---@type { [integer]: integer }
-	_legend = {}, ---@type Rabbit.Term.HlLine[]
-	_plugins = {}, ---@type Rabbit.Term.HlLine[]
-	_priority_legend = {}, ---@type Rabbit.Term.HlLine[]
-	_marquee = vim.uv.new_timer(),
-	_bg = nil, ---@type Rabbit.Stack.Workspace
-	_fg = nil, ---@type Rabbit.Stack.Workspace
-}
-
 local RECT = require("rabbit.term.rect")
 local HL = require("rabbit.term.highlight")
 local MEM = require("rabbit.util.mem")
@@ -28,6 +8,53 @@ local LSP = require("rabbit.util.lsp")
 local TERM = require("rabbit.util.term")
 local STACK = require("rabbit.term.stack")
 local ACTIONS
+
+---@class Rabbit.UI.Listing
+local UI = {
+	-- Last plugin called
+	---@type Rabbit.Plugin
+	---@diagnostic disable-next-line: missing-fields
+	_plugin = {}, ---@type Rabbit.Plugin
+
+	-- List of entries currently on screen
+	_entries = {}, ---@type Rabbit.Entry[]
+
+	-- Parent collection that generated entries on screen
+	_parent = nil, ---@type Rabbit.Entry.Collection
+
+	-- Should be the same as _parent
+	_display = nil, ---@type Rabbit.Entry.Collection
+
+	-- Keymaps currently bound
+	_keys = {}, ---@type Rabbit.Table.Set<string>
+
+	-- Preview border windows
+	_pre = {}, ---@type { [string]: Rabbit.Stack.Workspace }
+
+	-- Original buffers each window had opened
+	_hov = {}, ---@type { [integer]: integer }
+
+	-- Legend keymap for actions
+	_legend = {}, ---@type Rabbit.Term.HlLine[]
+
+	-- Legend keymap for plugins
+	_plugins = {}, ---@type Rabbit.Term.HlLine[]
+
+	-- Special keymap that overrides _legend, eg current window is changed
+	_priority_legend = {}, ---@type Rabbit.Term.HlLine[]
+
+	-- Marquee timer
+	_marquee = vim.uv.new_timer(),
+
+	-- Background window, featuring border
+	_bg = nil, ---@type Rabbit.Stack.Workspace
+
+	-- Foreground window, featuring entries
+	_fg = nil, ---@type Rabbit.Stack.Workspace
+
+	-- History of plugins
+	_plugin_history = SET.new(), ---@type Rabbit.Table.Set<string>
+}
 
 ---@param key string | string[]
 ---@return string[]
@@ -53,7 +80,7 @@ vim.api.nvim_create_autocmd("VimResized", {
 -- Creates a buffer for the given plugin
 ---@param plugin string | Rabbit.Plugin
 function UI.spawn(plugin)
-	ACTIONS = require("rabbit.actions")
+	ACTIONS = ACTIONS or require("rabbit.actions")
 
 	if #STACK._.open > 0 then
 		UI.close()
@@ -78,6 +105,8 @@ function UI.spawn(plugin)
 	if UI._plugin == nil then
 		error("Invalid plugin: " .. plugin)
 	end
+
+	UI._plugin_history:add(UI._plugin.name)
 
 	-- Create background window
 	local r = UI.rect(STACK._.user.win.id, 55)
@@ -276,20 +305,52 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		start = j - 1,
 	})
 
-	if entry.synopsis and CONFIG.window.synopsis == "always" then
-		UI._fg.extmarks:set({
-			line = j - 1,
-			col = 0,
-			ns = "rabbit.synopsis",
-			opts = {
-				id = j,
-				virt_lines = HL.wrap(entry.synopsis, UI._fg.win.config.width, vim.fn.strdisplaywidth(entry._env.ident)),
-			},
-		})
+	if entry.synopsis and CONFIG.window.synopsis.mode == "always" then
+		UI.synopsis(entry, j)
 	end
 
 	UI._fg.buf.o.modifiable = false
 	return auto_default, man_default, r
+end
+
+-- Creates the synopsis for a particular entry
+---@param entry Rabbit.Entry
+---@param id integer ID of this entry (use 0 to for hover, idx for always)
+function UI.synopsis(entry, id)
+	local text = entry.synopsis
+	if type(text) == "string" then
+		text = { ---@type Rabbit.Term.HlLine.NoAlign
+			text = text,
+			hl = { "rabbit.types.synopsis" },
+		}
+	else
+		text = entry.synopsis --[[@as Rabbit.Term.HlLine.NoAlign]]
+	end
+	local w = UI._fg.win.config.width
+	local ident = vim.fn.strdisplaywidth(entry._env.ident)
+	local parts = {}
+	for i, v in ipairs(vim.fn.str2list(CONFIG.window.synopsis.tree)) do
+		parts[i] = vim.fn.nr2char(v)
+	end
+
+	while #parts < 2 do
+		table.insert(parts, " ")
+	end
+
+	local synopsis = HL.wrap(text, w, (" "):rep(ident), { " " .. parts[1] .. parts[2]:rep(ident - 3) .. " " })
+	if CONFIG.window.synopsis.newline then
+		table.insert(synopsis, { { (" "):rep(w), "Normal" } })
+	end
+
+	UI._fg.extmarks:set({
+		line = entry._env.idx - 1,
+		col = 0,
+		ns = "rabbit.synopsis",
+		opts = {
+			id = id,
+			virt_lines = synopsis,
+		},
+	})
 end
 
 -- Creates the highlights for a particular entry
@@ -581,16 +642,8 @@ function UI.apply_actions()
 		TERM.feed("<Esc>")
 	end
 
-	if e.synopsis and CONFIG.window.synopsis == "hover" then
-		UI._fg.extmarks:set({
-			line = e._env.idx - 1,
-			col = 0,
-			ns = "rabbit.synopsis",
-			opts = {
-				id = e._env.idx,
-				virt_lines = HL.wrap(e.synopsis, UI._fg.win.config.width, vim.fn.strdisplaywidth(e._env.ident)),
-			},
-		})
+	if e.synopsis and CONFIG.window.synopsis.mode == "hover" then
+		UI.synopsis(e, 10)
 	end
 
 	last_mode = ""
@@ -743,7 +796,7 @@ end
 ---@return vim.api.keyset.win_config
 function UI.rect(win, z)
 	local spawn = CONFIG.window.spawn
-	local config = STACK._.user.win.config()
+	local config = STACK._.user.win.config
 
 	local calc_width = spawn.width
 	local calc_height = spawn.height

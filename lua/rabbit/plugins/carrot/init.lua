@@ -8,6 +8,7 @@ local TRAIL = require("rabbit.plugins.trail.list")
 ---@type Rabbit*Carrot
 local PLUG = {
 	synopsis = "Put carrots next to your favorite files for quick access",
+	version = "r00a2",
 	empty = {
 		msg = "There's nowhere to jump to! Get started by adding a file or collection",
 		actions = {

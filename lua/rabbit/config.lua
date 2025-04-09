@@ -65,6 +65,11 @@ C.colors = {
 		-- Folded highlight group. By default, all inherited colors use inherit
 		-- the key from the highlight group they inherit from.
 
+		-- Synopsis text for each plugin
+		-- Highlight group: `rabbit.types.synopsis`
+		---@type Rabbit.Color
+		synopsis = { fg = ":Comment", italic = true },
+
 		-- This is just here for transparency. It is updated with the plugin's color.
 		-- Highlight group: `rabbit.types.plugin`
 		---@type Rabbit.Color
@@ -504,12 +509,24 @@ C.window = {
 	---@type boolean
 	preview = true,
 
-	-- When to display synopsis for an entry. Always virtual lines
-	---@type
-	---| "never" # Never shows synopsis for any entry
-	---| "always" # Always shows synopsis for all entries
-	---| "hover" # Only show synopsis for the currently hovered entry
-	synopsis = "hover",
+	-- Synopsis details
+	---@class Rabbit.Config.Window.Synopsis
+	synopsis = {
+		-- When to display synopsis for an entry. Always virtual lines
+		---@type
+		---| "never" # Never shows synopsis for any entry
+		---| "always" # Always shows synopsis for all entries
+		---| "hover" # Only show synopsis for the currently hovered entry
+		mode = "hover",
+
+		-- Append a newline after synopsis?
+		---@type boolean
+		newline = false,
+
+		-- Indentation symbol. The last one will be repeated as many times as needed
+		---@type string
+		tree = "└─",
+	},
 }
 
 ---@class (exact) Rabbit.Cls.Box
@@ -761,12 +778,21 @@ C.keys = {
 -- Plugin settings
 ---@class Rabbit.Config.Plugin
 C.plugins = {
-	---@type Rabbit*Trail.Options
+	-- Disable a plugin with 'false'
+
+	---@type Rabbit*Trail.Options | false
 	---@diagnostic disable-next-line: missing-fields
 	trail = {},
 
+	---@type Rabbit*Carrot.Options | false
 	---@diagnostic disable-next-line: missing-fields
-	carrot = {}, ---@type Rabbit*Carrot.Options
+	carrot = {},
+
+	---@type Rabbit*Index.Options | false
+	---@diagnostic disable-next-line: missing-fields
+	index = {
+		default = true,
+	},
 }
 
 -- Other rabbit system settings
@@ -779,6 +805,13 @@ C.system = {
 	---@type string
 	-- Rename Rabbit to a custom name
 	name = "Rabbit",
+
+	-- When wrapping words, specify the maximum length of the word
+	-- before breaking into syllables. To disable, set to something
+	-- obscenely large like 10000. If <1, it is treated as a percentage
+	-- of the window width
+	---@type number
+	wrap = 0.9,
 }
 
 -- Default scoping function

@@ -78,4 +78,31 @@ function TERM.win_config(winid)
 		end,
 	})
 end
+
+-- String case functions
+TERM.case = {
+	-- UPPER CASE
+	upper = string.upper,
+
+	-- lower case
+	lower = string.lower,
+
+	-- Title Case
+	---@param text string
+	---@return string "The String In Title Case"
+	---@return integer count
+	title = function(text)
+		return text:gsub("(%w)(%w*)", function(a, b)
+			return string.upper(a) .. string.lower(b)
+		end)
+	end,
+
+	-- Unchanged text
+	---@param text string
+	---@return string
+	unchanged = function(text)
+		return text
+	end,
+}
+
 return TERM

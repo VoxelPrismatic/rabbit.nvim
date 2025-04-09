@@ -8,14 +8,14 @@
 ---@field actions Rabbit.Entry.File.Actions The actions to perform on the file.
 
 ---@class Rabbit.Entry.File.Actions
----@field select Rabbit.Action.Callback<Rabbit.Action.Select>
----@field delete Rabbit.Action.Callback<Rabbit.Action.Delete>
----@field hover Rabbit.Action.Callback<Rabbit.Action.Hover>
----@field parent Rabbit.Action.Callback<Rabbit.Action.Parent>
----@field insert Rabbit.Action.Callback<Rabbit.Action.Insert>
----@field collect Rabbit.Action.Callback<Rabbit.Action.Collect>
----@field yank Rabbit.Action.Callback<Rabbit.Action.Yank>
----@field cut Rabbit.Action.Callback<Rabbit.Action.Cut>
----@field rename Rabbit.Action.Callback<Rabbit.Action.Rename>
----@field visual Rabbit.Action.Callback<Rabbit.Action.Visual>
----@field paste Rabbit.Action.Callback<Rabbit.Action.Paste>
+---@field select? Rabbit.Action.Callback<Rabbit.Action.Select>
+---@field delete? Rabbit.Action.Callback<Rabbit.Action.Delete>
+---@field hover? Rabbit.Action.Callback<Rabbit.Action.Hover>
+---@field parent? Rabbit.Action.Callback<Rabbit.Action.Parent>
+---@field insert? Rabbit.Action.Callback<Rabbit.Action.Insert>
+---@field collect? Rabbit.Action.Callback<Rabbit.Action.Collect>
+---@field yank? Rabbit.Action.Callback<Rabbit.Action.Yank>
+---@field cut? Rabbit.Action.Callback<Rabbit.Action.Cut>
+---@field rename? Rabbit.Action.Callback<Rabbit.Action.Rename>
+---@field visual? Rabbit.Action.Callback<Rabbit.Action.Visual>
+---@field paste? Rabbit.Action.Callback<Rabbit.Action.Paste>

@@ -29,7 +29,9 @@ function RABBIT.setup(opts)
 		end, { desc = "Rabbit" })
 	end
 	for k, v in pairs(CONFIG.plugins) do
-		RABBIT.register(k, v)
+		if v ~= false then
+			RABBIT.register(k, v)
+		end
 	end
 
 	local ok, msg, errno = vim.uv.fs_mkdir(CONFIG.system.data, 493)

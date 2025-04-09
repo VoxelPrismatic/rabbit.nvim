@@ -1,4 +1,5 @@
 local SET = require("rabbit.util.set")
+local TERM = require("rabbit.util.term")
 local BOX = {}
 
 ---@class (exact) Rabbit.Term.Border.Generic<T>: { b: T, t: T, l: T, r: T }
@@ -112,18 +113,12 @@ local function hl_chars(ret, case, idx, text, hl)
 		idx = 1
 	end
 
-	if case == "upper" then
-		text = string.upper(text)
-	elseif case == "lower" then
-		text = string.lower(text)
-	elseif case == "title" then
-		text = text:gsub("(%w)(%w*)", function(a, b)
-			return string.upper(a) .. string.lower(b)
-		end)
-	end
+	local case_fn = TERM.case[case]
+	assert(case_fn ~= nil, "Invalid string case: " .. case)
+	text = case_fn(text)
 
 	for i, v in ipairs(vim.fn.str2list(text)) do
-		table.insert(ret, idx + i - 1, { vim.fn.list2str({ v }), hl })
+		table.insert(ret, idx + i - 1, { vim.fn.nr2char(v), hl })
 	end
 
 	return text

@@ -30,8 +30,6 @@ function ACTIONS.children(entry)
 		require("rabbit.plugins.carrot.init").empty.actions.insert = LIST.recent ~= 0
 	end
 
-	vim.print(LIST.recent)
-
 	if real.parent ~= -1 then
 		local c = vim.deepcopy(LIST.collections[real.parent])
 		local parent = real.parent

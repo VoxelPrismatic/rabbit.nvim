@@ -59,7 +59,7 @@ function LINES:set(lines, opts)
 		bufnr = self.target.buf.id,
 		ns = ns,
 		lines = lines,
-		width = self.target.win.config().width,
+		width = self.target.win.config.width,
 		lineno = opts.start or 0,
 		strict = opts.strict or false,
 		many = opts.many or false,

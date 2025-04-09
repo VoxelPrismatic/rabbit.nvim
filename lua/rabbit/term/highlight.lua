@@ -1,3 +1,4 @@
+local CONFIG = require("rabbit.config")
 local HL = {}
 
 -- Will create a new highlight group
@@ -243,21 +244,28 @@ end
 -- Wraps the lines so they fit to width
 ---@param lines Rabbit.Term.HlLine[]
 ---@param width integer
----@param indent? integer
+---@param indent? string
+---@param indent_override? string[]
 ---@return table<table<table<string, string | table<string>>>> To be passed to extmarks
-function HL.wrap(lines, width, indent)
-	local ident = ""
-	if type(indent) == "number" then
-		ident = (" "):rep(indent)
+function HL.wrap(lines, width, indent, indent_override)
+	indent = indent or ""
+	indent_override = indent_override or {}
+	lines = { lines }
+
+	local syllables = {}
+	local max_word_len = CONFIG.system.wrap
+	if max_word_len < 1 then
+		max_word_len = max_word_len * width
 	end
 
-	local ret = { { { ident, "Normal" } } }
-	local last_line = ret[#ret]
-	local line = ident
+	while #lines > 0 do
+		local v = table.remove(lines, 1)
+		if type(v) == "string" then
+			v = { text = v } --[[@as Rabbit.Term.HlLine]]
+		end
 
-	for _, v in ipairs(lines) do
 		for _, v2 in ipairs(v) do
-			table.insert(ret, v2)
+			table.insert(lines, v2)
 		end
 
 		if v.text == nil then
@@ -265,51 +273,58 @@ function HL.wrap(lines, width, indent)
 		end
 
 		for word in v.text:gmatch("%S+") do
-			if #(line .. word) + 1 >= width then
-				local continue = ""
-				local remainder = ""
-				if #word / width > 0.1 then
-					for syllable in word:gmatch("([aeiou]*[^aeiou]+)") do
-						if #remainder > 0 then
-							remainder = remainder .. syllable
-						elseif #(continue .. syllable .. line) + 1 >= width then
-							remainder = remainder .. syllable
-						else
-							continue = continue .. syllable
-						end
-					end
-
-					if #continue < 5 then
-						continue = ""
-						remainder = word
-					else
-						continue = continue .. "—"
-						remainder = "—" .. remainder
-					end
-				else
-					remainder = word
+			if vim.fn.strdisplaywidth(word) < max_word_len then
+				table.insert(syllables, { word, v.hl })
+			else
+				for syllable in word:gmatch("([aeiou]*[^aeiou]*)") do
+					table.insert(syllables, { syllable, v.hl })
 				end
-
-				table.insert(last_line, {
-					continue,
-					v.hl,
-				})
-
-				last_line = { { ident, "Normal" } }
-				table.insert(ret, last_line)
-
-				table.insert(lines, line .. continue)
-				line = ident
-				word = remainder
 			end
-
-			line = line .. word .. " "
-			table.insert(last_line, {
-				word,
-				v.hl,
-			})
+			table.insert(syllables, { " ", v.hl })
 		end
+		table.remove(syllables, #syllables)
+
 		::continue::
+	end
+
+	local line_width = width + 1
+	local last_line = {}
+	local ret = {}
+	local last_syllable = { " ", "Normal" }
+	local last_part = {}
+	for _, syllable in ipairs(syllables) do
+		local syllable_width = vim.fn.strdisplaywidth(syllable[1])
+		if line_width + syllable_width < width - 1 then
+			if syllable[2] == last_part[2] then
+				last_part[1] = last_part[1] .. syllable[1]
+			else
+				table.insert(last_line, syllable)
+			end
+			line_width = line_width + syllable_width
+		else
+			last_line = {}
+			table.insert(ret, last_line)
+			local ident = { indent_override[#ret] or indent, syllable[2] }
+			table.insert(last_line, ident)
+			line_width = vim.fn.strdisplaywidth(ident[1])
+			if syllable[1] == " " then
+				-- pass
+			elseif last_syllable[1] == " " then
+				ident[1] = ident[1] .. syllable[1]
+				line_width = line_width + syllable_width
+			else
+				last_part[1] = last_part[1] .. "—"
+				ident[1] = ident[1] .. "—" .. syllable[1]
+				line_width = line_width + syllable_width + 1
+			end
+		end
+		last_syllable = syllable
+		last_part = last_line[#last_line]
+	end
+
+	if line_width > 0 then
+		local fill = width - line_width
+		last_part[1] = last_part[1] .. (" "):rep(fill)
 	end
 
 	return ret
@@ -320,8 +335,8 @@ end
 ---@field end_ integer Where the highlight ends
 ---@field name string The highlight group
 
----@alias Rabbit.Term.HlLine Rabbit.Term.HlLine.Enum | Rabbit.Term.HlLine.Enum[]
----@alias Rabbit.Term.HlLine.NoAlign Rabbit.Term.HlLine.Enum.NoAlign | Rabbit.Term.HlLine.Enum.NoAlign[]
+---@alias Rabbit.Term.HlLine Rabbit.Term.HlLine.Enum | Rabbit.Term.HlLine[]
+---@alias Rabbit.Term.HlLine.NoAlign Rabbit.Term.HlLine.Enum.NoAlign | Rabbit.Term.HlLine.NoAlign[]
 
 ---@class (exact) Rabbit.Term.HlLine.Enum.NoAlign
 ---@field text string The text to display

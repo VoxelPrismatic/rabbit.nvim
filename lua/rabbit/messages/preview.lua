@@ -259,7 +259,7 @@ return function(data)
 		if preview_ws ~= nil and vim.api.nvim_win_is_valid(preview_ws.win.id) then
 			vim.api.nvim_win_set_buf(preview_ws.win.id, fallback_bufid)
 		else
-			local config = UI._bg.win.config()
+			local config = UI._bg.win.config
 			local fakewin = vim.api.nvim_open_win(fallback_bufid, false, {
 				width = config.width,
 				height = config.height,
