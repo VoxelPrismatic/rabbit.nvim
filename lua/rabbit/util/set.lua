@@ -9,7 +9,7 @@ SET.Func = {}
 ---@return Rabbit.Table.Set<T>
 function SET.new(arr)
 	---@type Rabbit.Table.Set
-	local ret = arr or {}
+	local ret = vim.deepcopy(arr or {})
 	assert(type(ret) == "table", "Expected table, got " .. type(ret))
 	setmetatable(ret, SET.Meta)
 	for k, v in pairs(SET.Func) do

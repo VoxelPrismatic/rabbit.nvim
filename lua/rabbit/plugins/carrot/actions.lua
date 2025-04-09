@@ -25,9 +25,12 @@ function ACTIONS.children(entry)
 
 	assert(real ~= nil, "Unreachable: Rabbit Collection should have a Twig Collection")
 	if type(LIST.recent) == "table" and entry.ctx.id == LIST.recent.id then
+		-- Do not permit moving a collection to itself
 		LIST.recent = 0
+		require("rabbit.plugins.carrot.init").empty.actions.insert = LIST.recent ~= 0
 	end
-	require("rabbit.plugins.carrot.init").empty.actions.insert = LIST.recent ~= 0
+
+	vim.print(LIST.recent)
 
 	if real.parent ~= -1 then
 		local c = vim.deepcopy(LIST.collections[real.parent])

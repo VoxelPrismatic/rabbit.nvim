@@ -516,7 +516,6 @@ function UI.apply_actions()
 		end
 	end
 
-	vim.print("-----")
 	for _, action in ipairs(all_actions) do
 		local cb, keys = UI.find_action(action, e)
 		if #keys == 0 or cb == nil then
@@ -533,7 +532,6 @@ function UI.apply_actions()
 			mode = "v"
 		end
 
-		vim.print(action)
 		UI._fg.keys:add({
 			label = action,
 			keys = keys,
