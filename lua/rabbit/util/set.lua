@@ -10,9 +10,20 @@ SET.Func = {}
 function SET.new(arr)
 	---@type Rabbit.Table.Set
 	local ret = arr or {}
+	assert(type(ret) == "table", "Expected table, got " .. type(ret))
 	setmetatable(ret, SET.Meta)
 	for k, v in pairs(SET.Func) do
 		ret[k] = v
+	end
+
+	local seen = {}
+	for i = #ret, 1, -1 do
+		local v = ret[i]
+		if seen[v] then
+			table.remove(ret, i)
+		else
+			seen[v] = true
+		end
 	end
 
 	return ret

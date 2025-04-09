@@ -1,3 +1,4 @@
+local TERM = require("rabbit.util.term")
 local RECT = {}
 
 ---@class Rabbit.UI.Rect
@@ -17,7 +18,7 @@ local RECT = {}
 -- @param win? integer Window ID (default: current window)
 ---@return Rabbit.UI.Rect
 function RECT.calc(rect, win)
-	local conf = require("rabbit.term.ctx").win_config(win)
+	local conf = TERM.win_config(win)
 	if conf == nil then
 		error("Invalid window ID: " .. win)
 	end

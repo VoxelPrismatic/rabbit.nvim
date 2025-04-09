@@ -500,8 +500,16 @@ C.window = {
 		visual = true,
 	},
 
-	---@type boolean Whether or not to display a preview of the buffer about to be opened
+	-- Whether or not to display a preview of the buffer about to be opened
+	---@type boolean
 	preview = true,
+
+	-- When to display synopsis for an entry. Always virtual lines
+	---@type
+	---| "never" # Never shows synopsis for any entry
+	---| "always" # Always shows synopsis for all entries
+	---| "hover" # Only show synopsis for the currently hovered entry
+	synopsis = "hover",
 }
 
 ---@class (exact) Rabbit.Cls.Box

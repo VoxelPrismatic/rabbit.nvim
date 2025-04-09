@@ -8,18 +8,17 @@ local UI = {
 	_parent = nil, ---@type Rabbit.Entry.Collection
 	_display = nil, ---@type Rabbit.Entry.Collection
 	_keys = {}, ---@type Rabbit.Table.Set<string>
-	_pre = {}, ---@type { [string]: Rabbit.UI.Workspace }
+	_pre = {}, ---@type { [string]: Rabbit.Stack.Workspace }
 	_hov = {}, ---@type { [integer]: integer }
 	_legend = {}, ---@type Rabbit.Term.HlLine[]
 	_plugins = {}, ---@type Rabbit.Term.HlLine[]
 	_priority_legend = {}, ---@type Rabbit.Term.HlLine[]
 	_marquee = vim.uv.new_timer(),
-	_bg = nil, ---@type Rabbit.UI.Workspace
-	_fg = nil, ---@type Rabbit.UI.Workspace
+	_bg = nil, ---@type Rabbit.Stack.Workspace
+	_fg = nil, ---@type Rabbit.Stack.Workspace
 }
 
 local RECT = require("rabbit.term.rect")
-local CTX = require("rabbit.term.ctx")
 local HL = require("rabbit.term.highlight")
 local MEM = require("rabbit.util.mem")
 local BOX = require("rabbit.term.border")
@@ -27,6 +26,7 @@ local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
 local LSP = require("rabbit.util.lsp")
 local TERM = require("rabbit.util.term")
+local STACK = require("rabbit.term.stack")
 local ACTIONS
 
 ---@param key string | string[]
@@ -42,7 +42,7 @@ local last_mode = ""
 
 vim.api.nvim_create_autocmd("VimResized", {
 	callback = function()
-		if #CTX.stack == 0 then
+		if #STACK._.open == 0 then
 			return
 		end
 
@@ -55,7 +55,7 @@ vim.api.nvim_create_autocmd("VimResized", {
 function UI.spawn(plugin)
 	ACTIONS = require("rabbit.actions")
 
-	if #CTX.stack > 0 then
+	if #STACK._.open > 0 then
 		UI.close()
 	end
 
@@ -65,7 +65,7 @@ function UI.spawn(plugin)
 		end
 	end
 
-	CTX.user = CTX.workspace()
+	STACK._.user = STACK.ws.from()
 
 	if type(plugin) == "string" then
 		UI._plugin = require("rabbit").plugins[plugin]
@@ -80,9 +80,9 @@ function UI.spawn(plugin)
 	end
 
 	-- Create background window
-	local r = UI.rect(CTX.user.win, 55)
+	local r = UI.rect(STACK._.user.win.id, 55)
 
-	UI._bg = CTX.scratch({
+	UI._bg = STACK.ws.scratch({
 		focus = false,
 		ns = "rabbit.bg",
 		config = r,
@@ -92,7 +92,7 @@ function UI.spawn(plugin)
 	-- Create foreground window
 	r.split = nil
 	r.relative = "win"
-	r.win = UI._bg.win
+	r.win = UI._bg.win.id
 	r.row = 1
 	r.col = 1
 	r.width = r.width - 2
@@ -105,7 +105,7 @@ function UI.spawn(plugin)
 		-- vim.api.nvim_win_set_cursor(listing.win, { vim.fn.line("."), 0 })
 	end
 
-	UI._fg = CTX.scratch({
+	UI._fg = STACK.ws.scratch({
 		focus = true,
 		ns = "rabbit.listing",
 		config = r,
@@ -122,7 +122,7 @@ function UI.spawn(plugin)
 		},
 	})
 
-	UI._fg:add_child(UI._bg) -- Treat these as the same layer
+	UI._fg.children:add(UI._bg.id) -- Treat these as the same layer
 
 	local cwd = { ---@type Rabbit.Plugin.Context.Directory
 		value = nil,
@@ -144,10 +144,10 @@ function UI.spawn(plugin)
 
 	-- Do not reassign in case _env is a reference to a module
 	UI._plugin._env.plugin = UI._plugin
-	UI._plugin._env.winid = CTX.user.win
+	UI._plugin._env.winid = STACK._.user.win.id
 	UI._plugin._env.cwd = cwd
 	UI._plugin._env.open = true
-	UI._plugin._env.bufid = CTX.user.buf
+	UI._plugin._env.bufid = STACK._.user.buf.id
 	UI._plugin._env.hov = UI._hov
 
 	UI.handle_callback(UI._plugin.list())
@@ -163,7 +163,7 @@ function UI.list(collection)
 		error("Invalid children")
 	end
 
-	vim.api.nvim_set_current_win(UI._fg.win)
+	UI._fg:focus()
 
 	UI._priority_legend = {}
 	UI._entries = collection.actions.children(collection)
@@ -185,20 +185,20 @@ function UI.list(collection)
 			auto_default, man_default, r = UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		end
 
-		vim.bo[UI._fg.buf].modifiable = true
-		UI._fg:move_cur(man_default or auto_default or 1, 0)
-		vim.api.nvim_buf_set_lines(UI._fg.buf, j, -1, false, {})
+		UI._fg.buf.o.modifiable = true
+		UI._fg.cursor:set(man_default or auto_default or 1, 0)
+		vim.api.nvim_buf_set_lines(UI._fg.buf.id, j, -1, false, {})
 	else
-		vim.bo[UI._fg.buf].modifiable = true
-		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.conf.width)
+		UI._fg.buf.o.modifiable = true
+		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.win.config.width)
 		table.insert(lines, "")
-		UI._fg:set_lines(lines)
-		UI._fg:move_cur(#lines, 0)
+		UI._fg.lines:set(lines)
+		UI._fg.cursor:set(#lines, 0)
 	end
 
 	UI.draw_border(UI._bg)
 	UI.apply_actions()
-	vim.bo[UI._fg.buf].modifiable = false
+	UI._fg.buf.o.modifiable = false
 
 	return UI._entries
 end
@@ -213,7 +213,7 @@ end
 ---@return number | nil "man_default"
 ---@return number "real index"
 function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
-	vim.bo[UI._fg.buf].modifiable = true
+	UI._fg.buf.o.modifiable = true
 
 	entry._env = {
 		idx = j,
@@ -222,6 +222,7 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		siblings = UI._entries,
 		parent = UI._display,
 		cwd = UI._plugin._env.cwd.value,
+		ident = "",
 	}
 
 	for k, v in ipairs(entry.actions) do
@@ -252,7 +253,7 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 			vim.keymap.set("n", tostring(r), function()
 				UI.handle_callback(UI.find_action("select", entry)(entry))
 			end, {
-				buffer = UI._fg.buf,
+				buffer = UI._fg.buf.id,
 			})
 		end
 	else
@@ -260,9 +261,11 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		man_default = entry.default and (man_default or j) or man_default
 	end
 
-	UI._fg:set_lines({
+	entry._env.ident = " " .. idx .. "\u{a0}"
+
+	UI._fg.lines:set({
 		{
-			text = " " .. idx .. "\u{a0}",
+			text = entry._env.ident,
 			hl = "rabbit.types.index",
 			align = "left",
 		},
@@ -273,7 +276,19 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 		start = j - 1,
 	})
 
-	vim.bo[UI._fg.buf].modifiable = false
+	if entry.synopsis and CONFIG.window.synopsis == "always" then
+		UI._fg.extmarks:set({
+			line = j - 1,
+			col = 0,
+			ns = "rabbit.synopsis",
+			opts = {
+				id = j,
+				virt_lines = HL.wrap(entry.synopsis, UI._fg.win.config.width, vim.fn.strdisplaywidth(entry._env.ident)),
+			},
+		})
+	end
+
+	UI._fg.buf.o.modifiable = false
 	return auto_default, man_default, r
 end
 
@@ -301,6 +316,7 @@ function UI.highlight(entry)
 	if not entry.closed and entry.path == "" then
 		entry.path = vim.api.nvim_buf_get_name(entry.bufid)
 	end
+
 	if tostring(entry.path):find("term://") == 1 then
 		return {
 			{
@@ -445,7 +461,7 @@ end
 
 -- Applies keymaps and draws the legend at the bottom of the listing
 function UI.apply_actions()
-	local i = vim.api.nvim_win_get_cursor(UI._fg.win)[1]
+	local i = UI._fg.cursor:get()[1]
 	local e = UI._entries[i] ---@type Rabbit.Entry
 
 	if e == nil then
@@ -473,7 +489,7 @@ function UI.apply_actions()
 	end
 
 	for _, key in ipairs(UI._keys) do
-		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf })
+		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf.id })
 	end
 
 	UI._keys = SET.new()
@@ -492,7 +508,7 @@ function UI.apply_actions()
 		})
 		:del("hover")
 
-	UI._fg:unbind(all_actions)
+	UI._fg.keys:clear()
 
 	if e.actions.parent then
 		if UI.find_action("parent", e)(e) == UI._display then
@@ -500,6 +516,7 @@ function UI.apply_actions()
 		end
 	end
 
+	vim.print("-----")
 	for _, action in ipairs(all_actions) do
 		local cb, keys = UI.find_action(action, e)
 		if #keys == 0 or cb == nil then
@@ -516,14 +533,15 @@ function UI.apply_actions()
 			mode = "v"
 		end
 
-		UI._keys:add(keys)
-		UI._fg:bind({
+		vim.print(action)
+		UI._fg.keys:add({
 			label = action,
-			key = keys,
+			keys = keys,
 			callback = function()
 				UI.handle_callback(cb(e))
 			end,
 			mode = mode,
+			hl = "rabbit.types.plugin",
 			shown = shown,
 		})
 
@@ -541,14 +559,14 @@ function UI.apply_actions()
 			or plugin.opts.keys.switch --[[@as table<string>]]
 
 		UI._keys:add(switches)
-		local part = UI._fg:bind({
+		local part = UI._fg.keys:add({
 			label = name,
-			key = switches,
+			keys = switches,
 			callback = function()
 				UI.spawn(plugin)
 			end,
 			mode = "n",
-			space = "rabbit.plugin." .. name,
+			hl = "rabbit.plugin." .. name,
 			align = "right",
 		})
 
@@ -561,8 +579,20 @@ function UI.apply_actions()
 
 	HL.apply(hls)
 
-	if vim.fn.mode() ~= "n" and not UI._fg:bound("visual") then
+	if vim.fn.mode() ~= "n" and not UI._fg.keys:has("visual") then
 		TERM.feed("<Esc>")
+	end
+
+	if e.synopsis and CONFIG.window.synopsis == "hover" then
+		UI._fg.extmarks:set({
+			line = e._env.idx - 1,
+			col = 0,
+			ns = "rabbit.synopsis",
+			opts = {
+				id = e._env.idx,
+				virt_lines = HL.wrap(e.synopsis, UI._fg.win.config.width, vim.fn.strdisplaywidth(e._env.ident)),
+			},
+		})
 	end
 
 	last_mode = ""
@@ -580,9 +610,17 @@ end
 
 -- Marquee legend
 function UI.marquee_legend()
+	if not UI._bg.buf:exists() then
+		UI._marquee:stop()
+		return
+	end
+
 	local cur_plugin = { join = {}, split = {} }
 	if vim.fn.mode() ~= last_mode then
-		UI._legend = HL.split(UI._fg:legend("rabbit.types.plugin", "left"))
+		UI._legend = HL.split(UI._fg.keys:legend({
+			align = "left",
+			hl = "rabbit.types.plugin",
+		}))
 		last_mode = vim.fn.mode()
 	end
 
@@ -597,7 +635,7 @@ function UI.marquee_legend()
 		legend = vim.deepcopy(UI._legend)
 	end
 
-	local max_len = UI._bg.conf.width - #cur_plugin.split - #legend
+	local max_len = UI._bg.win.config.width - #cur_plugin.split - #legend
 	if max_len < 0 then
 		for _ = 1, -max_len do
 			table.remove(legend, #legend)
@@ -610,22 +648,16 @@ function UI.marquee_legend()
 		})
 	end
 
-	local ns = vim.api.nvim_create_namespace("rabbit.marquee")
-	local ok = pcall(vim.api.nvim_buf_clear_namespace, UI._bg.buf, ns, 0, -1)
-
-	if not ok then
-		UI._marquee:stop()
-		return
-	end
+	UI._bg.extmarks:clear("rabbit.marquee")
 
 	HL.set_lines({
-		bufnr = UI._bg.buf,
-		lineno = UI._bg.conf.height - 1,
-		lines = { legend, cur_plugin.join },
-		ns = ns,
+		bufnr = UI._bg.buf.id,
+		lineno = UI._bg.win.config.height - 1,
+		lines = { { legend, cur_plugin.join } },
+		ns = "rabbit.marquee",
 		many = false,
-		strict = true,
-		width = UI._bg.conf.width,
+		strict = false,
+		width = UI._bg.win.config.width,
 	})
 end
 
@@ -651,12 +683,12 @@ function UI.handle_callback(data)
 end
 
 -- Draws the border around the listing
----@param ws Rabbit.UI.Workspace
+---@param ws Rabbit.Stack.Workspace
 function UI.draw_border(ws)
 	local config = CONFIG.boxes.rabbit
-	local final_height = ws.conf.height - (CONFIG.window.legend and 1 or 0)
+	local final_height = ws.win.config.height - (CONFIG.window.legend and 1 or 0)
 
-	---@type { [string]: Rabbit.Term.Border.Config.Part }
+	---@type { [string]: Rabbit.Cls.Box.Part }
 	local border_parts = {
 		rise = { (config.chars.rise):rep(final_height / 4), false },
 		rabbit = { CONFIG.system.name, true },
@@ -667,7 +699,7 @@ function UI.draw_border(ws)
 
 	local tail = config.chars.emphasis
 	local join_char, _, text = BOX.join_for(config, border_parts, "rabbit", "plugin", "head")
-	local tail_len = (ws.conf.width - 2) / 2 - vim.api.nvim_strwidth(text) - vim.api.nvim_strwidth(join_char)
+	local tail_len = (ws.win.config.width - 2) / 2 - vim.api.nvim_strwidth(text) - vim.api.nvim_strwidth(join_char)
 
 	if tail_len > 0 then
 		tail = tail:rep(tail_len)
@@ -679,7 +711,9 @@ function UI.draw_border(ws)
 		local base = config.right_side.base
 		local scroll_len = (final_height - 2) / vim.fn.line("$")
 		scroll_len = math.max(1, math.ceil(scroll_len))
-		local scroll_top = scroll_len * (vim.fn.line(".") - 1)
+		local scroll_top = ((vim.fn.line(".") - 1) / vim.fn.line("$") * (final_height - 2))
+		local frac = math.floor(scroll_top)
+		scroll_top = frac + (scroll_top - frac < 0.5 and 0 or 1)
 		border_parts.scroll[1] = base:rep(scroll_top) .. (config.chars.scroll or base):rep(scroll_len)
 	end
 
@@ -688,17 +722,17 @@ function UI.draw_border(ws)
 		["rabbit.types.plugin"] = c,
 	})
 
-	local sides = BOX.make(ws.conf.width, final_height, config, border_parts)
+	local sides = BOX.make(ws.win.config.width, final_height, config, border_parts)
 	local lines = sides:to_hl({
 		border_hl = "rabbit.types.plugin",
 		title_hl = "rabbit.types.title",
 	}).lines
 
 	HL.set_lines({
-		bufnr = UI._bg.buf,
+		bufnr = UI._bg.buf.id,
 		ns = UI._bg.ns,
 		lines = lines,
-		width = ws.conf.width,
+		width = ws.win.config.width,
 		lineno = 0,
 		strict = false,
 		many = true,
@@ -711,6 +745,7 @@ end
 ---@return vim.api.keyset.win_config
 function UI.rect(win, z)
 	local spawn = CONFIG.window.spawn
+	local config = STACK._.user.win.config()
 
 	local calc_width = spawn.width
 	local calc_height = spawn.height
@@ -718,21 +753,21 @@ function UI.rect(win, z)
 	if calc_width == nil then
 		calc_width = 64
 	elseif calc_width <= 1 then
-		calc_width = math.floor(CTX.user.conf.width * calc_width)
+		calc_width = math.floor(config.width * calc_width)
 	end
 
 	if calc_height == nil then
 		calc_height = 24
 	elseif calc_height <= 1 then
-		calc_height = math.floor(CTX.user.conf.height * calc_height)
+		calc_height = math.floor(config.height * calc_height)
 	end
 
 	local ret = { ---@type Rabbit.UI.Rect
 		x = 0,
 		y = 0,
 		z = z or 10,
-		w = CTX.user.conf.width,
-		h = CTX.user.conf.height,
+		w = config.width,
+		h = config.height,
 	}
 
 	if spawn.mode == "split" then
@@ -742,10 +777,10 @@ function UI.rect(win, z)
 		elseif spawn.side == "above" then
 			ret.h = calc_height
 		elseif spawn.side == "below" then
-			ret.y = CTX.user.conf.height - calc_height
+			ret.y = config.width - calc_height
 			ret.h = calc_height
 		else
-			ret.x = CTX.user.conf.width - calc_width
+			ret.x = config.height - calc_width
 			ret.w = calc_width
 		end
 	end
@@ -755,15 +790,15 @@ function UI.rect(win, z)
 		ret.h = calc_height
 
 		if spawn.side == "w" or spawn.side == "c" or spawn.side == "e" then
-			ret.y = math.floor((CTX.user.conf.height - calc_height) / 2)
+			ret.y = math.floor((config.height - calc_height) / 2)
 		elseif spawn.side == "sw" or spawn.side == "s" or spawn.side == "se" then
-			ret.y = CTX.user.conf.height - calc_height
+			ret.y = config.height - calc_height
 		end
 
 		if spawn.side == "n" or spawn.side == "c" or spawn.side == "s" then
-			ret.x = math.floor((CTX.user.conf.width - calc_width) / 2)
+			ret.x = math.floor((config.width - calc_width) / 2)
 		elseif spawn.side == "ne" or spawn.side == "e" or spawn.side == "se" then
-			ret.x = CTX.user.conf.width - calc_width
+			ret.x = config.width - calc_width
 		end
 	end
 
@@ -772,23 +807,25 @@ end
 
 -- Closes the window
 function UI.close()
-	if #CTX.stack == 0 then
+	if #STACK._.open == 0 then
 		return
 	end
 
-	_ = pcall(vim.api.nvim_set_current_win, CTX.user.win or 0)
-	_ = pcall(vim.api.nvim_set_current_buf, CTX.user.buf or 0)
+	_ = STACK._.user:focus(true)
+
 	if UI._bg ~= nil then
 		UI.cancel_hover()
 		UI._bg:close()
 	end
-	CTX.clear()
+
+	STACK._.clear()
+
 	UI._plugin._env.open = false
 end
 
 -- Closes the window ONLY if the latest window is NOT generated by CTX via the scratch function
 function UI.maybe_close()
-	if vim.uv.hrtime() - CTX.scratch_time > 250 * 1000000 then
+	if vim.uv.hrtime() - STACK._.last_scratch > 250 * 1000000 then
 		UI.close()
 	end
 end
@@ -810,7 +847,8 @@ function UI.cancel_hover()
 end
 
 -- Returns the current workspace
----@return Rabbit.UI.Workspace, Rabbit.UI.Workspace
+---@return Rabbit.Stack.Workspace "Background (border & legend)"
+---@return Rabbit.Stack.Workspace "Foreground (listing)"
 function UI.workspace()
 	return UI._bg, UI._fg
 end

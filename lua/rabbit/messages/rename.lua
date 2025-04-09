@@ -1,9 +1,9 @@
 local UI = require("rabbit.term.listing")
 local HL = require("rabbit.term.highlight")
-local CTX = require("rabbit.term.ctx")
 local TERM = require("rabbit.util.term")
+local STACK = require("rabbit.term.stack")
 
-local rename_ws ---@type Rabbit.UI.Workspace
+local rename_ws ---@type Rabbit.Stack.Workspace
 
 local priority_legend = {
 	{
@@ -46,14 +46,14 @@ local priority_legend = {
 
 ---@param data Rabbit.Message.Rename
 return function(data)
-	local linenr, curpos = unpack(vim.api.nvim_win_get_cursor(UI._fg.win))
+	local linenr, curpos = unpack(UI._fg.cursor:get())
 	local entry = UI._entries[linenr] ---@type Rabbit.Entry
 	if not entry.actions.rename then
 		vim.print("WARNING: Attempt to rename an entry that cannot be renamed.")
 		return
 	end
 
-	local line = vim.api.nvim_buf_get_lines(UI._fg.buf, linenr - 1, linenr, true)[1]
+	local line = UI._fg.lines:nr(linenr)
 	local _, startchar = line:find("\u{a0}")
 	local startcol = vim.fn.strdisplaywidth(line:sub(1, startchar))
 
@@ -65,18 +65,19 @@ return function(data)
 	end
 
 	local old_ws = rename_ws
-	rename_ws = CTX.scratch({
+	rename_ws = STACK.ws.scratch({
 		focus = true,
 		config = {
 			relative = "win",
-			win = UI._fg.win,
+			win = UI._fg.win.id,
 			row = linenr - 1,
 			col = startcol,
 			height = 1,
-			width = UI._fg.conf.width - startcol - 1,
+			width = UI._fg.win.config.width - startcol - 1,
 			style = "minimal",
 			zindex = 60,
 		},
+		---@diagnostic disable-next-line: missing-fields
 		wo = {
 			cursorline = true,
 		},
@@ -95,24 +96,24 @@ return function(data)
 	local rename_success = false
 
 	local function text_changed()
-		local lines = rename_ws:get_lines()
+		local lines = rename_ws.lines:get()
 		local new_name = table.concat(lines, "")
 
 		if #lines < 3 then
 			local col = vim.fn.col(".")
-			rename_ws:set_lines({ "", new_name, "" })
-			rename_ws:move_cur(2, col - 1)
+			rename_ws.lines:set({ "", new_name, "" })
+			rename_ws.cursor:set(2, col - 1)
 		end
 
 		local valid_name = data.apply(entry, new_name)
-		rename_ws:clear_extmarks()
+		rename_ws.extmarks:clear()
 
 		if valid_name == new_name then
 			return
 		end
 
 		if #new_name ~= 0 then
-			rename_ws:set_extmark({
+			rename_ws.extmarks:set({
 				line = 1,
 				col = 0,
 				opts = {
@@ -126,7 +127,7 @@ return function(data)
 		local _, _, copy = valid_name:find("%++([0-9]+)$")
 
 		if #valid_name < #new_name then
-			rename_ws:set_extmark({
+			rename_ws.extmarks:set({
 				line = 1,
 				col = #new_name,
 				opts = {
@@ -138,7 +139,7 @@ return function(data)
 			local _, _, exist = new_name:find("%++([0-9]+)$")
 			local c = #new_name - #copy + (exist == nil and 1 or 0)
 
-			rename_ws:set_extmark({
+			rename_ws.extmarks:set({
 				line = 1,
 				col = c,
 				opts = {
@@ -148,7 +149,7 @@ return function(data)
 				},
 			})
 		else
-			rename_ws:set_extmark({
+			rename_ws.extmarks:set({
 				line = 1,
 				col = #new_name,
 				opts = {
@@ -186,11 +187,11 @@ return function(data)
 			ignore_leave = true
 			entry.default = false
 			new_entry.default = true
-			local old_cur = UI._fg:get_cur()
+			local old_cur = UI._fg.cursor:get()
 			UI.place_entry(entry, idx, entry._env.real, #tostring(#UI._entries))
-			UI._fg:move_cur(old_cur[1] + dx, curpos + startcol)
+			UI._fg.cursor:set(old_cur[1] + dx, curpos + startcol)
 			UI.apply_actions()
-			rename_ws:unlisten()
+			rename_ws.autocmd:clear()
 			vim.defer_fn(function()
 				UI.handle_callback(new_rename(new_entry))
 			end, 5)
@@ -205,7 +206,7 @@ return function(data)
 		end
 	end
 
-	rename_ws:listen({
+	rename_ws.autocmd:add({
 		TextChangedI = text_changed,
 		CursorMovedI = cursor_moved,
 		InsertLeave = function()
@@ -213,7 +214,7 @@ return function(data)
 			if not ignore_leave then
 				rename_ws:close()
 				UI.list(UI._parent)
-				UI._fg:focus():move_cur(linenr, startcol + curpos)
+				UI._fg.cursor:set(linenr, startcol + curpos, true)
 			end
 
 			if not rename_success then

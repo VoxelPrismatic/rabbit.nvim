@@ -1,10 +1,11 @@
 local UI = require("rabbit.term.listing")
-local CTX = require("rabbit.term.ctx")
 local BOX = require("rabbit.term.border")
 local MEM = require("rabbit.util.mem")
 local CONFIG = require("rabbit.config")
+local TERM = require("rabbit.util.term")
+local STACK = require("rabbit.term.stack")
 
-local preview_ws ---@type Rabbit.UI.Workspace | nil
+local preview_ws ---@type Rabbit.Stack.Workspace | nil
 
 ---@class Rabbit.Caching.Message.Preview.WinConfig
 ---@field l vim.api.keyset.win_config Right config.
@@ -53,7 +54,7 @@ local function cache_config(id)
 	if type(id) ~= "number" or math.floor(id) ~= id then
 		error("Expected integer, got " .. type(id))
 	end
-	local w = CTX.win_config(id)
+	local w = TERM.win_config(id)
 	if w == nil then
 		error("Invalid window ID: " .. id)
 	end
@@ -212,7 +213,7 @@ local function possibly_closed(data)
 	})
 	local ok = pcall(vim.api.nvim_buf_set_lines, bufid, 0, -1, false, vim.fn.readfile(data.file))
 	if not ok then
-		local config = CTX.win_config(data.winid)
+		local config = TERM.win_config(data.winid)
 		if config == nil then
 			data.bufid = nil
 		else
@@ -255,27 +256,28 @@ return function(data)
 
 	if vim.api.nvim_buf_is_valid(fallback_bufid) then
 		-- Keep Oil windows open
-		if preview_ws ~= nil and vim.api.nvim_win_is_valid(preview_ws.win) then
-			vim.api.nvim_win_set_buf(preview_ws.win, fallback_bufid)
+		if preview_ws ~= nil and vim.api.nvim_win_is_valid(preview_ws.win.id) then
+			vim.api.nvim_win_set_buf(preview_ws.win.id, fallback_bufid)
 		else
+			local config = UI._bg.win.config()
 			local fakewin = vim.api.nvim_open_win(fallback_bufid, false, {
-				width = UI._bg.conf.width,
-				height = UI._bg.conf.height,
+				width = config.width,
+				height = config.height,
 				relative = "editor",
-				row = UI._bg.conf.row,
-				col = UI._bg.conf.col,
+				row = config.row,
+				col = config.col,
 				zindex = 1,
 			})
-			preview_ws = CTX.append(data.bufid, fakewin)
+			preview_ws = STACK.ws.from(data.bufid, fakewin, true)
 			preview_ws.container = true
-			UI._fg:add_child(preview_ws)
+			UI._fg.children:add(preview_ws.id)
 		end
 	end
 
 	local configs = win_config_cache[data.winid or 0]
 	local hl = configs[relpath.merge]
 
-	UI._pre.l = CTX.scratch({
+	UI._pre.l = STACK.ws.scratch({
 		focus = false,
 		config = configs.l,
 		parent = { UI._bg, UI._fg },
@@ -285,7 +287,7 @@ return function(data)
 		ns = "rabbit:preview",
 	})
 
-	UI._pre.r = CTX.scratch({
+	UI._pre.r = STACK.ws.scratch({
 		focus = false,
 		config = configs.r,
 		parent = { UI._pre.l, UI._fg },
@@ -295,7 +297,7 @@ return function(data)
 		ns = "rabbit:preview",
 	})
 
-	UI._pre.t = CTX.scratch({
+	UI._pre.t = STACK.ws.scratch({
 		focus = false,
 		config = configs.t,
 		parent = { UI._pre.r, UI._fg },
@@ -305,7 +307,7 @@ return function(data)
 		ns = "rabbit:preview",
 	})
 
-	UI._pre.b = CTX.scratch({
+	UI._pre.b = STACK.ws.scratch({
 		focus = false,
 		config = configs.b,
 		parent = { UI._pre.t, UI._pre.l, UI._fg }, -- Circle so they all close simultaneously

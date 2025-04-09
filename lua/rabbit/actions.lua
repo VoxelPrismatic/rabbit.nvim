@@ -1,6 +1,6 @@
-local CTX = require("rabbit.term.ctx")
 local UI = require("rabbit.term.listing")
 local TERM = require("rabbit.util.term")
+local STACK = require("rabbit.term.stack")
 
 ---@param action string
 ---@return fun(...)
@@ -24,7 +24,7 @@ function ACTIONS.select(entry)
 			if entry.target_winid ~= nil then
 				vim.api.nvim_set_current_win(entry.target_winid)
 			else
-				vim.api.nvim_set_current_win(CTX.user.win)
+				STACK._.user:focus()
 			end
 
 			if entry.closed then
@@ -46,8 +46,7 @@ end
 ---@type Rabbit.Action.Close
 function ACTIONS.close(_)
 	UI.close()
-	vim.api.nvim_set_current_win(CTX.user.win)
-	vim.api.nvim_set_current_buf(CTX.user.buf)
+	STACK._.user:focus(true)
 end
 
 ---@alias Rabbit.Action.Hover fun(entry: Rabbit.Entry): Rabbit.Response
@@ -96,18 +95,18 @@ ACTIONS.collect = not_implemented("collect")
 ---@alias Rabbit.Action.Visual fun(entry: Rabbit.Entry): Rabbit.Response
 ---@type Rabbit.Action.Visual
 ACTIONS.visual = function(_)
-	vim.bo[UI._fg.buf].modifiable = true
+	UI._fg.buf.o.modifiable = true
 
 	TERM.feed("V<Left>" .. (vim.fn.col(".") == 1 and "" or "<Right>"))
 
-	UI._fg:listen("ModeChanged", {
-		buffer = UI._fg.buf,
+	UI._fg.autocmd:add("ModeChanged", {
+		buffer = UI._fg.buf.id,
 		callback = function(evt)
 			if evt.match:sub(3) ~= "n" then
 				return true
 			end
 
-			vim.bo[UI._fg.buf].modifiable = false
+			UI._fg.buf.o.modifiable = false
 			return false
 		end,
 		desc = "Disable changes once user exits visual mode",

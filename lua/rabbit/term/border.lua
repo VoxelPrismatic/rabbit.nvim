@@ -1,6 +1,18 @@
 local SET = require("rabbit.util.set")
 local BOX = {}
 
+---@class (exact) Rabbit.Term.Border.Generic<T>: { b: T, t: T, l: T, r: T }
+
+---@class (exact) Rabbit.Term.Border.Applied: Rabbit.Term.Border.Generic<Rabbit.Term.Border.Side>
+---@field top_left string Top left character.
+---@field bot_left string Bottom left character.
+---@field top_right string Top right character.
+---@field bot_right string Bottom right character.
+---@field to_hl fun(self: Rabbit.Term.Border.Applied, kwargs: Rabbit.Term.Border.Applied.Hl.Kwargs): Rabbit.Term.Border.Applied.Hl Convert to highlight lines
+
+---@class (exact) Rabbit.Term.Border.Applied.Side
+---@field txt string[] Text characters
+---@field hl integer[] Main text highlight indexes
 ---@class Rabbit.Term.Border.Applied.Hl: Rabbit.Term.Border.Generic<Rabbit.Term.HlLine[]>
 ---@field lines Rabbit.Term.HlLine[][] Lines of highlighted lines
 
@@ -177,7 +189,7 @@ end
 ---@param w integer Window width
 ---@param h integer Window height
 ---@param config Rabbit.Cls.Box
----@param parts { [string]: Rabbit.Term.Border.Config.Part } Custom parts
+---@param parts { [string]: Rabbit.Cls.Box.Part } Custom parts
 ---@return Rabbit.Term.Border.Applied
 function BOX.make(w, h, config, parts)
 	local sides = { ---@type Rabbit.Term.Border.Applied

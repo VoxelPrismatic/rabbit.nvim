@@ -1,6 +1,6 @@
 local LIST = require("rabbit.plugins.trail.list")
 local ENV = require("rabbit.plugins.trail.env")
-local CTX = require("rabbit.term.ctx")
+local TERM = require("rabbit.util.term")
 
 ---@type Rabbit.Plugin.Events
 local EVT = {}
@@ -10,7 +10,7 @@ function EVT.BufEnter(evt, ctx)
 		return -- Ignore everything that happens when Rabbit is open
 	end
 
-	if CTX.win_config(ctx.winid).relative ~= "" then
+	if TERM.win_config(ctx.winid).relative ~= "" then
 		-- Ignore nested windows
 		return
 	end
@@ -47,7 +47,7 @@ function EVT.BufAdd(evt, _)
 end
 
 function EVT.WinEnter(evt, ctx)
-	if CTX.win_config(ctx.winid).relative ~= "" then
+	if TERM.win_config(ctx.winid).relative ~= "" then
 		-- Ignore nested windows
 		return
 	end

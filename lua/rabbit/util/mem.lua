@@ -1,4 +1,4 @@
-local CTX = require("rabbit.term.ctx")
+local STACK = require("rabbit.term.stack")
 local CONFIG = require("rabbit.config")
 local MEM = {}
 
@@ -142,13 +142,11 @@ end
 ---@param max_width? integer The maximum width of the window
 ---@return Rabbit.Mem.RelPath
 local function rel_path(source, target, max_width)
-	if not vim.api.nvim_buf_is_valid(CTX.user.buf) then
-		CTX.user.buf = vim.api.nvim_win_get_buf(CTX.user.win)
-	end
+	STACK._.user.buf()
 
 	if max_width == nil then
 		local UI = require("rabbit.term.listing")
-		max_width = UI._fg.conf.width
+		max_width = UI._fg.win.config.width
 	end
 
 	local ret = { ---@type Rabbit.Mem.RelPath
@@ -204,12 +202,12 @@ local path_cache = setmetatable({}, {
 ---@return Rabbit.Mem.RelPath
 function MEM.rel_path(target)
 	local UI = require("rabbit.term.listing")
-	local ok, source = pcall(vim.api.nvim_buf_get_name, CTX.user.buf)
+	local ok, source = pcall(vim.api.nvim_buf_get_name, STACK._.user.buf.id)
 	if not ok or vim.uv.fs_stat(source) == nil then
 		source = vim.fn.getcwd()
 	end
 
-	return path_cache[source][target][UI._fg.conf.width]
+	return path_cache[source][target][UI._fg.win.config.width]
 end
 
 ---@param self Rabbit.Writeable

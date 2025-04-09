@@ -73,19 +73,21 @@ end
 ---@field bufnr integer Buffer ID.
 ---@field lineno integer Start line.
 ---@field strict boolean If true, the lines must be strictly between start and end.
----@field ns integer? Namespace
+---@field ns integer | string? Namespace
 ---@field width integer Width
 ---@field lines Rabbit.Term.HlLine[] List of text.
 ---@field many? boolean If true, the lines field will be treated as many lines
 
 ---@param kwargs Rabbit.Term.HlLine.Kwargs
+---@return integer Ending line (only useful with "many" set to true)
 function HL.set_lines(kwargs)
+	local ret = kwargs.lineno
 	if kwargs.many then
 		for i, v in ipairs(kwargs.lines) do
 			if type(v) == "string" then
 				vim.api.nvim_buf_set_lines(kwargs.bufnr, kwargs.lineno + i - 1, kwargs.lineno + i, false, { v })
 			else
-				HL.set_lines({
+				ret = HL.set_lines({
 					bufnr = kwargs.bufnr,
 					lineno = kwargs.lineno + i - 1,
 					lines = v,
@@ -96,7 +98,7 @@ function HL.set_lines(kwargs)
 				})
 			end
 		end
-		return
+		return ret
 	end
 
 	local parts = {
@@ -120,6 +122,9 @@ function HL.set_lines(kwargs)
 	local lineno = kwargs.lineno
 	local buf = kwargs.bufnr
 	local ns = kwargs.ns
+	if type(ns) == "string" then
+		ns = vim.api.nvim_create_namespace(ns)
+	end
 
 	while #lines > 0 do
 		local v = table.remove(lines, 1)
@@ -203,6 +208,8 @@ function HL.set_lines(kwargs)
 			end_col = v.end_ + offset,
 		})
 	end
+
+	return ret + 1
 end
 
 -- Splits the list of lines so each character is in it's own line
@@ -233,16 +240,95 @@ function HL.split(lines)
 	return result
 end
 
+-- Wraps the lines so they fit to width
+---@param lines Rabbit.Term.HlLine[]
+---@param width integer
+---@param indent? integer
+---@return table<table<table<string, string | table<string>>>> To be passed to extmarks
+function HL.wrap(lines, width, indent)
+	local ident = ""
+	if type(indent) == "number" then
+		ident = (" "):rep(indent)
+	end
+
+	local ret = { { { ident, "Normal" } } }
+	local last_line = ret[#ret]
+	local line = ident
+
+	for _, v in ipairs(lines) do
+		for _, v2 in ipairs(v) do
+			table.insert(ret, v2)
+		end
+
+		if v.text == nil then
+			goto continue
+		end
+
+		for word in v.text:gmatch("%S+") do
+			if #(line .. word) + 1 >= width then
+				local continue = ""
+				local remainder = ""
+				if #word / width > 0.1 then
+					for syllable in word:gmatch("([aeiou]*[^aeiou]+)") do
+						if #remainder > 0 then
+							remainder = remainder .. syllable
+						elseif #(continue .. syllable .. line) + 1 >= width then
+							remainder = remainder .. syllable
+						else
+							continue = continue .. syllable
+						end
+					end
+
+					if #continue < 5 then
+						continue = ""
+						remainder = word
+					else
+						continue = continue .. "—"
+						remainder = "—" .. remainder
+					end
+				else
+					remainder = word
+				end
+
+				table.insert(last_line, {
+					continue,
+					v.hl,
+				})
+
+				last_line = { { ident, "Normal" } }
+				table.insert(ret, last_line)
+
+				table.insert(lines, line .. continue)
+				line = ident
+				word = remainder
+			end
+
+			line = line .. word .. " "
+			table.insert(last_line, {
+				word,
+				v.hl,
+			})
+		end
+		::continue::
+	end
+
+	return ret
+end
+
 ---@class Rabbit.Term.HlLine.Loc
 ---@field start integer Where the highlight starts
 ---@field end_ integer Where the highlight ends
 ---@field name string The highlight group
 
 ---@alias Rabbit.Term.HlLine Rabbit.Term.HlLine.Enum | Rabbit.Term.HlLine.Enum[]
+---@alias Rabbit.Term.HlLine.NoAlign Rabbit.Term.HlLine.Enum.NoAlign | Rabbit.Term.HlLine.Enum.NoAlign[]
 
----@class Rabbit.Term.HlLine.Enum
+---@class (exact) Rabbit.Term.HlLine.Enum.NoAlign
 ---@field text string The text to display
 ---@field hl? string | string[] | { [string]: boolean } The highlight group
+---@field [integer] Rabbit.Term.HlLine.NoAlign Nested lines
+
+---@class (exact) Rabbit.Term.HlLine.Enum: Rabbit.Term.HlLine.Enum.NoAlign
 ---@field align? "left" | "right" | "center" The alignment of the text
 ---@field [integer] Rabbit.Term.HlLine Nested lines
 
