@@ -6,6 +6,12 @@
 ---@field bufid integer The buffer number, if the file is currently open.
 ---@field target_winid integer The window number the file should be opened in.
 ---@field actions Rabbit.Entry.File.Actions The actions to perform on the file.
+---@field jump? Rabbit.Entry.File.Jump The line number and column to highlight
+
+---@class (exact) Rabbit.Entry.File.Jump
+---@field line integer Highlight line number
+---@field col integer Highlight column start (if nil, entire line is highlighted)
+---@field end_ integer Highlight column end (if nil, entire line is highlighted)
 
 ---@class Rabbit.Entry.File.Actions
 ---@field select? Rabbit.Action.Callback<Rabbit.Action.Select>

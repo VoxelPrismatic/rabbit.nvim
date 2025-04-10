@@ -53,7 +53,7 @@
 
 # Rabbit.nvim
 A plugin that allows you to switch between buffers faster than ever before, featuring a much more
-intuitive experience. You can customize almost every part of it so it fits right into your workflow.
+intuitive experience. You can customize almost every part of it, so it fits right into your workflow.
 
 ## Why
 - **Telescope**
@@ -67,7 +67,7 @@ intuitive experience. You can customize almost every part of it so it fits right
      - Rabbit does both
 - **Harpoon**
   1. Built for @ThePrimeagen, meaning it's very basic and not intuitive
-     - Rabbit shows a legend of actions you are able to perform
+     - Rabbit shows a legend of actions you can perform
   2. You have to remember where you are and where you were
      - Rabbit allows you to forget about both
 - **:b #**
@@ -115,5 +115,3 @@ tl;dr:
     },
 }
 ```
-
-

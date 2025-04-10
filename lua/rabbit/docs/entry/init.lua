@@ -14,7 +14,7 @@
 ---@field parent Rabbit.Entry.Collection The parent collection.
 ---@field siblings Rabbit.Entry[] The siblings.
 ---@field entry Rabbit.Entry The current entry.
----@field real integer The real index (as shown in the listing).
+---@field real? integer The real index as shown in the listing. Nil if index was disabled
 ---@field ident string The indent string (eg " 1. ").
 
 ---@alias Rabbit.Entry._.Label

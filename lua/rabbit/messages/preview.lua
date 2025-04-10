@@ -239,18 +239,18 @@ local function possibly_closed(data)
 	local lines = {}
 
 	local function highlight_search()
-		if data.linenr == nil or data.linenr < 1 or data.linenr > #lines then
+		if data.jump == nil or data.jump.line == nil or data.jump.line < 1 or data.jump.line > #lines then
 			return
 		end
 
-		if not data.col_start or not data.col_end then
-			data.col_start = 0
-			data.col_end = #lines[data.linenr]
-		end
+		data.jump.col = math.max(data.jump.col or 0, 0)
+		data.jump.end_ = math.min(data.jump.end_ or 10000, #lines[data.jump.line])
 
-		vim.api.nvim_win_set_cursor(data.winid, { data.linenr, data.col_start })
-		vim.api.nvim_buf_set_extmark(data.bufid, 0, data.linenr - 1, data.col_start, {
-			end_col = data.col_end,
+		local ns = vim.api.nvim_create_namespace("rabbit.preview.search")
+		vim.api.nvim_buf_clear_namespace(data.bufid, ns, 0, -1)
+		vim.api.nvim_win_set_cursor(data.winid, { data.jump.line, data.jump.col })
+		vim.api.nvim_buf_set_extmark(data.bufid, ns, data.jump.line - 1, data.jump.col, {
+			end_col = data.jump.end_,
 			hl_group = "Search",
 		})
 		vim.api.nvim_buf_call(data.bufid, function()

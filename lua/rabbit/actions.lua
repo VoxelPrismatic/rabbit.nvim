@@ -16,30 +16,38 @@ local ACTIONS = {}
 ---@alias Rabbit.Action.Select fun(entry: Rabbit.Entry): Rabbit.Response
 ---@type Rabbit.Action.Select
 function ACTIONS.select(entry)
-	if entry.class == "entry" then
-		entry = entry --[[@as Rabbit.Entry]]
-		if entry.type == "file" then
-			entry = entry --[[@as Rabbit.Entry.File]]
-			UI.close()
-			if entry.target_winid ~= nil then
-				vim.api.nvim_set_current_win(entry.target_winid)
-			else
-				STACK._.user:focus()
-			end
+	assert(entry.class == "entry", "[Rabbit]: Expected entry, got " .. entry.class)
 
-			if entry.closed then
-				vim.cmd("e " .. entry.path)
-				vim.bo.filetype = vim.filetype.match({ filename = entry.path })
-			else
-				vim.api.nvim_set_current_buf(entry.bufid)
-			end
-			return
-		elseif entry.type == "collection" then
-			return entry --[[@as Rabbit.Entry.Collection]]
-		end
+	entry = entry --[[@as Rabbit.Entry]]
+	if entry.type == "collection" then
+		return entry --[[@as Rabbit.Entry.Collection]]
 	end
 
-	error("Action 'select' not implemented by plugin")
+	assert(entry.type == "file", "[Rabbit]: Unsupported entry type: " .. entry.type)
+
+	entry = entry --[[@as Rabbit.Entry.File]]
+	UI.close()
+	if entry.target_winid ~= nil then
+		vim.api.nvim_set_current_win(entry.target_winid)
+	else
+		STACK._.user:focus()
+	end
+
+	if entry.closed then
+		vim.cmd("e " .. entry.path)
+		vim.bo.filetype = vim.filetype.match({ filename = entry.path })
+	else
+		vim.api.nvim_set_current_buf(entry.bufid)
+	end
+
+	if entry.jump then
+		vim.api.nvim_win_set_cursor(0, { entry.jump.line, entry.jump.col or 0 })
+		vim.api.nvim_win_call(0, function()
+			vim.cmd("normal! zz")
+		end)
+	end
+
+	return false
 end
 
 ---@alias Rabbit.Action.Close fun(entry: Rabbit.Entry.Collection): nil
@@ -52,20 +60,19 @@ end
 ---@alias Rabbit.Action.Hover fun(entry: Rabbit.Entry): Rabbit.Response
 ---@type Rabbit.Action.Hover
 function ACTIONS.hover(entry)
-	if entry.class == "entry" then
-		if entry.type == "file" then
-			entry = entry --[[@as Rabbit.Entry.File]]
-			return { ---@type Rabbit.Message.Preview
-				class = "message",
-				type = "preview",
-				file = entry.path,
-				bufid = entry.bufid,
-				winid = entry.target_winid,
-			}
-		end
-	end
+	assert(
+		entry.class == "entry" and entry.type == "file",
+		"[Rabbit]: Expected entry.file, got " .. entry.class .. "." .. entry.type
+	)
 
-	error("Action 'hover' not implemented by plugin")
+	entry = entry --[[@as Rabbit.Entry.File]]
+	return { ---@type Rabbit.Message.Preview
+		class = "message",
+		type = "preview",
+		file = entry.path,
+		bufid = entry.bufid,
+		winid = entry.target_winid,
+	}
 end
 
 ---@alias Rabbit.Action.Delete fun(entry: Rabbit.Entry): Rabbit.Response

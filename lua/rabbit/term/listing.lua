@@ -250,7 +250,7 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 
 	entry._env = {
 		idx = j,
-		real = r,
+		real = entry.idx and r + 1 or nil,
 		entry = entry,
 		siblings = UI._entries,
 		parent = UI._display,
@@ -719,6 +719,10 @@ end
 -- Handles callback data
 ---@param data? Rabbit.Response
 function UI.handle_callback(data)
+	if data == false then
+		return
+	end
+
 	if data == nil then
 		return UI.close()
 	end
@@ -887,12 +891,16 @@ end
 
 -- Deletes the hover windows
 function UI.cancel_hover()
+	local ns = vim.api.nvim_create_namespace("rabbit.preview.search")
+
 	for winid, view in pairs(UI._views) do
 		if not vim.api.nvim_win_is_valid(winid) then
 			UI._hov[winid] = nil
 			UI._views[winid] = nil
 			goto continue
 		end
+
+		vim.api.nvim_buf_clear_namespace(vim.api.nvim_win_get_buf(winid), ns, 0, -1)
 
 		local bufid = UI._hov[winid]
 		if vim.api.nvim_buf_is_valid(bufid) then

@@ -6,6 +6,7 @@
 ---| false # Disable the action altogether
 
 ---@alias Rabbit.Response
----| Rabbit.Entry
----| Rabbit.Message
----| nil
+---| Rabbit.Entry # Display an entry
+---| Rabbit.Message # Display a message
+---| nil # Close rabbit
+---| false # Do absolutely nothing
