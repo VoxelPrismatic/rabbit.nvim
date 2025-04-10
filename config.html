@@ -3,22 +3,25 @@
 
 <head>
 	<meta charset="utf-8">
-	<title>Rabbit | Config</title>
+	<title>Rabbit.nvim | Config</title>
 	<link rel="stylesheet" href="./style.css">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="Configuration documentation for Rabbit.nvim">
 	<!-- Open Graph -->
-	<meta property="og:title" content="Rabbit | Config">
+	<meta property="og:title" content="Rabbit.nvim | Config">
 	<meta property="og:description" content="Configuration documentation for Rabbit.nvim">
 	<meta property="og:image" content="./rabbit.png">
 	<meta property="og:image:type" content="image/png">
 	<meta property="twitter:image" content="./rabbit.png">
 	<meta property="twitter:card" content="summary">
-	<meta property="twitter:title" content="Rabbit | Config">
+	<meta property="twitter:title" content="Rabbit.nvim | Config">
 	<meta property="twitter:description" content="Configuration documentation for Rabbit.nvim">
 </head>
 
 <body>
+	<div class="home">
+		<a href="."><img src="./rabbit.png"></a>
+	</div>
 	<table id="config" class="hr">
 		<tr>
 			<td>
@@ -265,6 +268,168 @@
 						<td>ctermbg</td>
 						<td><code vim="@builtin" title="Optional">integer</code></td>
 						<td>ANSI background color, as specified by the user's terminal emulator</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<table id="config" class="hr">
+		<tr>
+			<td>
+				<h2>Config</h2>
+			</td>
+			<td>
+				<hr>
+			</td>
+		</tr>
+	</table>
+	You may set up an LSP, all these types are available.
+	<details>
+		<summary id="Rabbit.Config">Rabbit.Config</summary>
+		<article>
+			Parent configuration class
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>description</th>
+					</tr>
+					<tr>
+						<td>colors</td>
+						<td>
+							<code><b><a href="#Rabbit.Config.Colors">Rabbit.Config.Colors</a></b></code>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details>
+		<summary id="Rabbit.Config.Colors">Rabbit.Config.Colors</summary>
+		<article>
+			In your config, this will be formed as the following. All colors are of type
+			<code><b><a href="#NvimHlColor">NvimHlColor</a></b>
+				|
+				<b><a href="#NvimHlKwargs">NvimHlKwargs</a></b></code>.
+			For defaults, only the color is inherited. Bold &amp; italic must be specified here.
+			<pre>
+				{
+				&nbsp; &nbsp; [<span vim="@prop">group</span>] = {
+				&nbsp; &nbsp; &nbsp; &nbsp; [<span vim="@prop">key</span>] = <span vim="@comment">value...</span>
+				&nbsp; &nbsp; }
+				}
+			</pre>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>group</th>
+						<th>key</th>
+						<th>default</th>
+						<th>description</th>
+					</tr>
+					<tr>
+						<td rowspan="7">types</td>
+						<td>title</td>
+						<td><code><b>:Normal</b></code></td>
+						<td>Title text</td>
+					</tr>
+					<tr>
+						<td>index</td>
+						<td><code vim="@comment">:Comment</code></td>
+						<td>Entry index</td>
+					</tr>
+					<tr>
+						<td>tail</td>
+						<td><code vim="@comment">:Comment</code></td>
+						<td>Right-aligned text with additional details, eg buffer/window numbers</td>
+					</tr>
+					<tr>
+						<td>head</td>
+						<td><code vim="bold fg:T.muted">:NonText</code></td>
+						<td>Additional details before the main entry label</td>
+					</tr>
+					<tr>
+						<td>collection</td>
+						<td><code vim="bold italic fg:gold">:Constant</code></td>
+						<td>A collection/folder of entries. Keep in mind that plugins may support changing the color on
+							a per-collection basis.</td>
+					</tr>
+					<tr>
+						<td>preview</td>
+						<td><code vim="fg:rose bg:L.surface">:rabbit.types.plugin</code></td>
+						<td>Box around previewed buffers. By default, it simply matches the current plugin</td>
+					</tr>
+					<tr>
+						<td>plugin</td>
+						<td><code>:Normal</code></td>
+						<td>The color of this highlight group changes in accordance with the currently open plugin</td>
+					</tr>
+					<tr>
+						<td rowspan="6">files</td>
+						<td>file</td>
+						<td><code>:Normal</code></td>
+						<td>File name color, eg
+							<code>init.lua</code>
+							in
+							<code><span vim="fg=T.muted">~/git/rabbit.nvim/</span>init.lua</code>
+						</td>
+					</tr>
+					<tr>
+						<td>path</td>
+						<td><code vim="fg:T.muted">:NonText</code></td>
+						<td>Path color, eg
+							<code vim="fg:T.muted">~/git/rabbit.nvim/</code>
+							in
+							<code><span vim="fg:T.muted">~/git/rabbit.nvim/</span>init.lua</code>
+						</td>
+					</tr>
+					<tr>
+						<td>term</td>
+						<td><code vim="bold fg:gold">:Constant</code></td>
+						<td>The little
+							<code vim="bold fg:gold">$</code>
+							indicating that a buffer is a terminal buffer
+						</td>
+					</tr>
+					<tr>
+						<td>void</td>
+						<td><code vim="italic fg:rose">:Function</code></td>
+						<td>If a buffer has no name, it will be shown as
+							<code><span vim="italic fg=love">#nil</span>
+								XX</code>, where
+							<code>XX</code>
+							is the buffer number
+						</td>
+					</tr>
+					<tr>
+						<td>closed</td>
+						<td><code vim="fg:love">:DiagnosticVirtualTextError</code></td>
+						<td>When a buffer is closed, it will be highlighted in red</td>
+					</tr>
+					<tr>
+						<td>modified</td>
+						<td><code vim="fg:gold">:WarningMsg</code></td>
+						<td>
+							When a buffer is modified, a little dot with this highlight group will appear next to the
+							filename.
+							This exists so you can remove bufferline.nvim from your config
+						</td>
+					</tr>
+					<tr>
+						<td rowspan="7">paint</td>
+						<td>rose</td>
+						<td>RosePine or
+							<code vim style="--vim-fg=#ff69b4">HotPink</code>
+						</td>
+						<td>If you use RosePine, it will use Rose. Otherwise, it will fall back to HotPink.</td>
+					</tr>
+					<tr>
+						<td>love</td>
+						<td>RosePine or
+							<code vim style="--vim-fg=#cd5c5c">IndianRed</code>
+						</td>
+						<td>If you use RosePine, it will use Love. Otherwise, it will fall back to IndianRed.</td>
 					</tr>
 				</table>
 			</div>

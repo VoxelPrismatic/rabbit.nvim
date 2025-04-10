@@ -1,5 +1,6 @@
 @import url("./font/font.css");
 @import url("./vim.css");
+@import url("./vim2.css");
 
 :root {
 	--sakura-paint-rose: #d875a7;
@@ -44,29 +45,49 @@ body {
 table.hr {
 	width: 100%;
 	border-collapse: collapse;
-	--vim-fg: var(--sakura-paint-foam);
-	color: var(--sakura-paint-foam);
 
-	td:first-child,
-	h1,
-	h2,
-	h3,
-	h4,
-	h5,
-	h6 {
+	&:not([vim]) {
+		--vim-fg: var(--sakura-paint-foam);
+		color: var(--sakura-paint-foam);
+	}
+
+	& td:first-child,
+	& h1,
+	& h2,
+	& h3,
+	& h4,
+	& h5,
+	& h6,
+	& td:last-child {
 		width: min-content;
+		white-space: nowrap;
+		color: var(--vim-fg);
+		margin-bottom: 0px;
+		margin-top: 0px;
+		vertical-align: bottom;
 	}
 
-	td:last-child {
+	td:nth-child(2) {
 		width: 100%;
+		vertical-align: middle;
 	}
 
-	hr {
+	td {
+		padding-top: 32px;
+	}
+
+	& hr {
 		margin-left: 16px;
 		width: calc(100% - 18px);
-		border-color: var(--sakura-paint-foam);
-		border-width: 1px;
-		border-style: solid;
+		border-top: 1px solid var(--vim-fg);
+		border-bottom: none;
+		border-left: none;
+		border-right: none;
+	}
+
+	& td:nth-child(3) {
+		padding-left: 16px;
+		vertical-align: middle;
 	}
 }
 
@@ -83,12 +104,17 @@ details {
 	}
 }
 
-code {
+code,
+pre {
 	--vim-bg: var(--sakura-layer-surface);
 	background-color: var(--sakura-layer-surface);
 	padding: 2px 4px;
 	border-radius: 4px;
 	font-size: 14px;
+}
+
+pre {
+	white-space: pre-line;
 }
 
 div.table-border {
@@ -100,7 +126,17 @@ div.table-border {
 	overflow: clip;
 }
 
-table:not(.hr) {
+div.home {
+	width: min-content;
+	margin: auto;
+
+	img {
+		max-width: 368px;
+	}
+
+}
+
+table:not(.hr):not(.call) {
 	width: 100%;
 
 	display: table;
@@ -149,6 +185,10 @@ details {
 
 	&[open] {
 		margin-bottom: 32px;
+
+		& table.call {
+			height: 20px;
+		}
 	}
 
 	& summary:target {
@@ -173,4 +213,63 @@ a {
 	font-style: italic;
 	color: var(--sakura-text-muted);
 	--vim-fg: var(--sakura-paint-muted);
+}
+
+table.call {
+	width: calc(100% - 24px);
+	display: inline-block;
+	vertical-align: top;
+
+	& td:first-child {
+		white-space: nowrap;
+		width: min-content;
+		padding-right: 16px;
+	}
+
+	& td:last-child {
+		text-align: right;
+		width: 100%;
+		--vim-fg: var(--sakura-text-norm);
+		color: var(--sakura-text-norm);
+	}
+
+	& td {
+		vertical-align: top;
+		padding: 0px;
+	}
+
+	& ol {
+		margin: 0;
+		padding: 0;
+		list-style: numbers inside;
+		white-space: collapse nowrap;
+		font-size: 14px;
+
+		& li::marker {
+			--vim-fg: var(--sakura-paint-gold);
+			color: var(--sakura-paint-gold);
+			font-size: 14px;
+
+		}
+
+		& li {
+			margin: 0;
+		}
+
+		&>li:first-child {
+			list-style: " →" inside;
+
+			&::marker {
+				--vim-fg: var(--sakura-text-norm);
+				color: var(--sakura-text-norm);
+			}
+		}
+	}
+}
+
+@counter-style numbers {
+	system: numeric;
+	symbols: "0" "1" "2" "3" "4" "5" "6" "7" "8" "9";
+	prefix: " ";
+	suffix: "";
 }

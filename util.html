@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+	<meta charset="utf-8">
+	<title>Rabbit.nvim | Config</title>
+	<link rel="stylesheet" href="./style.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Configuration documentation for Rabbit.nvim">
+	<!-- Open Graph -->
+	<meta property="og:title" content="Rabbit.nvim | Utilities">
+	<meta property="og:description" content="Documentation for Rabbit.nvim's utilites">
+	<meta property="og:image" content="./rabbit.png">
+	<meta property="og:image:type" content="image/png">
+	<meta property="twitter:image" content="./rabbit.png">
+	<meta property="twitter:card" content="summary">
+	<metaproperty="twitter:title" content="Rabbit.nvim | Utilities">
+		<meta property="twitter:description" content="Documentation for Rabbit.nvim's utilites">
+</head>
+
+<body>
+	<div class="home">
+		<a href="."><img src="./rabbit.png"></a>
+	</div>
+	<table id="config" class="hr">
+		<tr>
+			<td>
+				<h1>Utilities</h1>
+			</td>
+			<td>
+				<hr>
+			</td>
+		</tr>
+	</table>
+	<table id="types" class="hr">
+		<tr>
+			<td>
+				<h2>Types</h2>
+			</td>
+			<td>
+				<hr>
+			</td>
+		</tr>
+	</table>
+	<details>
+		<summary id="Rabbit.Mem.RelPath">Rabbit.Mem.RelPath<span vim="@comment">: table</span></summary>
+		<article>
+			Relative filepath details
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>description</th>
+					</tr>
+					<tr>
+						<td>dir</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							Dir name, eg
+							<code>.../rel/to/</code>
+						</td>
+					</tr>
+					<tr>
+						<td>file</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							Base name, eg
+							<code>foo.txt</code>
+						</td>
+					</tr>
+					<tr>
+						<td>merge</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							The merged path, eg
+							<code>.../rel/to/foo.txt</code>
+						</td>
+					</tr>
+					<tr>
+						<td>parts</td>
+						<td>
+							<vim -builtin -->string<vim -norm>[]</vim>
+							</vim>
+						</td>
+						<td>
+							All parts to the path, eg<br>
+							<vim -->{
+								<vim -str>".."</vim>,
+								<vim -str>".."</vim>,
+								<vim -str>"rel"</vim>,
+								<vim -str>"to"</vim>,
+								<vim -str>"foo.txt"</vim>
+								}
+							</vim>
+						</td>
+					</tr>
+					<tr>
+						<td>source</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>Real, absolute path of the source file</td>
+					</tr>
+					<tr>
+						<td>target</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>Real, absolute path of the target file</td>
+					</tr>
+					<tr>
+						<td>
+							[<vim -builtin>integer</vim>]
+						</td>
+						<td>
+							<a href="#Rabbit.Mem.RelPath">
+								<vim -cls -->Rabbit.Mem.RelPath</vim>
+							</a>
+						</td>
+						<td>
+							Recalculate the relative path with a new maximum display width. Eg,
+							<vim -->[80]</vim>
+							recalculates the path with a maximum width of 80 characters
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details>
+		<summary id="Rabbit.Writeable">Rabbit.Writeable<span vim="@comment">: table</span></summary>
+		<article>
+			JSON data that you can save with ease
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>description</th>
+					</tr>
+					<tr>
+						<td>[<vim -builtin>any</vim>]</td>
+						<td>
+							<vim -builtin -->any</vim>
+						</td>
+						<td>Actual data</td>
+					</tr>
+					<tr>
+						<td>__Dest</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							Destination file path
+						</td>
+					</tr>
+					<tr>
+						<td>__Save</td>
+						<td>
+							<vim -builtin -->function</vim>
+						</td>
+						<td>
+							A function that takes no arguments to save the current data.
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<table id="memory-api" class="hr">
+		<tr>
+			<td>
+				<h2>Memory API</h2>
+			</td>
+			<td>
+				<hr>
+			</td>
+			<td>
+				<vim -norm --="3">local
+					<vim -cls>MEM</vim>
+					=
+					<vim -builtin -fn>require</vim>(<vim -str>"rabbit.util.mem"</vim>)
+				</vim>
+			</td>
+		</tr>
+	</table>
+	<details>
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>MEM</vim>.<vim -fn>rel_path</vim>(<vim ital -prop>target</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<a href="#Rabbit.Mem.RelPath">
+									<vim -cls>Rabbit.Mem.RelPath</vim>
+								</a>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns the relative path to the target file from the current file.
+						Also handles trimming and overflows.
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>target</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>/path/to/target</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<a href="#Rabbit.Mem.RelPath">
+								<vim -cls -->Rabbit.Mem.RelPath</vim>
+							</a>
+						</td>
+						<td>Calculated file path</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details>
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>MEM</vim>.<vim -fn>Read</vim>(<vim -prop>src</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<a href="#Rabbit.Writeable>">
+									<vim -cls>Rabbit.Writeable</vim>
+								</a>
+							</li>
+							<li>
+								<vim -builtin>boolean</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Reads a JSON file
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>src</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>File path</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td><a href="#Rabbit.Writeable">
+								<vim -cls -->Rabbit.Writeable</vim>
+							</a></td>
+						<td>File contents. If the file doesn't exist, returns an empty Rabbit.Writeable</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str>2</vim>
+						</td>
+						<td>
+							<vim -builtin -->boolean</vim>
+						</td>
+						<td>If the file exists</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details>
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>MEM</vim>.<vim -fn>Write</vim>(<vim -prop>data</vim>, <vim -prop>dest</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -str bold>nil</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Writes a JSON file, creating the necessary parent directories if they don't exist
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>data</td>
+						<td>
+							<vim -builtin -->table</vim>
+						</td>
+						<td>File contents<br><b>WARNING:</b> Cannot be <a href="#Rabbit.Writeable">Rabbit.Writeable</a>
+						</td>
+					</tr>
+					<tr>
+						<td>dest</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>File path</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<table id="set-api" class="hr">
+		<tr>
+			<td>
+				<h2>Set API</h2>
+			</td>
+			<td>
+				<hr>
+			</td>
+			<td>
+				<vim -norm --="3">
+					local <vim -cls>SET</vim> = <vim -builtin -fn>require</vim>(<vim -str>"rabbit.util.set"</vim>)
+				</vim>
+			</td>
+		</tr>
+	</table>
+	<details>
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							local <vim -cls>obj</vim> = <vim -cls>SET</vim>.<vim -fn>new</vim>(<vim -prop
+								title="Optional">arr</vim>)
+						</vim>
+					</td>
+					<td>
+						Creates a new Set object from an array
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>arr</td>
+						<td>
+							<vim -builtin title="Optional" -->any<vim -norm>[]</vim>
+							</vim>
+						</td>
+						<td>Array of values. This array is deep-copied, and any duplicate values are immediately dropped
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+</body>
+
+</html>
