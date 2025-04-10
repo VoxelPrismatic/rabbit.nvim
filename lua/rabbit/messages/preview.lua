@@ -138,16 +138,19 @@ local win_config_cache = setmetatable({}, {
 	end,
 })
 
----@type string[][]
+---@type { [string]: string[][] }
 local binary_sz_cache = {}
 
+---@param msg string Message to display
 ---@param width integer
 ---@param height integer
-local function gen_binary_preview(width, height)
+local function gen_msg_preview(msg, width, height)
 	local hash = width * 37 + height
 
-	if binary_sz_cache[hash] ~= nil then
-		return binary_sz_cache[hash]
+	if binary_sz_cache[msg] == nil then
+		binary_sz_cache[msg] = {}
+	elseif binary_sz_cache[msg][hash] ~= nil then
+		return binary_sz_cache[msg][hash]
 	end
 
 	local h = math.floor(height / 3)
@@ -174,10 +177,10 @@ local function gen_binary_preview(width, height)
 	end
 
 	local msg_h = math.floor(h / 2)
-	local st = "Binaries cannot be previewed"
-	local fix = ("╱"):rep((w - #st - 2) / 2)
-	grid[msg_h - 1] = fix .. " " .. (" "):rep(#st) .. " " .. fix
-	grid[msg_h] = fix .. " " .. st .. " " .. fix
+	-- local st = "Binaries cannot be previewed"
+	local fix = ("╱"):rep((w - #msg - 2) / 2)
+	grid[msg_h - 1] = fix .. " " .. (" "):rep(#msg) .. " " .. fix
+	grid[msg_h] = fix .. " " .. msg .. " " .. fix
 	grid[msg_h + 1] = grid[msg_h - 1]
 
 	for i = 1, h do
@@ -192,36 +195,109 @@ local function gen_binary_preview(width, height)
 		lines[i] = lines[1]
 	end
 
-	binary_sz_cache[hash] = lines
+	binary_sz_cache[msg][hash] = lines
 	return lines
 end
 
 ---@param data Rabbit.Message.Preview
-local function possibly_closed(data)
-	if vim.api.nvim_buf_is_valid(data.bufid) or vim.uv.fs_stat(data.file or "") == nil then
-		return
+---@return string | string[] "Error message (nil if no error)"
+local function preview_test(data)
+	local stat = vim.uv.fs_stat(data.file)
+	if stat == nil then
+		return "No such file exists"
 	end
 
-	local bufid = vim.api.nvim_create_buf(false, true)
-	data.bufid = bufid
+	if stat.type == "directory" then
+		return "Cannot preview a directory"
+	end
+
+	if stat.size == 0 then
+		return "File is empty"
+	end
+
+	if stat.size > 1 * 1024 * 1024 then
+		return "File too large to preview"
+	end
+
+	local file = io.open(data.file, "r")
+	if file == nil then
+		return "Could not read file"
+	end
+
+	local lines = {}
+	for line in file:lines() do
+		table.insert(lines, line)
+	end
+
+	return lines
+end
+
+---@param data Rabbit.Message.Preview
+---@return boolean true if closed
+local function possibly_closed(data)
+	---@type string[] | string
+	local lines = {}
+
+	local function highlight_search()
+		if data.linenr == nil or data.linenr < 1 or data.linenr > #lines then
+			return
+		end
+
+		if not data.col_start or not data.col_end then
+			data.col_start = 0
+			data.col_end = #lines[data.linenr]
+		end
+
+		vim.api.nvim_win_set_cursor(data.winid, { data.linenr, data.col_start })
+		vim.api.nvim_buf_set_extmark(data.bufid, 0, data.linenr - 1, data.col_start, {
+			end_col = data.col_end,
+			hl_group = "Search",
+		})
+		vim.api.nvim_buf_call(data.bufid, function()
+			vim.cmd("normal! zz")
+		end)
+	end
+
+	if vim.api.nvim_buf_is_valid(data.bufid) then
+		lines = vim.api.nvim_buf_get_lines(data.bufid, 0, -1, false)
+		highlight_search()
+		return false
+	end
+
+	data.bufid = vim.api.nvim_create_buf(false, true)
+
 	vim.api.nvim_create_autocmd("BufLeave", {
-		buffer = bufid,
+		buffer = data.bufid,
 		callback = function()
 			vim.api.nvim_win_set_buf(data.winid, UI._hov[data.winid])
-			vim.api.nvim_buf_delete(bufid, { force = true })
+			vim.api.nvim_buf_delete(data.bufid, { force = true })
 		end,
 	})
-	local ok = pcall(vim.api.nvim_buf_set_lines, bufid, 0, -1, false, vim.fn.readfile(data.file))
-	if not ok then
-		local config = TERM.win_config(data.winid)
-		if config == nil then
-			data.bufid = nil
-		else
-			vim.api.nvim_buf_set_lines(bufid, 0, -1, false, gen_binary_preview(config.width, config.height))
-		end
-	end
-	vim.bo[bufid].filetype = vim.filetype.match({ filename = data.file }) or "text"
-	vim.bo[bufid].readonly = true
+
+	local timer, err = vim.uv.new_timer()
+	assert(timer ~= nil, err)
+
+	timer:start(0, 0, function()
+		lines = preview_test(data)
+		local is_err = false
+
+		vim.schedule(function()
+			if type(lines) == "string" then
+				local config = TERM.win_config(data.winid)
+				assert(config ~= nil, "Target window does not exist")
+				lines = gen_msg_preview(lines, config.width, config.height)
+				is_err = true
+			end
+			vim.api.nvim_buf_set_lines(data.bufid, 0, -1, false, lines)
+			vim.bo[data.bufid].filetype = vim.filetype.match({ filename = data.file }) or "text"
+			vim.bo[data.bufid].readonly = true
+
+			if not is_err then
+				highlight_search()
+			end
+		end)
+	end)
+	return true
 end
 
 ---@param data Rabbit.Message.Preview
@@ -236,12 +312,16 @@ return function(data)
 		return
 	end
 
-	possibly_closed(data)
+	local was_closed = possibly_closed(data)
 
 	local relpath
 	local fallback_bufid = UI._hov[data.winid]
 	if vim.api.nvim_buf_is_valid(data.bufid or -1) then
-		relpath = MEM.rel_path(vim.api.nvim_buf_get_name(data.bufid))
+		if was_closed then
+			relpath = MEM.rel_path(data.file)
+		else
+			relpath = MEM.rel_path(vim.api.nvim_buf_get_name(data.bufid))
+		end
 		vim.api.nvim_win_set_buf(data.winid, data.bufid)
 	else
 		if preview_ws ~= nil then
@@ -261,11 +341,11 @@ return function(data)
 		else
 			local config = UI._bg.win.config
 			local fakewin = vim.api.nvim_open_win(fallback_bufid, false, {
-				width = config.width,
-				height = config.height,
+				width = config.width - 4,
+				height = config.height - 4,
 				relative = "editor",
-				row = config.row,
-				col = config.col,
+				row = config.row + 2,
+				col = config.col + 2,
 				zindex = 1,
 			})
 			preview_ws = STACK.ws.from(data.bufid, fakewin, true)

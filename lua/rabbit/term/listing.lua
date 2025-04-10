@@ -34,6 +34,9 @@ local UI = {
 	-- Original buffers each window had opened
 	_hov = {}, ---@type { [integer]: integer }
 
+	-- Each window's view
+	_views = {}, ---@type { [integer]: vim.fn.winsaveview.ret }
+
 	-- Legend keymap for actions
 	_legend = {}, ---@type Rabbit.Term.HlLine[]
 
@@ -89,6 +92,7 @@ function UI.spawn(plugin)
 	for _, winid in ipairs(vim.api.nvim_list_wins()) do
 		if vim.api.nvim_win_get_config(winid).relative == "" then
 			UI._hov[winid] = vim.api.nvim_win_get_buf(winid)
+			UI._views[winid] = vim.api.nvim_win_call(winid, vim.fn.winsaveview)
 		end
 	end
 
@@ -883,12 +887,25 @@ end
 
 -- Deletes the hover windows
 function UI.cancel_hover()
-	for winid, bufid in pairs(UI._hov) do
-		if vim.api.nvim_buf_is_valid(bufid) and vim.api.nvim_win_is_valid(winid) then
+	for winid, view in pairs(UI._views) do
+		if not vim.api.nvim_win_is_valid(winid) then
+			UI._hov[winid] = nil
+			UI._views[winid] = nil
+			goto continue
+		end
+
+		local bufid = UI._hov[winid]
+		if vim.api.nvim_buf_is_valid(bufid) then
 			vim.api.nvim_win_set_buf(winid, bufid)
 		else
 			UI._hov[winid] = nil
 		end
+
+		vim.api.nvim_win_call(winid, function()
+			vim.fn.winrestview(view)
+		end)
+
+		::continue::
 	end
 
 	for _, v in pairs(UI._pre) do
