@@ -57,6 +57,9 @@ return function(data)
 		cursor = { 2, curpos, true },
 		many = true,
 		ns = "rabbit:rename",
+		on_close = function()
+			UI._priority_legend = {}
+		end,
 	})
 
 	if old_ws then
@@ -116,11 +119,9 @@ return function(data)
 
 	UI._fg.keys:rebind(color_ws.buf.id, {
 		select = function()
-			UI._priority_legend = {}
 			color_ws:close()
 		end,
 		close = function()
-			UI._priority_legend = {}
 			apply(data.color)
 			color_ws:close()
 		end,

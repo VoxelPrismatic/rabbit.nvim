@@ -228,14 +228,15 @@ function KEYS:legend(kwargs)
 	kwargs.labels = kwargs.labels or {}
 	kwargs.rename = kwargs.rename or {}
 
-	local to_ret = SET.new(kwargs.labels or {})
+	local to_ret = SET.new(kwargs.labels)
 	local actions = {}
 
 	local mode = kwargs.mode or vim.fn.mode():lower()
 	for _, key in ipairs(self.binds) do
-		if #to_ret > 0 and to_ret:idx(key.label) == nil then
+		local found = to_ret:idx(key.label) ~= nil
+		if #to_ret > 0 and not found then
 			-- pass
-		elseif key.shown and key.mode == mode and (kwargs.hl == nil or key.hl == kwargs.hl) then
+		elseif (key.shown or found) and key.mode == mode and (kwargs.hl == nil or key.hl == kwargs.hl) then
 			table.insert(actions, key:legend(kwargs.align, kwargs.rename[key.label] or key.label))
 		end
 	end

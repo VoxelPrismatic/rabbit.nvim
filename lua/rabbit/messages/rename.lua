@@ -87,6 +87,9 @@ return function(data)
 		cursor = { 2, curpos },
 		many = true,
 		ns = "rabbit:rename",
+		on_close = function()
+			UI._priority_legend = {}
+		end,
 	})
 
 	if old_ws then
@@ -212,7 +215,6 @@ return function(data)
 		TextChangedI = text_changed,
 		CursorMovedI = cursor_moved,
 		InsertLeave = function()
-			UI._priority_legend = {}
 			if not ignore_leave then
 				rename_ws:close()
 				UI.list(UI._parent)

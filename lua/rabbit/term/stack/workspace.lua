@@ -159,6 +159,7 @@ end
 ---@field many? boolean If true, the lines field will be treated as many lines
 ---@field cursor? { [1]: integer, [2]: integer, [3]: boolean } Cursor position. If [3] is true, the real position will be used
 ---@field container? boolean Will not delete buffer upon close
+---@field on_close? fun(self: Rabbit.Stack.Workspace) Called when the workspace is closed
 
 -- Creates a scratch window and buffer, appending it to the stack
 ---@param opts Rabbit.Stack.Kwargs.Scratch
@@ -223,10 +224,15 @@ function WS.scratch(opts)
 		ws.autocmd:add(k, v)
 	end
 
+	ws.on_close = opts.on_close or ws.on_close
+
 	return ws
 end
 
 function WS:close()
+	if self.on_close then
+		self:on_close()
+	end
 	SHARED.spaces[self.id] = nil
 	SHARED.open:del(self.id)
 	for _, parent in pairs(SHARED.spaces) do
@@ -277,5 +283,8 @@ function WS:focus(focus_buf)
 
 	return ok
 end
+
+-- On close callback
+function WS:on_close() end
 
 return WS
