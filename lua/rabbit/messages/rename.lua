@@ -190,7 +190,7 @@ return function(data)
 			entry.default = false
 			new_entry.default = true
 			local old_cur = UI._fg.cursor:get()
-			UI.place_entry(entry, idx, entry._env.real, #tostring(#UI._entries))
+			UI.redraw_entry(entry)
 			UI._fg.cursor:set(old_cur[1] + dx, curpos + startcol)
 			UI.apply_actions()
 			rename_ws.autocmd:clear()
@@ -221,11 +221,11 @@ return function(data)
 
 			if rename_success then
 				data.apply(entry, new_name)
+				if data.color then
+					UI.handle_callback(data.color)
+				end
 			end
-			UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))
-			if data.color then
-				UI.handle_callback(data.color)
-			end
+			UI.redraw_entry(entry)
 		end,
 	})
 

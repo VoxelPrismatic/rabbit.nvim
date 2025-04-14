@@ -48,9 +48,10 @@ end
 -- Actually binds the keymap to the buffer
 ---@param self Rabbit.Stack.Keybind
 ---@param bufid integer
-local function bind_set(self, bufid)
+---@param callback? function Custom callback function
+local function bind_set(self, bufid, callback)
 	for _, k in ipairs(self.keys) do
-		vim.keymap.set(self.mode, k, self.callback, { buffer = bufid, desc = self.label })
+		vim.keymap.set(self.mode, k, callback or self.callback, { buffer = bufid, desc = self.label })
 	end
 end
 
@@ -240,17 +241,32 @@ end
 
 -- Returns the keybind with the given label
 ---@param ... string
----@return Rabbit.Stack.Keybind[]
+---@return table<string, Rabbit.Stack.Keybind> "Keybind by name"
+---@return Rabbit.Stack.Keybind? "Last match, eg `_, select = KEYS:find('select')`"
 function KEYS:find(...)
 	local ret = {}
+	local last
 	for _, label in ipairs({ ... }) do
 		for _, bind in ipairs(self.binds) do
 			if bind.label == label then
-				table.insert(ret, bind)
+				ret[label] = bind
+				last = bind
 			end
 		end
 	end
-	return ret
+	return ret, last
+end
+
+-- Rebinds the keybinds with the given callbacks to the new buffer ID
+-- Note: does NOT touch anything in this instance. Simply a helper function
+-- to use user's existing keybinds with new callbacks
+---@param bufid integer
+---@param callbacks table<string, function>
+function KEYS:rebind(bufid, callbacks)
+	local keys = self:find(unpack(vim.tbl_keys(callbacks)))
+	for label, callback in pairs(callbacks) do
+		keys[label]:set(bufid, callback)
+	end
 end
 
 return KEYS

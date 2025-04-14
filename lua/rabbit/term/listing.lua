@@ -236,6 +236,14 @@ function UI.list(collection)
 	return UI._entries
 end
 
+-- Redraws this entry at it's current position. Shorthand for:
+-- `UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))`
+-- **WARNING:** This entry must be placed first (must have _env set)
+---@param entry Rabbit.Entry
+function UI.redraw_entry(entry)
+	UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))
+end
+
 ---@param entry Rabbit.Entry
 ---@param j number Index (line number).
 ---@param r number Real index.

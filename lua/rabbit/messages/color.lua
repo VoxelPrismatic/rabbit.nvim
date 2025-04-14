@@ -42,16 +42,20 @@ return function(data)
 		},
 		parent = UI._fg,
 		lines = {
-			{ text = "", hl = "rabbit.paint.rose" },
-			{ text = "", hl = "rabbit.paint.love" },
-			{ text = "", hl = "rabbit.paint.gold" },
-			{ text = "", hl = "rabbit.paint.tree" },
-			{ text = "", hl = "rabbit.paint.foam" },
-			{ text = "", hl = "rabbit.paint.iris" },
-			{ text = "", hl = "rabbit.paint.pine" },
+			{ text = "" },
+			{
+				{ text = "", hl = "rabbit.paint.rose" },
+				{ text = "", hl = "rabbit.paint.love" },
+				{ text = "", hl = "rabbit.paint.gold" },
+				{ text = "", hl = "rabbit.paint.tree" },
+				{ text = "", hl = "rabbit.paint.foam" },
+				{ text = "", hl = "rabbit.paint.iris" },
+				{ text = "", hl = "rabbit.paint.pine" },
+			},
+			{ text = "" },
 		},
-		cursor = { 1, curpos, true },
-		many = false,
+		cursor = { 2, curpos, true },
+		many = true,
 		ns = "rabbit:rename",
 	})
 
@@ -59,14 +63,41 @@ return function(data)
 		old_ws:close()
 	end
 
+	local function apply(color)
+		data.apply(entry, color)
+		UI.redraw_entry(entry)
+	end
+
 	local function cursor_moved()
-		local col = TERM.realcol() + 1
-		if col > #colors then
-			TERM.feed("<Left>")
+		local idx = entry._env.idx or 0
+		local dx = vim.fn.line(".") - 2
+		local row = vim.fn.line(".")
+
+		if dx == 0 or vim.fn.line("$") < 3 then
+			local col = TERM.realcol() + 1
+			if col > #colors then
+				TERM.feed("<Left>")
+				return
+			end
+			apply(colors[col])
 			return
 		end
-		data.apply(entry, colors[col])
-		UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))
+
+		local continue_key, opposite_key = unpack(dx == -1 and { "<Up>", "<Down>" } or { "<Down>", "<Up>" })
+
+		local new_entry = entry._env.siblings[idx + dx]
+		if new_entry == nil then
+			TERM.feed(opposite_key)
+			return
+		end
+
+		vim.cmd("stopinsert")
+		UI._bg:focus()
+		vim.defer_fn(function()
+			color_ws:close()
+			UI._fg:focus()
+			TERM.feed(continue_key)
+		end, 5)
 	end
 
 	color_ws.autocmd:add({
@@ -87,7 +118,13 @@ return function(data)
 		},
 	})
 
-	for _, key in ipairs(UI._fg.keys:find("select", "close")) do
-		key:set(color_ws.buf.id)
-	end
+	UI._fg.keys:rebind(color_ws.buf.id, {
+		select = function()
+			color_ws:close()
+		end,
+		close = function()
+			apply(data.color)
+			color_ws:close()
+		end,
+	})
 end
