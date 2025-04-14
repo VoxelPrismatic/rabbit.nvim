@@ -4,7 +4,7 @@
 ---@type Rabbit*Index
 local PLUG = {
 	synopsis = "List all the plugins you have installed and their synopses",
-	version = "r00a1",
+	version = "r1.0",
 	empty = {
 		msg = "You have no plugins installed!",
 		actions = {},
