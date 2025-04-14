@@ -219,6 +219,17 @@ local function apply_rename(entry, new_name)
 	return new_name
 end
 
+---@param entry Rabbit*Carrot.Collection
+---@param new_color string
+local function apply_color(entry, new_color)
+	entry.label.hl = {
+		"rabbit.types.collection",
+		"rabbit.paint." .. new_color,
+	}
+	entry.ctx.real.color = new_color
+	LIST.carrot:__Save()
+end
+
 function ACTIONS.rename(entry)
 	if entry.type == "file" then
 		error("Unreachable (file should never be renamed)")
@@ -229,7 +240,12 @@ function ACTIONS.rename(entry)
 		type = "rename",
 		apply = apply_rename,
 		check = check_rename,
-		color = false,
+		color = {
+			class = "message",
+			type = "color",
+			apply = apply_color,
+			color = entry.ctx.real.color,
+		},
 		name = entry.ctx.real.name,
 	}
 end

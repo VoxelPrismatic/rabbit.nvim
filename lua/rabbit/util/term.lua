@@ -79,6 +79,31 @@ function TERM.win_config(winid)
 	})
 end
 
+-- Returns the real column number, taking into account UTF-8 characters
+function TERM.realcol()
+	local line = vim.fn.line(".")
+	local col = vim.fn.col(".")
+
+	return vim.fn.strdisplaywidth(vim.api.nvim_buf_get_lines(0, line - 1, line, false)[1]:sub(1, col - 1))
+end
+
+-- Places the cursor at the real position
+---@param row integer
+---@param col integer
+---@param win? integer Window ID (will use current buffer ID)
+function TERM.realplace(row, col, win)
+	win = win or 0
+	local buf = vim.api.nvim_win_get_buf(win)
+	local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1]
+	local chars = vim.fn.str2list(line)
+	local real_col = 0
+	for i = 1, math.min(col, #chars) do
+		real_col = real_col + #vim.fn.nr2char(chars[i])
+	end
+
+	vim.api.nvim_win_set_cursor(win, { row, real_col })
+end
+
 -- String case functions
 TERM.case = {
 	-- UPPER CASE

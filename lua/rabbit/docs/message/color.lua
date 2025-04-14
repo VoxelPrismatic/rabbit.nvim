@@ -1,0 +1,4 @@
+---@class Rabbit.Message.Color: Rabbit.Message
+---@field type "color"
+---@field color string Current color
+---@field apply fun(entry: Rabbit.Entry, new_color: string) Sets the color of the entry

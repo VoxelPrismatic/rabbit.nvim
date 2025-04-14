@@ -44,12 +44,13 @@ local priority_legend = {
 	},
 }
 
+-- You may only rename the currently highlighted entry
 ---@param data Rabbit.Message.Rename
 return function(data)
 	local linenr, curpos = unpack(UI._fg.cursor:get())
 	local entry = UI._entries[linenr] ---@type Rabbit.Entry
 	if not entry.actions.rename then
-		vim.print("WARNING: Attempt to rename an entry that cannot be renamed.")
+		vim.notify("Attempt to rename an entry that cannot be renamed.", vim.log.levels.ERROR)
 		return
 	end
 
@@ -222,6 +223,9 @@ return function(data)
 				data.apply(entry, new_name)
 			end
 			UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))
+			if data.color then
+				UI.handle_callback(data.color)
+			end
 		end,
 	})
 

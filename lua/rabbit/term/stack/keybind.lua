@@ -12,11 +12,12 @@ local SET = require("rabbit.util.set")
 -- Creates the legend entry
 ---@param self Rabbit.Stack.Keybind
 ---@param align? "left" | "right" | "center" Alignment
+---@param new_label? string New label to use
 ---@return Rabbit.Term.HlLine[] "Legend entry"
-local function bind_legend(self, align)
+local function bind_legend(self, align, new_label)
 	local ret = {
 		{
-			text = self.label,
+			text = new_label or self.label,
 			hl = { "rabbit.legend.action", self.hl },
 			align = align,
 		},
@@ -212,6 +213,8 @@ end
 ---@field align? "left" | "right" | "center" Set alignment
 ---@field hl? string Highlight name
 ---@field mode? "n" | "i" | "v" | "x" Keymap mode
+---@field labels? string[] List of labels to return. If nil or empty, all returned
+---@field rename? table<string, string> Map of old label to new label
 
 -- Returns all the legends with the current mode and highlight
 ---@param kwargs Rabbit.Stack.Kwargs.Legend
@@ -220,15 +223,34 @@ function KEYS:legend(kwargs)
 		return a.label < b.label
 	end)
 
+	local to_ret = SET.new(kwargs.labels or {})
 	local actions = {}
+
 	local mode = kwargs.mode or vim.fn.mode():lower()
 	for _, key in ipairs(self.binds) do
-		if key.shown and key.mode == mode and (kwargs.hl == nil or key.hl == kwargs.hl) then
-			table.insert(actions, key:legend(kwargs.align))
+		if #to_ret and to_ret:idx(key.label) == nil then
+			-- pass
+		elseif key.shown and key.mode == mode and (kwargs.hl == nil or key.hl == kwargs.hl) then
+			table.insert(actions, key:legend(kwargs.align, kwargs.rename[key.label] or key.label))
 		end
 	end
 
 	return actions
+end
+
+-- Returns the keybind with the given label
+---@param ... string
+---@return Rabbit.Stack.Keybind[]
+function KEYS:find(...)
+	local ret = {}
+	for _, label in ipairs({ ... }) do
+		for _, bind in ipairs(self.binds) do
+			if bind.label == label then
+				table.insert(ret, bind)
+			end
+		end
+	end
+	return ret
 end
 
 return KEYS

@@ -157,7 +157,7 @@ end
 ---@field autocmd? table<string, fun(evt: NvimEvent): nil | boolean> Buffer Autocmds
 ---@field lines? (Rabbit.Term.HlLine | string)[] Highlight line
 ---@field many? boolean If true, the lines field will be treated as many lines
----@field cursor? integer[] Cursor position
+---@field cursor? { [1]: integer, [2]: integer, [3]: boolean } Cursor position. If [3] is true, the real position will be used
 ---@field container? boolean Will not delete buffer upon close
 
 -- Creates a scratch window and buffer, appending it to the stack
@@ -212,7 +212,11 @@ function WS.scratch(opts)
 	end
 
 	if opts.cursor then
-		vim.api.nvim_win_set_cursor(winid, opts.cursor)
+		if opts.cursor[3] then
+			TERM.realplace(opts.cursor[1], opts.cursor[2], winid)
+		else
+			vim.api.nvim_win_set_cursor(winid, { opts.cursor[1], opts.cursor[2] })
+		end
 	end
 
 	for k, v in pairs(opts.autocmd or {}) do
