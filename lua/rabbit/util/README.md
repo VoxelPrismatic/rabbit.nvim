@@ -13,7 +13,7 @@ Various APIs that are useful for various other things
 			<li>
 				<details>
 					<summary>
-						<code>MEM.<b>rel_path</b>(<i>target</i>)</code>
+						<code>MEM.<b>rel_path</b>(<i>target</i>)</code><br>
 						→
 						<i>Rabbit.Mem.RelPath</i>
 						<br>
@@ -109,8 +109,9 @@ Various APIs that are useful for various other things
 			<li>
 				<details>
 					<summary>
-						<code>MEM.<b>Read</b>(<i>src</i>)</code>
-						→ table, boolean
+						<code>MEM.<b>Read</b>(<i>src</i>)</code><br>
+						→ table<br>
+						2 boolean
 						<br>
 						Reads a JSON file
 					</summary>
@@ -274,9 +275,7 @@ Various APIs that are useful for various other things
 									<th>details</th>
 								</tr>
 								<tr>
-									<td>arr
-										<i>(optional)</i>
-									</td>
+									<td>arr?</td>
 									<td>T[]</td>
 									<td>Initial values (deepcopy &amp; unique</td>
 								</tr>
@@ -321,60 +320,29 @@ Various APIs that are useful for various other things
 								<tr>
 									<td rowspan="2">elem</td>
 									<td>T</td>
-									<td>Add a single element</td>
+									<td>
+										Add a single element. Any duplicate elements are removed and inserted at the
+										target position
+									</td>
 								</tr>
 								<tr>
 									<td>T[]</td>
-									<td>Adds many elements</td>
+									<td>
+										Adds many elements. Any duplicate elements are removed and inserted at the
+										target position
+									</td>
 								</tr>
 								<tr>
-									<td>idx</td>
-									<td>number</td>
-									<td>Index to insert at</td>
-								</tr>
-							</table>
-						</li>
-					</ul>
-				</details>
-			</li>
-		</ul>
-	</li>
-	<li>
-		<details>
-			<summary>
-				<h2>Terminal API</h2>
-			</summary>
-			Additional terminal functions
-			<pre lang="lua">local TERM = require("rabbit.util.term")</pre>
-		</details>
-		<ul>
-			<li>
-				<details>
-					<summary>
-						<code>TERM.<b>wrap</b>(<i>text</i>,
-							<i>width</i>)</code>
-						→ string[]
-						<br>
-						Wraps text to a given width
-					</summary>
-					<ul>
-						<li>
-							<b>Parameters</b>
-							<table>
-								<tr>
-									<th>param</th>
-									<th>type</th>
-									<th>details</th>
+									<td rowspan="2">idx?</td>
+									<td>integer</td>
+									<td>
+										Index to insert elements at. If negative, it adds at idx from the end.
+										Eg, -1 for last, -2 for second to last
+									</td>
 								</tr>
 								<tr>
-									<td>text</td>
-									<td>string</td>
-									<td>Text to wrap</td>
-								</tr>
-								<tr>
-									<td>width</td>
-									<td>number</td>
-									<td>Width to wrap to</td>
+									<td><i>nil</i></td>
+									<td>Insert at the beginning</td>
 								</tr>
 							</table>
 						</li>
@@ -382,14 +350,123 @@ Various APIs that are useful for various other things
 							<b>Returns</b>
 							<table>
 								<tr>
-									<td>string[]</td>
-									<td>Wrapped text</td>
+									<th>-</th>
+									<th>type</th>
+									<th>description</th>
+								</tr>
+								<tr>
+									<td>-&gt;</td>
+									<td><i>Rabbit.Table.Set</i>&lt;T&gt;</td>
+									<td>Itself, for chaining</td>
 								</tr>
 							</table>
 						</li>
 					</ul>
 				</details>
 			</li>
-		</ul>
+			<li>
+				<details>
+					<summary>
+						<code>obj:<b>pop</b>(<i>idx?</i>)</code>
+						→ &lt;T&gt;
+						<br>
+						Removes an element from the set
+					</summary>
+			<li>
+				<b>Parameters</b>
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>idx?</td>
+						<td>integer</td>
+						<td>
+							Index to remove. If negative, it removes from idx from the end.
+							Eg, -1 for last, -2 for second to last
+						</td>
+					</tr>
+				</table>
+			</li>
+			<li>
+				<b>Returns</b>
+				<table>
+					<tr>
+						<th>-</th>
+						<th>type</th>
+						<th>description</th>
+					</tr>
+					<tr>
+						<td>-&gt;</td>
+						<td>T</td>
+						<td>The removed element</td>
+					</tr>
+				</table>
+			</li>
+			</details>
 	</li>
+	<li>
+		<details>
+			<summary>
+				<code>obj:<b>del</b>(<i>elem</i>)</code>
+				→ integer
+				<br>
+				Removes an element from the set
+</ul>
+</li>
+<li>
+	<details>
+		<summary>
+			<h2>Terminal API</h2>
+		</summary>
+		Additional terminal functions
+		<pre lang="lua">local TERM = require("rabbit.util.term")</pre>
+	</details>
+	<ul>
+		<li>
+			<details>
+				<summary>
+					<code>TERM.<b>wrap</b>(<i>text</i>,
+						<i>width</i>)</code>
+					→ string[]
+					<br>
+					Wraps text to a given width
+				</summary>
+				<ul>
+					<li>
+						<b>Parameters</b>
+						<table>
+							<tr>
+								<th>param</th>
+								<th>type</th>
+								<th>details</th>
+							</tr>
+							<tr>
+								<td>text</td>
+								<td>string</td>
+								<td>Text to wrap</td>
+							</tr>
+							<tr>
+								<td>width</td>
+								<td>number</td>
+								<td>Width to wrap to</td>
+							</tr>
+						</table>
+					</li>
+					<li>
+						<b>Returns</b>
+						<table>
+							<tr>
+								<td>string[]</td>
+								<td>Wrapped text</td>
+							</tr>
+						</table>
+					</li>
+				</ul>
+			</details>
+		</li>
+	</ul>
+</li>
 </ul>
