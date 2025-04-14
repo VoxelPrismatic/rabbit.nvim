@@ -71,7 +71,6 @@ return function(data)
 	local function cursor_moved()
 		local idx = entry._env.idx or 0
 		local dx = vim.fn.line(".") - 2
-		local row = vim.fn.line(".")
 
 		if dx == 0 or vim.fn.line("$") < 3 then
 			local col = TERM.realcol() + 1
@@ -102,9 +101,6 @@ return function(data)
 
 	color_ws.autocmd:add({
 		CursorMoved = cursor_moved,
-		WinClosed = function()
-			UI._priority_legend = {}
-		end,
 		InsertEnter = function()
 			TERM.feed("<Esc>")
 		end,
@@ -120,9 +116,11 @@ return function(data)
 
 	UI._fg.keys:rebind(color_ws.buf.id, {
 		select = function()
+			UI._priority_legend = {}
 			color_ws:close()
 		end,
 		close = function()
+			UI._priority_legend = {}
 			apply(data.color)
 			color_ws:close()
 		end,

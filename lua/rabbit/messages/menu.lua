@@ -117,5 +117,5 @@ return function(data)
 		end,
 	})
 
-	UI._priority_legend = opts.keys:legend({})
+	UI._priority_legend = opts.keys:legend()
 end

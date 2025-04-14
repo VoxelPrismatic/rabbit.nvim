@@ -218,18 +218,22 @@ end
 ---@field rename? table<string, string> Map of old label to new label
 
 -- Returns all the legends with the current mode and highlight
----@param kwargs Rabbit.Stack.Kwargs.Legend
+---@param kwargs? Rabbit.Stack.Kwargs.Legend
 function KEYS:legend(kwargs)
 	table.sort(self.binds, function(a, b)
 		return a.label < b.label
 	end)
+
+	kwargs = kwargs or {}
+	kwargs.labels = kwargs.labels or {}
+	kwargs.rename = kwargs.rename or {}
 
 	local to_ret = SET.new(kwargs.labels or {})
 	local actions = {}
 
 	local mode = kwargs.mode or vim.fn.mode():lower()
 	for _, key in ipairs(self.binds) do
-		if #to_ret and to_ret:idx(key.label) == nil then
+		if #to_ret > 0 and to_ret:idx(key.label) == nil then
 			-- pass
 		elseif key.shown and key.mode == mode and (kwargs.hl == nil or key.hl == kwargs.hl) then
 			table.insert(actions, key:legend(kwargs.align, kwargs.rename[key.label] or key.label))
