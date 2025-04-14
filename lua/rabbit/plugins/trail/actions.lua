@@ -190,26 +190,34 @@ end
 
 ---@param entry Rabbit*Trail.Win.User
 ---@param new_name string
-local function apply_rename(entry, new_name)
+---@return string
+local function check_rename(entry, new_name)
 	if new_name == "" then
-		new_name = tostring(entry.ctx.winid)
+		return tostring(entry.ctx.winid)
 	end
 
 	for _, winobj in pairs(LIST.real.wins) do
 		if winobj ~= entry and winobj.label.text == new_name then
 			local _, _, count, match = new_name:find("(%++)([0-9]*)$")
 			if match == nil and count == nil then
-				return apply_rename(entry, new_name .. "+")
+				return check_rename(entry, new_name .. "+")
 			elseif match == "" and count ~= "" then
-				return apply_rename(entry, new_name .. #count)
+				return check_rename(entry, new_name .. #count)
 			else
 				local new_idx = tostring(tonumber(match) + 1)
-				return apply_rename(entry, new_name:sub(1, -#new_idx - 1) .. new_idx)
+				return check_rename(entry, new_name:sub(1, -#new_idx - 1) .. new_idx)
 			end
 		end
 	end
-	entry.label.text = new_name
 	return new_name
+end
+
+---@param entry Rabbit*Trail.Win.User
+---@param new_name string
+---@return string
+local function apply_rename(entry, new_name)
+	entry.label.text = check_rename(entry, new_name)
+	return entry.label.text
 end
 
 function ACTIONS.rename(entry)
@@ -225,6 +233,7 @@ function ACTIONS.rename(entry)
 		class = "message",
 		type = "rename",
 		apply = apply_rename,
+		check = check_rename,
 		color = false,
 		name = entry.label.text,
 	}

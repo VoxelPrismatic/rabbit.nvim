@@ -16,9 +16,7 @@ function ACTIONS.children(entry)
 	entry._env = env
 	LIST.buffers[0] = entry
 
-	if entry._env == nil then
-		entry._env = { cwd = ENV.cwd.value }
-	end
+	entry._env = entry._env or { cwd = ENV.cwd.value }
 
 	local real = entry.ctx.real
 	local parent_idx = 0
@@ -117,9 +115,8 @@ function ACTIONS.insert(entry)
 
 	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Carrot.Collection
 
-	if entry._env == nil then
-		entry._env = { idx = 1, cwd = ENV.cwd.value }
-	end
+	entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value }
+
 	local idx = entry._env.idx
 	if entry._env.siblings[1].idx == false then
 		idx = math.max(1, idx - 1)
@@ -156,9 +153,8 @@ function ACTIONS.collect(entry)
 	if entry._env ~= nil then
 		collection = LIST.collections[entry._env.parent.ctx.id]
 	end
-	if entry._env == nil then
-		entry._env = { idx = 1, cwd = ENV.cwd.value }
-	end
+	entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value }
+
 	local idx = vim.uv.hrtime()
 	local c = LIST.collections[idx]
 
@@ -186,7 +182,8 @@ end
 
 ---@param entry Rabbit*Carrot.Collection
 ---@param new_name string
-local function apply_rename(entry, new_name)
+---@return string
+local function check_rename(entry, new_name)
 	if new_name == "" then
 		new_name = string.format("%04x", math.random(1, 65535))
 	end
@@ -198,15 +195,24 @@ local function apply_rename(entry, new_name)
 		elseif collection ~= entry and collection.ctx.real.name == new_name then
 			local _, _, count, match = new_name:find("(%++)([0-9]*)$")
 			if match == nil and count == nil then
-				return apply_rename(entry, new_name .. "+")
+				return check_rename(entry, new_name .. "+")
 			elseif match == "" and count ~= "" then
-				return apply_rename(entry, new_name .. #count)
+				return check_rename(entry, new_name .. #count)
 			else
 				local new_idx = tostring(tonumber(match) + 1)
-				return apply_rename(entry, new_name:sub(1, -#new_idx - 1) .. new_idx)
+				return check_rename(entry, new_name:sub(1, -#new_idx - 1) .. new_idx)
 			end
 		end
 	end
+
+	return new_name
+end
+
+---@param entry Rabbit*Carrot.Collection
+---@param new_name string
+---@return string
+local function apply_rename(entry, new_name)
+	new_name = check_rename(entry, new_name)
 	entry.label.text = new_name
 	entry.ctx.real.name = new_name
 	LIST.carrot:__Save()
@@ -222,6 +228,7 @@ function ACTIONS.rename(entry)
 		class = "message",
 		type = "rename",
 		apply = apply_rename,
+		check = check_rename,
 		color = false,
 		name = entry.ctx.real.name,
 	}

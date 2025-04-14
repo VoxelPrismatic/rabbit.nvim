@@ -94,10 +94,11 @@ return function(data)
 
 	local ignore_leave = false
 	local rename_success = false
+	local new_name = ""
 
 	local function text_changed()
 		local lines = rename_ws.lines:get()
-		local new_name = table.concat(lines, "")
+		new_name = table.concat(lines, "")
 
 		if #lines < 3 then
 			local col = vim.fn.col(".")
@@ -105,7 +106,7 @@ return function(data)
 			rename_ws.cursor:set(2, col - 1)
 		end
 
-		local valid_name = data.apply(entry, new_name)
+		local valid_name = data.check(entry, new_name)
 		rename_ws.extmarks:clear()
 
 		if valid_name == new_name then
@@ -217,10 +218,10 @@ return function(data)
 				UI._fg.cursor:set(linenr, startcol + curpos, true)
 			end
 
-			if not rename_success then
-				data.apply(entry, data.name)
-				UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))
+			if rename_success then
+				data.apply(entry, new_name)
 			end
+			UI.place_entry(entry, entry._env.idx, entry._env.real, #tostring(#UI._entries))
 		end,
 	})
 
