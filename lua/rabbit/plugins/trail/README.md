@@ -3,9 +3,9 @@
 
 Rabbit Trail lists the buffers you've visited in the order of most recent, and
 split by window. This way, a simple keybind, `‣r↵`, will take you to the
-previous buffer. You may also choose *which* window to open. A preview is shown
-for the target window, displaying the target buffer precisely how you'd see it.
-Now, you don't have to mentally switch contexts when opening buffers!
+previous buffer. You may also select a specific window to open. A preview is
+shown for the target window, displaying the target buffer precisely how you'd
+see it. Now, you don't have to mentally switch contexts when opening buffers!
 
 ## Configuration
 
@@ -33,7 +33,14 @@ local PLUGIN_CONFIG = {
 ```
 
 ## Change Log
-- `r00b1`: Apr 04, 2025
+- `r1.0`: Apr 14, 2025
+  - Fixed Bugs
+    - *none*
+  - Known Issues
+    - *none*
+  - New Features
+    - You may now cancel the rename operation
+- `r0.0b1`: Apr 04, 2025
   - Fixed Bugs
     - Deleting a closed buffer will soft-crash Rabbit and close the current window
   - Known Issues
@@ -43,7 +50,7 @@ local PLUGIN_CONFIG = {
     buffer will be selected by default, instead of the second-most recent buffer
     - You may now sort windows by display name
     - Cut, Yank, & Paste
-- `r00a5`: Apr 02, 2025
+- `r0.0a5`: Apr 02, 2025
   - Fixed Bugs
     - Attempting to copy a closed window will crash
   - Known Issues
@@ -51,14 +58,14 @@ local PLUGIN_CONFIG = {
   - New Features
     - You may now copy specific parts of history to new windows
     - Visual selection
-- `r00a4`: Mar 29, 2025
+- `r0.0a4`: Mar 29, 2025
   - Fixed Bugs
     - *none*
   - Known Issues
     - Attempting to copy a closed window will crash
   - New Features
     - You are now prompted when trying to close a modified buffer
-- `r00a3`: Mar 25, 2025
+- `r0.0a3`: Mar 25, 2025
   - Fixed Bugs
     - *none*
   - Known Issues
@@ -67,7 +74,7 @@ local PLUGIN_CONFIG = {
     - You may now delete closed buffers
     - You may now delete closed windows
     - You may now close saved buffers
-- `r00a2`: Mar 19, 2025
+- `r0.0a2`: Mar 19, 2025
   - Fixed Bugs
     - Trail now ignores all events when Rabbit is open
     - Previewing buffers no longer breaks the buffer order
@@ -76,7 +83,7 @@ local PLUGIN_CONFIG = {
   - New Features
     - Implemented the Rename action, imitating Oil's insert behavior
     - Implemented the Parent action; quickly jump to the parent collection
-- `r00a1`: Mar 15, 2025
+- `r0.0a1`: Mar 15, 2025
   - Fixed Bugs
     - *none*
   - Known Issues
@@ -84,5 +91,5 @@ local PLUGIN_CONFIG = {
   - New Features
     - Initial release
     - Legacy:History and Legacy:Reopen have been merged into Rewrite:Trail
-    - Trail allows you to select which window to open
+    - Trail allows you to select the window to open
     - Trail displays a preview of what you're about to open and where

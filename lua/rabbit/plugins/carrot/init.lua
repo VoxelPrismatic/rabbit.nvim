@@ -8,7 +8,7 @@ local TRAIL = require("rabbit.plugins.trail.list")
 ---@type Rabbit*Carrot
 local PLUG = {
 	synopsis = "Put carrots next to your favorite files for quick access",
-	version = "r00a2",
+	version = "r0.0a3",
 	empty = {
 		msg = "There's nowhere to jump to! Get started by adding a file or collection",
 		actions = {
@@ -51,6 +51,10 @@ function PLUG.list()
 			PLUG.empty.actions.insert = true
 			break
 		end
+	end
+
+	if PLUG.opts.separate == "never" then
+		return LIST.collections[0]
 	end
 
 	return LIST.buffers[LIST.scope()]

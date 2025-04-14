@@ -7,7 +7,7 @@ local LIST = require("rabbit.plugins.trail.list")
 ---@type Rabbit*Trail
 local PLUG = {
 	synopsis = "Navigate the trail of previously visited buffers, separated by window",
-	version = "r00a5",
+	version = "r1.0",
 	empty = {
 		msg = "There's nowhere to jump to! Get started by opening a buffer",
 		actions = {
