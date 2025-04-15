@@ -1,6 +1,7 @@
 local LIST = require("rabbit.plugins.trail.list")
 local ENV = require("rabbit.plugins.trail.env")
 local TERM = require("rabbit.util.term")
+local MEM = require("rabbit.util.mem")
 
 ---@type Rabbit.Plugin.Events
 local EVT = {}
@@ -26,7 +27,7 @@ function EVT.BufEnter(evt, ctx)
 end
 
 function EVT.BufDelete(evt, _)
-	if not LIST.bufs[evt.buf].ctx.listed or vim.uv.fs_stat(evt.file) == nil then
+	if not (LIST.bufs[evt.buf].ctx.listed and MEM.exists(evt.file)) then
 		LIST.handle_duped_bufs(evt.buf)
 		LIST.major.ctx.bufs:del({ evt.buf })
 		for _, winid in ipairs(LIST.major.ctx.wins) do

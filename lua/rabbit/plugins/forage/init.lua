@@ -1,4 +1,5 @@
 local LIST = require("rabbit.plugins.forage.list")
+local GLOBAL_CONFIG = require("rabbit.config")
 
 ---@class (exact) Rabbit*Forage: Rabbit.Plugin
 ---@field opts Rabbit*Forage.Options
@@ -22,3 +23,14 @@ local PLUG = {
 		"trail",
 	},
 }
+
+function PLUG.setup(opts)
+	PLUG.opts = vim.tbl_deep_extend("force", PLUG.opts, opts)
+	LIST.load(GLOBAL_CONFIG.system.data .. PLUG.save)
+end
+
+function PLUG.list()
+	return LIST.default
+end
+
+return PLUG

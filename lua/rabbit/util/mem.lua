@@ -4,8 +4,8 @@ local MEM = {}
 
 -- Split the paths into components
 ---@param path string
----@return string[] Components
----@return string Absolute path
+---@return string[] parts Components
+---@return string abs_path Absolute path
 local function split_path(path)
 	local components = {}
 	path = vim.fn.fnamemodify(path, ":p")
@@ -20,15 +20,14 @@ end
 
 ---@param source string
 ---@param target string
----@return string[]
+---@return string[] parts
 local function relative_filepath(source, target)
 	-- Split the paths into components
 	local src_path, source_path = split_path(source)
 	local dst_path = split_path(target)
 
 	-- We do not care about the file part
-	local stat = vim.uv.fs_stat(source_path)
-	if stat == nil or stat.type ~= "directory" then
+	if not MEM.is_type(source_path, "file") then
 		table.remove(src_path, #src_path)
 	end
 
@@ -47,6 +46,55 @@ local function relative_filepath(source, target)
 	end
 
 	return rel_path
+end
+
+-- Return the real stat, traveling through symbolic links
+---@param path string
+---@return uv.fs_stat.result | nil stat
+---@return string | nil err
+---@return string | nil err_name
+function MEM.stat(path)
+	local stat, err, err_name = vim.uv.fs_stat(path)
+	while stat ~= nil and stat.type == "link" do
+		stat, err, err_name = vim.uv.fs_lstat(stat.ino)
+	end
+	return stat, err, err_name
+end
+
+-- Check if the file/dir is a certain type. You cannot check links with this.
+-- 1. If the file does not exist, it returns false
+-- 2. If there are no types to check, it returns true
+---@param path string To check
+---@param ...
+---| "file"
+---| "directory"
+---| "socket"
+---| "fifo"
+---| "char"
+---| "block"
+---@return boolean is_type
+function MEM.is_type(path, ...)
+	local stat = MEM.stat(path)
+	if stat == nil then
+		return false
+	end
+
+	if #{ ... } == 0 then
+		return true
+	end
+
+	for _, t in ipairs({ ... }) do
+		if stat.type == t then
+			return true
+		end
+	end
+	return false
+end
+
+-- Check if the file exists
+---@return boolean exists
+function MEM.exists(path)
+	return MEM.stat(path) ~= nil
 end
 
 ---@class Rabbit.Mem.RelPath.Kwargs
@@ -125,8 +173,7 @@ local function dynamic_rel_path(self, new_width)
 		merge = dir .. name,
 	}
 
-	local stat = vim.uv.fs_stat(self.target)
-	if stat ~= nil and stat.type == "directory" then
+	if MEM.is_type(self.target, "directory") then
 		ret.merge = ret.merge .. "/"
 		ret.name = ret.name .. "/"
 	end
@@ -197,20 +244,21 @@ local path_cache = setmetatable({}, {
 		return ret
 	end,
 })
+
 -- Like rel_path, but fills in all the defaults. (rel_path is separate for easy copy/paste)
 ---@param target string
 ---@return Rabbit.Mem.RelPath
 function MEM.rel_path(target)
 	local UI = require("rabbit.term.listing")
 	local ok, source = pcall(vim.api.nvim_buf_get_name, STACK._.user.buf.id)
-	if not ok or vim.uv.fs_stat(source) == nil then
+	if not (ok and MEM.exists(source)) then
 		source = vim.fn.getcwd()
 	end
 
 	return path_cache[source][target][UI._fg.win.config.width]
 end
 
----@param self Rabbit.Writeable
+---@param self Rabbit.Writeable<`K`, `V`>
 local function writeable_save(self)
 	-- Vim doesn't trim functions, so we delete it and reinstate manually
 	local dest = self.__Dest
@@ -224,8 +272,8 @@ end
 -- Tries to read a file. If the file isn't found, it returns an empty table
 -- under the assumption that it has yet to be created.
 ---@param src string The path to the file to read.
----@return Rabbit.Writeable "The contents of the file"
----@return boolean "true if the file exists"
+---@return Rabbit.Writeable obj "The contents of the file"
+---@return boolean success True if the file exists
 function MEM.Read(src)
 	local data, msg, errno = io.open(src, "r")
 	local ret = {}
@@ -255,7 +303,7 @@ end
 function MEM.Write(data, dest)
 	local stack = {}
 	for dir in vim.fs.parents(dest) do
-		if vim.uv.fs_stat(dir) ~= nil then
+		if MEM.stat(dir) ~= nil then
 			break
 		end
 		-- vim.fs.parents goes from source->root, but we need root->source
@@ -276,10 +324,9 @@ function MEM.Write(data, dest)
 	writer:close()
 end
 
----@class Rabbit.Writeable: table
+---@class Rabbit.Writeable<K, V>: { [K]: V }
+---@field __Dest string
 ---@field __Save fun(self: Rabbit.Writeable)
----@field __Dest string The destination
----
 
 MEM.cache = real_cache
 

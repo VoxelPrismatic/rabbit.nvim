@@ -793,6 +793,10 @@ C.plugins = {
 	index = {
 		default = true,
 	},
+
+	---@type Rabbit*Forage.Options | false
+	---@diagnostic disable-next-line: missing-fields
+	forage = {},
 }
 
 -- Other rabbit system settings

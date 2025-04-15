@@ -1,4 +1,5 @@
 local SET = require("rabbit.util.set")
+local MEM = require("rabbit.util.mem")
 local CONFIG = require("rabbit.plugins.trail.config")
 local GLOBAL_CONFIG = require("rabbit.config")
 local LIST = {
@@ -216,7 +217,7 @@ function buf_meta:__index(bufid)
 			true_path = vim.api.nvim_buf_get_name(bufid)
 			true_listed = vim.fn.buflisted(bufid) == 1
 		elseif type(bufid) == "string" then
-			if vim.uv.fs_stat(bufid) == nil then
+			if not MEM.exists(bufid) then
 				error("Invalid file path: " .. bufid)
 			end
 
@@ -261,7 +262,7 @@ function buf_meta:__index(bufid)
 		ret.actions.hover = true
 		if not ret.closed then
 			ret.ctx.listed = vim.fn.buflisted(bufid) == 1 or not CONFIG.ignore_unlisted
-		elseif vim.uv.fs_stat(ret.path) then
+		elseif MEM.exists(ret.path) then
 			ret.ctx.listed = true
 		else
 			ret.ctx.listed = false

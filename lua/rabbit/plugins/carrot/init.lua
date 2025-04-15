@@ -1,6 +1,7 @@
 local GLOBAL_CONFIG = require("rabbit.config")
 local LIST = require("rabbit.plugins.carrot.list")
 local TRAIL = require("rabbit.plugins.trail.list")
+local MEM = require("rabbit.util.mem")
 
 ---@class (exact) Rabbit*Carrot: Rabbit.Plugin
 ---@field opts Rabbit*Carrot.Options
@@ -36,7 +37,7 @@ function PLUG.list()
 	PLUG.empty.actions.insert = false
 	for _, bufid in ipairs(TRAIL.major.ctx.bufs) do
 		local bufobj = TRAIL.bufs[bufid]
-		if bufobj.ctx.listed and vim.uv.fs_stat(bufobj.path) ~= nil then
+		if bufobj.ctx.listed and MEM.exists(bufobj.path) then
 			LIST.recent = bufobj.path
 			PLUG.empty.actions.insert = true
 			break

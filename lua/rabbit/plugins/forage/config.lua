@@ -3,10 +3,12 @@
 ---@field grep boolean Enable grep-based search with `rg`.
 ---@field find boolean Enable classic-find with `find`.
 ---@field history_length integer Length of the history. Set to 0 to disable history.
----@field restore
----| "global" # All search tools will restore the last searched term among any search tool
----| "split" # Each search tool will restore its own last searched term
----| "never" # Search tools will open without restoring the last searched term
+---@field oxide Rabbit*Forage.Options.Oxide
+
+---@class (exact) Rabbit*Forage.Options.Oxide
+---@field max_age integer Maximum age of a frequently accessed file, similar to Zoxide's AGING algorithm.
+---@field children_only boolean Do not display files outside of the current working directory \
+---Note: This only works if the `cwd` function returns a directory
 
 ---@type Rabbit*Forage.Options
 local PLUGIN_CONFIG = {
@@ -18,7 +20,11 @@ local PLUGIN_CONFIG = {
 	grep = true,
 	find = true,
 	history_length = 128,
-	restore = "split",
+	cwd = require("rabbit.util.paths").git,
+	oxide = {
+		max_age = 1000,
+		children_only = true,
+	},
 }
 
 return PLUGIN_CONFIG

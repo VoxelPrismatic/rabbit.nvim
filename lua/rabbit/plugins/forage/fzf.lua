@@ -1,0 +1,16 @@
+---@class (exact) Rabbit*Forage.Options.FuzzyFind
+---@field extended boolean Extended-search mode. Enabled by default.
+---@field case: Case sensitivity mode
+---| "ignore" # Ignore case
+---| "smart" # Smart case
+---| "strict" # Case-sensitive
+---@field exact boolean Enable exact-match
+---@field literal boolean Do not normalize latin script letters for matching.
+---@field score_fn: Scoring function
+---| "default" # Generic scoring scheme designed to work well with any type of input.
+---| "path" # Additional bonus point is only given to the characters after path separator.
+---| "history" # Scoring scheme well suited for command history or any input where chronological ordering is important.
+---| "none" # Do not sort the result
+---@field algorithm: Fuzzy matching algorithm
+---| "v1" # Faster but not guaranteed to find the optimal result (performance)
+---| "v2" # Optimal scoring algorithm (quality)

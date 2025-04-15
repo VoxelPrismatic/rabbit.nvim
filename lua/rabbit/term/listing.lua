@@ -584,7 +584,8 @@ function UI.apply_actions()
 	UI._fg.keys:clear()
 
 	if e.actions.parent then
-		if UI.find_action("parent", e)(e) == UI._display then
+		local _, val = pcall(UI.find_action("parent", e) or function() end, e)
+		if val == UI._display then
 			all_actions:del("parent")
 		end
 	end

@@ -62,7 +62,6 @@ function AUTOCMD:add(event, kwargs)
 			desc = "Rabbit Autocmd",
 		}
 	elseif kwargs.buffer == nil and kwargs.pattern == nil then
-		vim.print(kwargs)
 		kwargs.buffer = self.target.buf.id
 	end
 

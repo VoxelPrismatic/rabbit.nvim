@@ -202,7 +202,7 @@ end
 ---@param data Rabbit.Message.Preview
 ---@return string | string[] "Error message (nil if no error)"
 local function preview_test(data)
-	local stat = vim.uv.fs_stat(data.file)
+	local stat = MEM.stat(data.file)
 	if stat == nil then
 		return "No such file exists"
 	end
