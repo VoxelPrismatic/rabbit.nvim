@@ -108,9 +108,8 @@ yourself.
 
 <br><br>
 
-## Active Development
-I know this project looks stalled, but that's because I think it's about perfect as-is! Feel free
-to open an issue.
+> [!NOTE]
+> Rabbit is currently being rewritten. Expect breaking changes soon.
 
 <br><br>
 
@@ -124,14 +123,6 @@ return {
     end,
 }
 ```
-
-> [!WARNING]
-> Rabbit is only tested on Linux, although probably works as well on macOS.
-> Please help with any compatibility issues by raising an [issue](https://github.com/voxelprismatic/rabbit.nvim/issues)
-
-> [!NOTE]
-> Rabbit is only tested on the latest version of Neovim, which is detailed at the top of the readme.
-> If your version of Neovim is significantly older, bite the bullet and upgrade.
 
 <br><br>
 
