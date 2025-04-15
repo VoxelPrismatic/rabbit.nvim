@@ -61,18 +61,9 @@ LIST.major = {
 		align = "right",
 	},
 	actions = {
-		delete = false,
 		children = true,
 		select = true,
-		hover = false,
 		parent = true,
-		rename = false,
-		insert = false,
-		collect = false,
-		visual = false,
-		yank = false,
-		cut = false,
-		paste = false,
 	},
 	ctx = {
 		wins = SET.new(),
@@ -143,18 +134,11 @@ function win_meta.__index(_, winid)
 				hl = { "rabbit.paint.iris" },
 			},
 			actions = {
-				delete = false,
 				children = true,
 				select = true,
 				hover = true,
 				parent = true,
 				rename = true,
-				insert = false,
-				collect = false,
-				visual = false,
-				yank = false,
-				cut = false,
-				paste = false,
 			},
 			ctx = {
 				winid = winid,
@@ -292,7 +276,6 @@ setmetatable(LIST.bufs, buf_meta)
 -- Remove buffers that are not referenced anywhere
 ---@param bufs_to_del integer[]
 function LIST.clean_bufs(bufs_to_del)
-	local actions = require("rabbit.plugins.trail.actions")
 	for _, bufid in ipairs(bufs_to_del) do
 		if LIST.major.ctx.bufs:idx(bufid) or LIST.yank:idx(bufid) then
 			goto referenced
@@ -312,7 +295,7 @@ function LIST.clean_bufs(bufs_to_del)
 	end
 end
 
--- Finds duplicate buffers based on a buf id or path
+-- Finds duplicate buffers based on a bufid or path
 ---@param bufid integer | string
 ---@return integer[]
 function LIST.find_dupes(bufid)
@@ -394,9 +377,9 @@ function LIST.save()
 end
 
 -- Returns all the window IDs in the current layout
----@param winlayout Rabbit*Trail.SaveFile.Layout
+---@param win_layout Rabbit*Trail.SaveFile.Layout
 ---@return integer[]
-function LIST.traverse_layout(winlayout)
+function LIST.traverse_layout(win_layout)
 	local ret = SET.new() ---@type Rabbit.Table.Set<integer>
 
 	---@param node Rabbit*Trail.SaveFile.Layout
@@ -411,7 +394,7 @@ function LIST.traverse_layout(winlayout)
 		end
 	end
 
-	traverse(winlayout)
+	traverse(win_layout)
 	return ret
 end
 

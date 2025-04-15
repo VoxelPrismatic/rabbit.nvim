@@ -12,18 +12,8 @@ local PLUG = {
 	empty = {
 		msg = "There's nowhere to jump to! Get started by adding a file or collection",
 		actions = {
-			children = false,
-			delete = false,
-			hover = false,
-			parent = false,
-			rename = false,
-			select = false,
 			insert = true,
 			collect = true,
-			yank = false,
-			cut = false,
-			visual = false,
-			paste = false,
 		},
 	},
 	name = "carrot",

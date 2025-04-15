@@ -352,7 +352,7 @@ function ACTIONS.yank(entry)
 	for i = start_idx, end_idx do
 		local sibling = siblings[i]
 		assert(sibling.type == "file", "only files can be yanked")
-		table.insert(LIST.yank, sibling.bufid)
+		LIST.yank:add(sibling.bufid, -1)
 	end
 
 	default = start_idx

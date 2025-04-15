@@ -1,6 +1,10 @@
 ---@class (exact) Rabbit*Carrot.Options: Rabbit.Plugin.Options
----@field default_color Rabbit.Colors.Paint Color to use for new collections
----@field separate "never" | "buffer" | "window" Separate collections by buffer, window, or never
+---@field default_color Rabbit.Colors.Paint Color to use for new collections.
+---@field separate: Separate collections by buffer or window.
+---| "global" # All buffers and windows share the same list.
+---| "buffer" # Each buffer will remember its last collection.
+---| "window" # Each window will remember its last collection.
+---| "never" # Always return the root collection. Recommended for building muscle memory.
 
 ---@type Rabbit*Carrot.Options
 local PLUGIN_CONFIG = {

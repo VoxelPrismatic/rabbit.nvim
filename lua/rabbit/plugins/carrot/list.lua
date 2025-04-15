@@ -145,7 +145,6 @@ local function create_collection(self, id)
 			delete = true,
 			children = true,
 			select = true,
-			hover = false,
 			parent = collection.parent ~= 0,
 			rename = str_id ~= "0",
 			insert = true,
