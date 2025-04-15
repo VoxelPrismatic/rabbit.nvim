@@ -2,8 +2,17 @@ local ENV = require("rabbit.plugins.carrot.env")
 local LIST = require("rabbit.plugins.carrot.list")
 local SET = require("rabbit.util.set")
 local CONFIG = require("rabbit.config")
+local ICONS = require("rabbit.util.icons")
 
 local selection = 10000
+
+---@param entry Rabbit*Carrot.Collection
+---@return Rabbit*Carrot.Collection.Dump real
+local function real_target(entry)
+	local real = LIST.collections[entry.ctx.id].ctx.real
+	entry.ctx.real = real
+	return real
+end
 
 ---@type Rabbit.Plugin.Actions
 local ACTIONS = {}
@@ -18,7 +27,7 @@ function ACTIONS.children(entry)
 
 	entry._env = entry._env or { cwd = ENV.cwd.value }
 
-	local real = entry.ctx.real
+	local real = real_target(entry)
 	local parent_idx = 0
 
 	assert(real ~= nil, "Unreachable: Rabbit Collection should have a Twig Collection")
@@ -69,7 +78,7 @@ function ACTIONS.children(entry)
 
 	local to_remove = {}
 	local top_level = LIST.collections[0] == entry
-	for i, e in ipairs(entry.ctx.real.list) do
+	for i, e in ipairs(real.list) do
 		if e == vim.NIL or e == nil then
 			table.insert(to_remove, i)
 		elseif type(e) == "string" then
@@ -77,6 +86,14 @@ function ACTIONS.children(entry)
 			c.actions.parent = not top_level
 			c.actions.delete = true
 			c.actions.insert = LIST.recent ~= 0
+			c.actions.rename = true
+			local fakename = real.filename[c.path]
+			if fakename then
+				c.label = {
+					{ text = ICONS[c.path] .. " ", hl = "rabbit.files.path" },
+					{ text = fakename, hl = "rabbit.files.file" },
+				}
+			end
 			table.insert(entries, c)
 		else
 			local c = LIST.collections[e]
@@ -93,7 +110,7 @@ function ACTIONS.children(entry)
 	end
 
 	for j = #to_remove, 1, -1 do
-		table.remove(entry.ctx.real.list, to_remove[j])
+		table.remove(real.list, to_remove[j])
 	end
 
 	if selection <= #entries and #entries > 0 then
@@ -185,7 +202,11 @@ end
 ---@return string
 local function check_rename(entry, new_name)
 	if new_name == "" then
-		new_name = string.format("%04x", math.random(1, 65535))
+		if entry.type == "file" then
+			local e = entry --[[@as Rabbit*Trail.Buf]]
+			return "./" .. vim.fs.basename(e.path)
+		end
+		return string.format("%04x", math.random(1, 65535))
 	end
 
 	for _, collection in pairs(entry._env.siblings) do
@@ -213,8 +234,26 @@ end
 ---@return string
 local function apply_rename(entry, new_name)
 	new_name = check_rename(entry, new_name)
-	entry.label.text = new_name
-	entry.ctx.real.name = new_name
+	if entry.type == "collection" then
+		entry.label.text = new_name
+		entry.ctx.real.name = new_name
+	elseif entry.type == "file" then
+		local e = entry --[[@as Rabbit*Trail.Buf]]
+		local real = real_target(entry._env.parent --[[@as Rabbit*Carrot.Collection]])
+		if new_name == "" or new_name == "./" .. vim.fs.basename(e.path) or new_name == e.path then
+			real.filename[e.path] = nil
+			e.label = nil
+		else
+			real.filename[e.path] = new_name
+			e.label = {
+				{ text = ICONS[e.path] .. " ", hl = "rabbit.files.path" },
+				{ text = new_name, hl = "rabbit.files.file" },
+			}
+		end
+	else
+		error("Unreachable")
+	end
+
 	LIST.carrot:__Save()
 	return new_name
 end
@@ -232,7 +271,15 @@ end
 
 function ACTIONS.rename(entry)
 	if entry.type == "file" then
-		error("Unreachable (file should never be renamed)")
+		entry = entry --[[@as Rabbit*Trail.Buf]]
+		return { ---@type Rabbit.Message.Rename
+			class = "message",
+			type = "rename",
+			apply = apply_rename,
+			check = check_rename,
+			color = false,
+			name = entry._env.parent.ctx.real.filename[entry.path] or "",
+		}
 	end
 
 	return { ---@type Rabbit.Message.Rename
@@ -256,7 +303,8 @@ function ACTIONS.delete(entry)
 		entry = entry --[[@as Rabbit*Trail.Buf]]
 		LIST.recent = entry.path
 		selection = entry._env.idx
-		SET.Func.del(entry._env.parent.ctx.real.list, entry.path)
+		local real = LIST.collections[entry._env.parent.ctx.id].ctx.real
+		SET.Func.del(real.list, entry.path)
 	elseif entry.type == "collection" then
 		assert(entry.idx ~= false, "Cannot delete the move-up collection")
 		entry = LIST.collections[entry.ctx.id]

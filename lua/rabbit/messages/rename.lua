@@ -215,19 +215,19 @@ return function(data)
 		TextChangedI = text_changed,
 		CursorMovedI = cursor_moved,
 		InsertLeave = function()
+			if rename_success then
+				data.apply(entry, new_name)
+			end
+
 			if not ignore_leave then
 				rename_ws:close()
 				UI.list(UI._parent)
 				UI._fg.cursor:set(linenr, startcol + curpos, true)
 			end
 
-			if rename_success then
-				data.apply(entry, new_name)
-				if data.color then
-					UI.handle_callback(data.color)
-				end
+			if rename_success and data.color then
+				UI.handle_callback(data.color)
 			end
-			UI.redraw_entry(entry)
 		end,
 	})
 

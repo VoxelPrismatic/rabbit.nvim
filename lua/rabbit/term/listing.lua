@@ -383,6 +383,11 @@ function UI.highlight(entry)
 		error("Highlight not implemented for type: " .. entry.type)
 	end
 
+	entry = entry --[[@as Rabbit.Entry.File]]
+	if entry.label then
+		return { entry.label }
+	end
+
 	---@diagnostic disable-next-line: missing-fields
 	entry = entry --[[@as Rabbit.Entry.File]]
 	entry.closed = not vim.api.nvim_buf_is_valid(entry.bufid)

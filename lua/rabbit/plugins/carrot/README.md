@@ -39,6 +39,9 @@ local PLUGIN_CONFIG = {
 }
 ```
 
+> [!NOTE]
+> This plugin requires the `trail` plugin, and it will be loaded automatically.
+
 ## Change log
 - `r0.0a3`: Apr 14, 2025
   - Fixed Bugs

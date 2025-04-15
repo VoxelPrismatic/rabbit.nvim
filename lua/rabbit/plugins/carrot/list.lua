@@ -19,6 +19,7 @@ local TRAIL = require("rabbit.plugins.trail.list")
 ---@field color Rabbit.Colors.Paint Collection color
 ---@field parent integer Parent collection (or 0 for root)
 ---@field list (string | integer)[] String: File path; Integer: Collection ID
+---@field filename table<string, string> Renamed files
 
 ---@class (exact) Rabbit*Carrot.Dump
 ---@field [string] Rabbit*Carrot.Collection.Dump
@@ -44,6 +45,7 @@ local LIST = {
 	-- { buffer id: Collection }
 	buffers = {},
 
+	---@type table<integer | string, Rabbit*Trail.Buf>
 	files = {},
 
 	---@type table<string, table<integer, Rabbit*Carrot.Collection>>
@@ -53,7 +55,7 @@ local LIST = {
 -- Loads collection data from disk
 ---@param path string File path
 function LIST.load(path)
-	LIST.carrot = MEM.Read(path)
+	LIST.carrot = MEM.Read(path) --[[@as Rabbit*Carrot.Writeable]]
 	for _, collections in pairs(LIST.carrot) do
 		if type(collections) ~= "table" then
 			goto continue
@@ -124,9 +126,14 @@ local function create_collection(self, id)
 			color = "rose",
 			parent = -1,
 			list = {},
+			filename = {},
 		}
 
 		carrot_target[str_id] = collection
+	else
+		collection.parent = collection.parent or 0
+		collection.list = collection.list or {}
+		collection.filename = collection.filename or {}
 	end
 
 	---@type Rabbit*Carrot.Collection
