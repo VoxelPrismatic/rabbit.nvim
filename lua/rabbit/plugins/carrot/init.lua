@@ -9,7 +9,7 @@ local MEM = require("rabbit.util.mem")
 ---@type Rabbit*Carrot
 local PLUG = {
 	synopsis = "Put carrots next to your favorite files for quick access",
-	version = "r0.0a3",
+	version = "r0.0a4",
 	empty = {
 		msg = "There's nowhere to jump to! Get started by adding a file or collection",
 		actions = {

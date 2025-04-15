@@ -43,6 +43,14 @@ local PLUGIN_CONFIG = {
 > This plugin requires the `trail` plugin, and it will be loaded automatically.
 
 ## Change log
+- `r0.0a4`: Apr 15, 2025
+  - Fixed Bugs
+    - *none*
+  - Known Issues
+    - *none*
+  - New Features
+    - You may rename files
+    - Renamed files show a little filetype icon
 - `r0.0a3`: Apr 14, 2025
   - Fixed Bugs
     - *none*
