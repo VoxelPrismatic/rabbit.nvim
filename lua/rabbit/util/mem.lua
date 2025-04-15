@@ -27,7 +27,7 @@ local function relative_filepath(source, target)
 	local dst_path = split_path(target)
 
 	-- We do not care about the file part
-	if not MEM.is_type(source_path, "file") then
+	if MEM.is_type(source_path, "file") then
 		table.remove(src_path, #src_path)
 	end
 
