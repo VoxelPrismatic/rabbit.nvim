@@ -15,6 +15,7 @@ local function real_target(entry)
 end
 
 ---@type Rabbit.Plugin.Actions
+---@diagnostic disable-next-line: missing-fields
 local ACTIONS = {}
 
 ---@param entry Rabbit*Carrot.Collection

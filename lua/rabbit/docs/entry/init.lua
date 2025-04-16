@@ -20,5 +20,4 @@
 ---@alias Rabbit.Entry._.Label
 ---| string # Generic text
 ---| Rabbit.Term.HlLine # Highlighted text
----| Rabbit.Term.HlLine[] # Highlighted text
 ---| string[] # Generic text

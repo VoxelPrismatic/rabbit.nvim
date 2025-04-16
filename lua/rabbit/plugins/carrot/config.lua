@@ -11,6 +11,7 @@ local PLUGIN_CONFIG = {
 	color = "#696ac2",
 	default_color = "iris",
 	separate = "never",
+	---@diagnostic disable-next-line: missing-fields
 	keys = {
 		switch = "h",
 	},

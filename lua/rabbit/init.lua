@@ -73,7 +73,9 @@ function RABBIT.register(plugin, opts)
 		if not RABBIT.autocmds[evt] then
 			RABBIT.autocmds[evt] = vim.api.nvim_create_autocmd(evt, {
 				callback = function(e)
-					RABBIT.propagate(e)
+					-- NvimEvent and vim.api.keyset.create_autocmd.callback_args are the same,
+					-- but mine is better typed
+					RABBIT.propagate(e --[[@as NvimEvent]])
 				end,
 				group = RABBIT.augroup,
 			})

@@ -13,6 +13,7 @@
 ---@type Rabbit*Forage.Options
 local PLUGIN_CONFIG = {
 	color = "#33b473",
+	---@diagnostic disable-next-line: missing-fields
 	keys = {
 		switch = "f",
 	},

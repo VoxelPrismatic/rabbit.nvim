@@ -5,7 +5,7 @@ local CONFIG = require("rabbit.plugins.carrot.config")
 local TRAIL = require("rabbit.plugins.trail.list")
 
 ---@class (exact) Rabbit*Carrot.Collection: Rabbit.Entry.Collection
----@field label Rabbit.Term.HlLine | Rabbit.Term.HlLine[]
+---@field label Rabbit.Term.HlLine
 ---@field ctx Rabbit*Carrot.Collection.Ctx
 
 ---@class Rabbit*Carrot.Collection.Ctx

@@ -14,7 +14,7 @@ local preview_ws ---@type Rabbit.Stack.Workspace | nil
 ---@field b vim.api.keyset.win_config Bottom config.
 ---@field w vim.api.keyset.win_config Target window config.
 ---@field [0] uv.uv_timer_t Timer to clear cache after 10m
----@field [string] Rabbit.Term.Border.Generic<Rabbit.Term.HlLine[]> Borders for the window (per file).
+---@field [string] Rabbit.Term.Border.Generic<Rabbit.Term.HlLine> Borders for the window (per file).
 
 ---@param win_config vim.api.keyset.win_config
 ---@param path string

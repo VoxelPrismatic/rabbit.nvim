@@ -21,7 +21,7 @@
 ---@field cterm? string[] Special attributes. Use the boolean values above instead.
 ---@field force? boolean Update the highlight group if it exists
 
----@class NvimEvent
+---@class NvimEvent: vim.api.keyset.create_autocmd.callback_args
 ---@field buf integer Buffer ID
 ---@field event string Event type
 ---@field file string File name

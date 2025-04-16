@@ -335,16 +335,21 @@ end
 ---@field end_ integer Where the highlight ends
 ---@field name string The highlight group
 
----@alias Rabbit.Term.HlLine Rabbit.Term.HlLine.Enum | Rabbit.Term.HlLine[]
----@alias Rabbit.Term.HlLine.NoAlign Rabbit.Term.HlLine.Enum.NoAlign | Rabbit.Term.HlLine.NoAlign[]
-
----@class (exact) Rabbit.Term.HlLine.Enum.NoAlign
----@field text string The text to display
----@field hl? string | string[] | { [string]: boolean } The highlight group
----@field [integer] Rabbit.Term.HlLine.NoAlign Nested lines
-
----@class (exact) Rabbit.Term.HlLine.Enum: Rabbit.Term.HlLine.Enum.NoAlign
----@field align? "left" | "right" | "center" The alignment of the text
+---@class (exact) Rabbit.Term.HlLine: table<Rabbit.Term.HlLine>
+---@field text? string The text to display
+---@field hl? : The highlight group to apply to text
+---| string # Single highlight group
+---| string[] # Multiple highlight groups
+---| { [string]: boolean } # { [hl]: enabled } pairs; if enabled, highlight is applied
+---@field align? "left" | "center" | "right" : The text alignment
 ---@field [integer] Rabbit.Term.HlLine Nested lines
+
+---@class (exact) Rabbit.Term.HlLine.NoAlign: table<Rabbit.Term.HlLine.NoAlign>
+---@field text? string The text to display
+---@field hl? : The highlight group to apply to text
+---| string # Single highlight group
+---| string[] # Multiple highlight groups
+---| { [string]: boolean } # { [hl]: enabled } pairs; if enabled, highlight is applied
+---@field [integer] Rabbit.Term.HlLine.NoAlign Nested lines
 
 return HL

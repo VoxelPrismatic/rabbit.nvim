@@ -1,8 +1,10 @@
 local TRAIL = require("rabbit.plugins.trail.list")
 local LIST = require("rabbit.plugins.forage.list")
 local ENV = require("rabbit.plugins.forage.env")
-
-local ACTIONS = {} ---@type Rabbit.Plugin.Actions
+---
+---@type Rabbit.Plugin.Actions
+---@diagnostic disable-next-line: missing-fields
+local ACTIONS = {}
 
 ---@class Rabbit*Forage.Buf: Rabbit*Trail.Buf
 ---@field ctx Rabbit*Forage.Buf.Ctx
