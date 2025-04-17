@@ -136,7 +136,17 @@ local function create_collection(self, id)
 
 	local str_id = tostring(id)
 	if rawget(real_target, str_id) ~= nil then
-		return real_target[str_id]
+		local collection = real_target[str_id]
+		local real_obj = LIST.carrot[ENV.cwd.value][str_id]
+		collection.label = {
+			text = real_obj.name,
+			hl = {
+				"rabbit.types.collection",
+				"rabbit.paint." .. real_obj.color,
+			},
+		}
+
+		return collection
 	end
 
 	local carrot_target = LIST.carrot[ENV.cwd.value]
@@ -183,6 +193,10 @@ local function create_collection(self, id)
 			rename = str_id ~= "0",
 			insert = true,
 			collect = true,
+			visual = true,
+			yank = true,
+			cut = true,
+			paste = true,
 		},
 		ctx = {
 			bufid = ENV.bufid,
