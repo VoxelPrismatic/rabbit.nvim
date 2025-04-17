@@ -130,4 +130,18 @@ TERM.case = {
 	end,
 }
 
+-- Returns the start and end indexes, and exits visual mode
+---@return integer start_idx
+---@return integer end_idx
+function TERM.get_yank()
+	TERM.feed("<Esc>")
+	local start_idx = vim.fn.getpos("v")[2]
+	local end_idx = vim.fn.getpos(".")[2]
+	if start_idx > end_idx then
+		start_idx, end_idx = end_idx, start_idx
+	end
+
+	return start_idx, end_idx
+end
+
 return TERM
