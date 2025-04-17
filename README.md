@@ -52,8 +52,7 @@
 ---
 
 > [!WARNING]
-> This is the rewrite branch. All changes will be merged once I am confident in
-> feature parity. Please use the original branch for now.
+> This branch is experiencing rapid changes. Please use tagged releases to ensure stability.
 
 # Rabbit.nvim
 A plugin that allows you to switch between buffers faster than ever before, featuring a much more

@@ -1,4 +1,6 @@
-# Trail
+[rabbit.trail]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Ftrail%2FVERSION.json&query=%24.latest&style=flat&label=trail&labelColor=white&color=yellow
+
+# Trail ![version][rabbit.trail]
 ### Navigate the trail of previously visited buffers
 
 Rabbit Trail lists the buffers you've visited in the order of most recent, and

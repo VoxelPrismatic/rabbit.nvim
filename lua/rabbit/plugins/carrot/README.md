@@ -1,4 +1,6 @@
-# Carrot
+[rabbit.carrot]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Fcarrot%2FVERSION.json&query=%24.latest&style=flat&label=carrot&labelColor=white&color=yellow
+
+# Carrot ![version][rabbit.carrot]
 ### Place carrots next to your favorite files for quick access
 
 Rabbit Carrot lists your favorite buffers in any order you like, including in
