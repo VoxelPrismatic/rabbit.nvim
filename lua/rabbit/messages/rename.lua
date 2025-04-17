@@ -187,13 +187,13 @@ return function(data)
 		end
 
 		rename_success = true
+		data.apply(entry, new_name)
 		local new_rename = UI.find_action("rename", entry._env.siblings[idx + dx])
 		if new_rename ~= nil then
 			ignore_leave = true
 			entry.default = false
 			new_entry.default = true
 			local old_cur = UI._fg.cursor:get()
-			data.apply(entry, new_name)
 			UI.redraw_entry(entry)
 			UI._fg.cursor:set(old_cur[1] + dx, curpos + startcol)
 			UI.apply_actions()
