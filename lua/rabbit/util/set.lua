@@ -1,24 +1,27 @@
-local SET = { Meta = {} }
-
----@class Rabbit.Table.Set<T>: table<T>
-SET.Func = {}
+---@class Rabbit.Table.Set<T>: { [integer]: T }
+local SET = {}
 
 -- Creates a new set
 ---@generic T
 ---@param arr? T[]
----@return Rabbit.Table.Set<T>
+---@return Rabbit.Table.Set<T> set New set object
 function SET.new(arr)
+	if arr == nil then
+		return setmetatable({}, { __index = SET })
+	end
+
+	assert(type(arr) == "table", "Expected table, got " .. type(arr))
+
 	---@type Rabbit.Table.Set
-	local ret = vim.deepcopy(arr or {})
-	assert(type(ret) == "table", "Expected table, got " .. type(ret))
-	setmetatable(ret, SET.Meta)
-	for k, v in pairs(SET.Func) do
-		ret[k] = v
+	local ret = setmetatable(vim.deepcopy(arr), { __index = SET })
+
+	if #ret < 2 then
+		return ret
 	end
 
 	local seen = {}
 	for i = #ret, 1, -1 do
-		local v = ret[i]
+		local v = tostring(ret[i])
 		if seen[v] then
 			table.remove(ret, i)
 		else
@@ -32,11 +35,12 @@ end
 -- Inserts an element (or elements) into the set
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
----@param elem T
----@param idx? 1 | integer The index to insert the element at
----@return Rabbit.Table.Set<T> "Self for chaining"
----@overload fun(self: Rabbit.Table.Set<`T`>, elem: `T`[], idx?: 1 | integer)
-function SET.Func:add(elem, idx)
+---@param elem
+---| T # Insert single element
+---| T[] # Insert multiple elements
+---@param idx? 1 | integer The index to insert the element at. Negative numbers insert at end, eg -1 = last, -2 = second to last
+---@return Rabbit.Table.Set<T> self Self for chaining
+function SET:add(elem, idx)
 	if idx == nil then
 		idx = 1
 	elseif idx < 1 then
@@ -47,7 +51,7 @@ function SET.Func:add(elem, idx)
 
 	local to_add = type(elem) == "table" and elem or { elem }
 
-	SET.Func.del(self, to_add)
+	SET.del(self, to_add)
 
 	idx = math.min(math.max(1, idx), #self + 1)
 
@@ -62,17 +66,17 @@ end
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
 ---@param idx? 1 | integer The index of the element to pop
----@return T "The popped element"
-function SET.Func:pop(idx)
+---@return T elem The popped element
+function SET:pop(idx)
 	return table.remove(self, idx or 1)
 end
 
 -- Removes an element (or elements) from the set
 ---@generic T
----@param self Rabbit.Table.Set<T>
 ---@param elem T | T[]
----@return integer "How many elements were removed (usually 1)"
-function SET.Func:del(elem)
+---@return Rabbit.Table.Set<T> self Self for chaining
+---@return integer count How many elements were removed (usually 1)
+function SET:del(elem)
 	local count = 0
 	if type(elem) ~= "table" then
 		elem = { elem }
@@ -87,24 +91,27 @@ function SET.Func:del(elem)
 		end
 	end
 
-	return count
+	return self, count
 end
 
 -- Toggles an element
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
 ---@param elem T
----@param include? boolean True = Force include; False = Force exclude; Nil = Toggle
----@return boolean "Whether the element was added or removed"
-function SET.Func:tog(elem, include)
+---@param include _ Nil to toggle element.
+---| true # Force include.
+---| false # Force exclude.
+---| nil # Toggle element (remove if present, add if not present).
+---@return boolean state Whether the element was added or removed
+function SET:tog(elem, include)
 	if include == nil then
-		include = SET.Func.idx(self, elem) == nil
+		include = SET.idx(self, elem) == nil
 	end
 
 	if include then
-		SET.Func.add(self, elem)
+		SET.add(self, elem)
 	else
-		SET.Func.del(self, elem)
+		SET.del(self, elem)
 	end
 
 	return include
@@ -112,10 +119,9 @@ end
 
 -- Returns the index of an element
 ---@generic T
----@param self Rabbit.Table.Set<T>
 ---@param elem T
----@return integer | nil
-function SET.Func:idx(elem)
+---@return integer? idx Index of element, nil if not found
+function SET:idx(elem)
 	for i, v in ipairs(self) do
 		if v == elem then
 			return i
@@ -129,16 +135,16 @@ end
 ---@param self Rabbit.Table.Set<T>
 ---@param elem T | T[]
 ---@param new T
----@return Rabbit.Table.Set<T>
-function SET.Func:sub(elem, new)
+---@return Rabbit.Table.Set<T> self Self for chaining
+function SET:sub(elem, new)
 	if type(elem) ~= "table" then
 		elem = { elem }
 	end
 
-	local done = SET.Func.idx(self, new) ~= nil
+	local done = SET.idx(self, new) ~= nil
 
 	for _, e in ipairs(elem) do
-		local idx = SET.Func.idx(self, e)
+		local idx = SET.idx(self, e)
 		while idx do
 			if not done then
 				self[idx] = new
@@ -146,7 +152,7 @@ function SET.Func:sub(elem, new)
 			else
 				table.remove(self, idx)
 			end
-			idx = SET.Func.idx(self, e)
+			idx = SET.idx(self, e)
 		end
 	end
 
@@ -157,8 +163,8 @@ end
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
 ---@param elem Rabbit.Table.Set<T>
----@return Rabbit.Table.Set<T>
-function SET.Func:AND(elem)
+---@return Rabbit.Table.Set<T> intersection
+function SET:AND(elem)
 	local ret = SET.new()
 
 	for _, v in ipairs(self) do
@@ -174,8 +180,8 @@ end
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
 ---@param elem Rabbit.Table.Set<T>
----@return Rabbit.Table.Set<T>
-function SET.Func:OR(elem)
+---@return Rabbit.Table.Set<T> union
+function SET:OR(elem)
 	local ret = SET.new()
 	for _, v in ipairs(self) do
 		ret:add(v)
@@ -190,9 +196,11 @@ end
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
 ---@param elem Rabbit.Table.Set<T>
----@return Rabbit.Table.Set<T>
-function SET.Func:XOR(elem)
-	return SET.Func.OR(self, elem):del(SET.Func.AND(self, elem))
+---@return Rabbit.Table.Set<T> negate
+function SET:XOR(elem)
+	local ret = SET.OR(self, elem)
+	ret:del(SET.AND(self, elem))
+	return ret
 end
 
 -- Returns keys from pairs
@@ -204,6 +212,71 @@ function SET.keys(t)
 		table.insert(ret, k)
 	end
 	return unpack(ret)
+end
+
+-- Maps all elements in the set with a function
+---@generic T
+---@generic R
+---@param self Rabbit.Table.Set<T>
+---@param fn fun(idx: integer, elem: T): R?
+---@param all_pairs boolean? True to use pairs() instead of ipairs()
+---@return Rabbit.Table.Set<R> mapped New set with mapped values
+function SET:map(fn, all_pairs)
+	local ret = SET.new()
+	for k, v in (all_pairs and pairs or ipairs)(self) do
+		table.insert(ret, fn(k, v))
+	end
+	return ret
+end
+
+-- Sorts the set
+---@generic T
+---@param self Rabbit.Table.Set<T>
+---@param fn fun(a: T, b: T): boolean?
+---@return Rabbit.Table.Set<T> self Self for chaining
+function SET:sort(fn)
+	table.sort(self, fn)
+	return self
+end
+
+-- Removes gaps between elements
+---@generic T
+---@param self Rabbit.Table.Set<T>
+---@return Rabbit.Table.Set<T> compacted New compacted set
+function SET:compact()
+	local ret = SET.new()
+	for k, v in pairs(self) do
+		if type(k) == "string" then
+			ret[k] = v
+		else
+			table.insert(ret, v)
+		end
+	end
+	return ret
+end
+
+-- Puts an element into the set, incrementing the
+-- index until a free slot is found
+---@generic T
+---@param self Rabbit.Table.Set<T>
+---@param idx integer
+---@param elem T
+---@return Rabbit.Table.Set<T> self Self for chaining
+function SET:put(idx, elem)
+	if idx <= #self + 1 then
+		table.insert(self, idx, elem)
+		return self
+	end
+
+	local swap = self[idx]
+	self[idx] = elem
+	while swap do
+		idx = idx + 1
+		self[idx] = swap
+		swap = self[idx]
+	end
+
+	return self
 end
 
 return SET

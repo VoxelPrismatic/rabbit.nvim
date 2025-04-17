@@ -1,4 +1,5 @@
 local CONFIG = require("rabbit.config")
+local SET = require("rabbit.util.set")
 local HL = {}
 
 -- Will create a new highlight group
@@ -84,13 +85,14 @@ end
 function HL.set_lines(kwargs)
 	local ret = kwargs.lineno
 	if kwargs.many then
-		for i, v in ipairs(kwargs.lines) do
+		for _, v in ipairs(kwargs.lines) do
 			if type(v) == "string" then
-				vim.api.nvim_buf_set_lines(kwargs.bufnr, kwargs.lineno + i - 1, kwargs.lineno + i, false, { v })
+				vim.api.nvim_buf_set_lines(kwargs.bufnr, ret, ret + 1, false, { v })
+				ret = ret + 1
 			else
 				ret = HL.set_lines({
 					bufnr = kwargs.bufnr,
-					lineno = kwargs.lineno + i - 1,
+					lineno = ret,
 					lines = v,
 					ns = kwargs.ns,
 					many = false,
@@ -106,14 +108,20 @@ function HL.set_lines(kwargs)
 		left = {
 			text = "",
 			hl = {},
+			offset = 0,
+			len = 0,
 		},
 		center = {
 			text = "",
 			hl = {},
+			offset = 0,
+			len = 0,
 		},
 		right = {
 			text = "",
 			hl = {},
+			offset = 0,
+			len = 0,
 		},
 	}
 
@@ -122,42 +130,57 @@ function HL.set_lines(kwargs)
 	local strict = kwargs.strict
 	local lineno = kwargs.lineno
 	local buf = kwargs.bufnr
-	local ns = kwargs.ns
+	local ns = kwargs.ns or -1
 	if type(ns) == "string" then
 		ns = vim.api.nvim_create_namespace(ns)
 	end
 
 	while #lines > 0 do
 		local v = table.remove(lines, 1)
+		if type(v) == "string" then
+			v = { text = v } --[[@as Rabbit.Term.HlLine]]
+		else
+			for i, v2 in ipairs(v) do
+				table.insert(lines, i, v2)
+			end
 
-		for i, v2 in ipairs(v) do
-			table.insert(lines, i, v2)
+			if v.text == nil then
+				goto continue
+			end
 		end
 
-		if v.text == nil then
+		local target = parts[v.align or "left"] or parts.left
+		target.text = target.text .. v.text
+		local old_len = target.len
+		target.len = target.len + #v.text
+
+		if v.hl == nil then
 			goto continue
 		end
 
-		local target = parts[v.align or "left"]
-		target.text = target.text .. v.text
-		if v.hl ~= nil then
-			---@type string[]
-			---@diagnostic disable-next-line: assign-type-mismatch
-			local hls = type(v.hl) == "string" and { v.hl } or v.hl
-			for k, enable in pairs(hls) do
-				if type(k) == "string" and enable then
-					table.insert(hls, k)
-				end
-			end
+		local inter = v.hl or {}
+		if type(inter) == "string" then
+			inter = { inter }
+		end
+		inter = SET.new(inter)
 
-			for _, hl in ipairs(hls) do
-				table.insert(target.hl, {
-					start = #target.text - #v.text,
-					end_ = #target.text,
-					name = hl,
-				})
+		for hl, priority in pairs(inter) do
+			if type(hl) == "number" then
+				-- ignore
+			elseif type(priority) == "boolean" and priority == true then
+				inter:add(hl)
+				inter[hl] = nil
+			elseif type(priority) == "number" and priority > 0 then
+				inter:put(priority, hl)
+				inter[hl] = nil
 			end
 		end
+
+		table.insert(target.hl, {
+			start = old_len,
+			end_ = target.len,
+			name = inter:compact(),
+		})
 		::continue::
 	end
 
@@ -167,47 +190,36 @@ function HL.set_lines(kwargs)
 		- vim.api.nvim_strwidth(parts.right.text)
 		- vim.api.nvim_strwidth(parts.center.text)
 	) / 2
+
 	local text = parts.left.text
 		.. (" "):rep(math.floor(center_pad))
 		.. parts.center.text
 		.. (" "):rep(math.ceil(center_pad))
 		.. parts.right.text
 
-	local ok = pcall(vim.api.nvim_buf_set_lines, buf, lineno, lineno + 1, strict, { text })
+	local put = { text }
+
+	local ok = pcall(vim.api.nvim_buf_set_lines, buf, lineno, lineno + 1, strict, put)
 	if not ok then
-		local max = #vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-		local empty = {}
-		for _ = max, lineno + 1 do
-			table.insert(empty, "")
+		local max = #vim.api.nvim_buf_get_lines(buf, lineno, lineno + 1, false)
+		for _ = max, lineno do
+			table.insert(put, 1, "")
 		end
-		vim.api.nvim_buf_set_lines(buf, max - 1, lineno, false, empty)
-		vim.api.nvim_buf_set_lines(buf, lineno, lineno + 1, strict, { text })
+
+		vim.api.nvim_buf_set_lines(buf, max - 1, lineno + 1, strict, put)
 	end
 
-	for _, v in ipairs(parts.left.hl) do
-		vim.api.nvim_buf_set_extmark(buf, ns or 0, lineno, v.start, {
-			hl_group = v.name,
-			end_line = lineno,
-			end_col = v.end_,
-		})
-	end
+	parts.center.offset = math.floor(center_pad) + parts.left.len
+	parts.right.offset = parts.center.offset + math.ceil(center_pad) + parts.center.len
 
-	local offset = #parts.left.text + math.floor(center_pad)
-	for _, v in ipairs(parts.center.hl) do
-		vim.api.nvim_buf_set_extmark(buf, ns or 0, lineno, v.start + offset, {
-			hl_group = v.name,
-			end_line = lineno,
-			end_col = v.end_ + offset,
-		})
-	end
-
-	offset = #parts.left.text + math.floor(center_pad) + #parts.center.text + math.ceil(center_pad)
-	for _, v in ipairs(parts.right.hl) do
-		vim.api.nvim_buf_set_extmark(buf, ns or 0, lineno, v.start + offset, {
-			hl_group = v.name,
-			end_line = lineno,
-			end_col = v.end_ + offset,
-		})
+	for _, part in pairs(parts) do
+		for _, v in ipairs(part.hl) do
+			vim.api.nvim_buf_set_extmark(buf, ns, lineno, v.start + part.offset, {
+				hl_group = v.name,
+				end_line = lineno,
+				end_col = v.end_ + part.offset,
+			})
+		end
 	end
 
 	return ret + 1
@@ -336,20 +348,22 @@ end
 ---@field name string The highlight group
 
 ---@class (exact) Rabbit.Term.HlLine: table<Rabbit.Term.HlLine>
----@field text? string The text to display
----@field hl? : The highlight group to apply to text
----| string # Single highlight group
----| string[] # Multiple highlight groups
----| { [string]: boolean } # { [hl]: enabled } pairs; if enabled, highlight is applied
----@field align? "left" | "center" | "right" : The text alignment
----@field [integer] Rabbit.Term.HlLine Nested lines
+---@field text? string The text to display.
+---@field hl? : The highlight group to apply to text.
+---| string # Single highlight group.
+---| string[] # Multiple highlight groups.
+---| { [string]: boolean } # { [hl]: enabled } pairs; if enabled, highlight is applied.
+---| { [string]: integer } # { [hl]: priority } pairs; 0 = disabled and the highlight won't be applied.
+---@field align? "left" | "center" | "right" : The text alignment.
+---@field [integer] Rabbit.Term.HlLine Nested lines.
 
 ---@class (exact) Rabbit.Term.HlLine.NoAlign: table<Rabbit.Term.HlLine.NoAlign>
 ---@field text? string The text to display
----@field hl? : The highlight group to apply to text
----| string # Single highlight group
----| string[] # Multiple highlight groups
----| { [string]: boolean } # { [hl]: enabled } pairs; if enabled, highlight is applied
----@field [integer] Rabbit.Term.HlLine.NoAlign Nested lines
+---@field hl? : The highlight group to apply to text.
+---| string # Single highlight group.
+---| string[] # Multiple highlight groups.
+---| { [string]: boolean } # { [hl]: enabled } pairs; if enabled, highlight is applied.
+---| { [string]: integer } # { [hl]: priority } pairs; 0 = disabled and the highlight won't be applied.
+---@field [integer] Rabbit.Term.HlLine.NoAlign Nested lines.
 
 return HL
