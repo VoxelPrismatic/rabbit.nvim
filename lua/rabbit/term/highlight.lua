@@ -169,7 +169,7 @@ function HL.set_lines(kwargs)
 				-- ignore
 			elseif type(priority) == "boolean" then
 				if priority == true then
-					inter:add(hl)
+					inter:add(hl, -1)
 				end
 				inter[hl] = nil
 			elseif type(priority) == "number" then
