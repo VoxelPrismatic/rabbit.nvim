@@ -772,7 +772,7 @@ C.keys = {
 	visual = { "v", "V", "<C-v>" },
 
 	-- Paste entries from visual-line mode
-	-- Map mode: visual
+	-- Map mode: normal
 	---@type string | string[]
 	paste = { "p", "P" },
 
