@@ -786,7 +786,7 @@ function UI.draw_border(ws)
 		scroll_len = math.max(1, math.ceil(scroll_len))
 		local scroll_top = ((vim.fn.line(".") - 1) / vim.fn.line("$") * (final_height - 2))
 		local frac = math.floor(scroll_top)
-		scroll_top = frac + (scroll_top - frac < 0.5 and 0 or 1)
+		scroll_top = math.min(frac + (scroll_top - frac < 0.5 and 0 or 1), final_height - 3)
 		border_parts.scroll[1] = base:rep(scroll_top) .. (config.chars.scroll or base):rep(scroll_len)
 	end
 
