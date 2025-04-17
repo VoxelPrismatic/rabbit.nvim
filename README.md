@@ -46,7 +46,7 @@
 [rabbit.carrot]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Fcarrot%2FVERSION.json&query=%24.latest&style=flat&label=carrot&labelColor=white&color=yellow
 [wiki.carrot]: ./lua/rabbit/plugins/carrot
 
-[rabbit.forage]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Fforage%2FVERSION.json&query=%24.latest&style=flat&label=carrot&labelColor=white&color=yellow
+[rabbit.forage]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Fforage%2FVERSION.json&query=%24.latest&style=flat&label=forage&labelColor=white&color=yellow
 [wiki.forage]: ./lua/rabbit/plugins/forage
 
 ---
