@@ -140,14 +140,14 @@ function ACTIONS.insert(entry)
 		idx = math.max(1, idx - 1)
 	end
 	if type(LIST.recent) == "string" then
-		SET.Func.add(collection.ctx.real.list, LIST.recent, idx)
+		SET.add(collection.ctx.real.list, LIST.recent, idx)
 	elseif type(LIST.recent) == "table" then
 		local folder = LIST.carrot[ENV.cwd.value]
 		local target = folder[tostring(LIST.recent.id)]
 		local parent = folder[tostring(target.parent)]
 		local current = folder[tostring(collection.ctx.id)]
-		SET.Func.del(parent.list, LIST.recent.id)
-		SET.Func.add(current.list, LIST.recent.id, idx)
+		SET.del(parent.list, LIST.recent.id)
+		SET.add(current.list, LIST.recent.id, idx)
 		for id, value in
 			pairs(LIST.recent --[[@as table]])
 		do
@@ -182,7 +182,7 @@ function ACTIONS.collect(entry)
 	end
 
 	c.ctx.real.parent = collection.ctx.id
-	SET.Func.add(collection.ctx.real.list, idx, pt)
+	SET.add(collection.ctx.real.list, idx, pt)
 	selection = entry._env.idx
 	LIST.carrot:__Save()
 
@@ -305,7 +305,7 @@ function ACTIONS.delete(entry)
 		LIST.recent = entry.path
 		selection = entry._env.idx
 		local real = LIST.collections[entry._env.parent.ctx.id].ctx.real
-		SET.Func.del(real.list, entry.path)
+		SET.del(real.list, entry.path)
 	elseif entry.type == "collection" then
 		assert(entry.idx ~= false, "Cannot delete the move-up collection")
 		entry = LIST.collections[entry.ctx.id]
@@ -325,7 +325,7 @@ function ACTIONS.delete(entry)
 			end
 		end
 
-		SET.Func.del(entry._env.parent.ctx.real.list, entry.ctx.id)
+		SET.del(entry._env.parent.ctx.real.list, entry.ctx.id)
 		selection = entry._env.idx
 	else
 		error("Unreachable")
