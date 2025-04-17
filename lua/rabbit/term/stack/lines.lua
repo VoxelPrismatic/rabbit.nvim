@@ -30,7 +30,7 @@ function LINES:nr(line)
 end
 
 ---@class (exact) Rabbit.Stack.Kwargs.SetLines
----@field start integer | 0 Start line
+---@field start? integer | 0 Start line
 ---@field end_? integer End line (used to clear the rest of the buffer)
 ---@field many boolean If true, the lines field will be treated as many lines
 ---@field strict? boolean | false Whether to use strict mode
@@ -44,10 +44,6 @@ function LINES:set(lines, opts)
 
 	if opts == nil then
 		opts = { strict = false, start = 0, many = true }
-	end
-
-	if opts.strict == nil then
-		opts.strict = false
 	end
 
 	local ns = opts.ns or self.target.ns
@@ -66,7 +62,7 @@ function LINES:set(lines, opts)
 	})
 
 	if opts.end_ ~= nil and (opts.end_ == -1 or opts.end_ > new_end) then
-		vim.api.nvim_buf_set_lines(self.target.buf.id, opts.end_, -1, opts.strict, {})
+		vim.api.nvim_buf_set_lines(self.target.buf.id, new_end, -1, opts.strict, {})
 	end
 end
 

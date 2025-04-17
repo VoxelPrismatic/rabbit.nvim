@@ -98,18 +98,7 @@ function UI.spawn(plugin)
 
 	STACK._.user = STACK.ws.from()
 
-	if type(plugin) == "string" then
-		UI._plugin = require("rabbit").plugins[plugin]
-	elseif type(plugin) == "table" then
-		UI._plugin = plugin
-	else
-		error("Invalid plugin. Expected string or table, got " .. type(plugin))
-	end
-
-	if UI._plugin == nil then
-		error("Invalid plugin: " .. plugin)
-	end
-
+	UI.update_env(plugin)
 	UI._plugin_history:add(UI._plugin.name)
 
 	-- Create background window
@@ -157,6 +146,20 @@ function UI.spawn(plugin)
 
 	UI._fg.children:add(UI._bg.id) -- Treat these as the same layer
 
+	UI._plugin._env.open = true
+
+	UI.handle_callback(UI._plugin.list())
+end
+
+-- Updates the environment of the plugin
+---@param plugin? Rabbit.Plugin | string
+function UI.update_env(plugin)
+	if plugin ~= nil then
+		UI.normalize_plugin(plugin)
+	end
+
+	STACK._.user = STACK.ws.from()
+
 	local cwd = { ---@type Rabbit.Plugin.Context.Directory
 		value = nil,
 		scope = "fallback",
@@ -179,11 +182,24 @@ function UI.spawn(plugin)
 	UI._plugin._env.plugin = UI._plugin
 	UI._plugin._env.winid = STACK._.user.win.id
 	UI._plugin._env.cwd = cwd
-	UI._plugin._env.open = true
 	UI._plugin._env.bufid = STACK._.user.buf.id
 	UI._plugin._env.hov = UI._hov
+end
 
-	UI.handle_callback(UI._plugin.list())
+-- Normalizes the plugin
+---@param plugin string | Rabbit.Plugin
+function UI.normalize_plugin(plugin)
+	if type(plugin) == "string" then
+		UI._plugin = require("rabbit").plugins[plugin]
+	elseif type(plugin) == "table" then
+		UI._plugin = plugin
+	else
+		error("Invalid plugin. Expected string or table, got " .. type(plugin))
+	end
+
+	if UI._plugin == nil then
+		error("Invalid plugin: " .. plugin)
+	end
 end
 
 -- Actually lists the entries. Also calls `apply_actions` at the end
@@ -225,7 +241,7 @@ function UI.list(collection)
 		UI._fg.buf.o.modifiable = true
 		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.win.config.width)
 		table.insert(lines, "")
-		UI._fg.lines:set(lines)
+		UI._fg.lines:set(lines, { end_ = -1, many = true })
 		UI._fg.cursor:set(#lines, 0)
 	end
 
@@ -786,7 +802,7 @@ function UI.draw_border(ws)
 		scroll_len = math.max(1, math.ceil(scroll_len))
 		local scroll_top = ((vim.fn.line(".") - 1) / vim.fn.line("$") * (final_height - 2))
 		local frac = math.floor(scroll_top)
-		scroll_top = math.min(frac + (scroll_top - frac < 0.5 and 0 or 1), final_height - 3)
+		scroll_top = math.min(frac + (scroll_top - frac < 0.5 and 0 or 1), final_height - 2 - scroll_len)
 		border_parts.scroll[1] = base:rep(scroll_top) .. (config.chars.scroll or base):rep(scroll_len)
 	end
 

@@ -26,7 +26,7 @@
 
 ---@class Rabbit.Plugin.Context.Directory
 ---@field value any Current scoped directory
----@field scope "global" | "plugin" | "fallback" Indicates where the scope was evaluated
+---@field scope "global" | "plugin" | "fallback" | "script" Indicates where the scope was evaluated
 ---@field raw string | fun() The generating function
 
 ---@class Rabbit.Plugin.Events

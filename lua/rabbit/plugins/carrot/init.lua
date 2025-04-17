@@ -9,12 +9,13 @@ local MEM = require("rabbit.util.mem")
 ---@type Rabbit*Carrot
 local PLUG = {
 	synopsis = "Put carrots next to your favorite files for quick access",
-	version = "r0.0a4",
+	version = "r0.0b1",
 	empty = {
 		msg = "There's nowhere to jump to! Get started by adding a file or collection",
 		actions = {
 			insert = true,
 			collect = true,
+			paste = true,
 		},
 	},
 	name = "carrot",
@@ -46,6 +47,8 @@ function PLUG.list()
 			break
 		end
 	end
+
+	PLUG.empty.actions.paste = #LIST.yank > 0
 
 	if PLUG.opts.separate == "never" then
 		return LIST.collections[0]

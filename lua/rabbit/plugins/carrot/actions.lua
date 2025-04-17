@@ -5,8 +5,7 @@ local CONFIG = require("rabbit.config")
 local ICONS = require("rabbit.util.icons")
 local TERM = require("rabbit.util.term")
 local MEM = require("rabbit.util.mem")
-
-local default = 0
+local INIT ---@type Rabbit*Carrot
 
 -- Deep copy a collection
 ---@param id integer Collection ID
@@ -66,6 +65,7 @@ local ACTIONS = {}
 
 ---@param entry Rabbit*Carrot.Collection
 function ACTIONS.children(entry)
+	INIT = INIT or require("rabbit.plugins.carrot")
 	local entries = {}
 	local env = entry._env
 	entry = LIST.collections[entry.ctx.id]
@@ -79,13 +79,15 @@ function ACTIONS.children(entry)
 
 	assert(real ~= nil, "Unreachable: Rabbit Collection should have a Twig Collection")
 
+	INIT.empty.actions.paste = #LIST.yank > 0
+
 	local recent = LIST.recent
-	if recent ~= nil and recent.type == "collection" then
+	if recent ~= nil and recent.type == "collection" and entry.ctx ~= nil then
 		recent = recent --[[@as Rabbit*Carrot.Yank.Collection]]
-		if recent.id == entry.ctx.id then
+		if recent.id == entry.ctx.id or recent.id_map[recent.id] == entry.ctx.id then
 			-- Do not permit moving a collection to itself
 			LIST.recent = nil
-			require("rabbit.plugins.carrot.init").empty.actions.insert = false
+			INIT.empty.actions.insert = false
 		end
 	end
 
@@ -126,6 +128,7 @@ function ACTIONS.children(entry)
 		c.actions.insert = LIST.recent ~= nil
 		c.actions.delete = false
 		c.actions.paste = #LIST.yank > 0
+		c.actions.visual = false
 		table.insert(entries, c)
 	end
 
@@ -168,13 +171,13 @@ function ACTIONS.children(entry)
 		table.remove(real.list, to_remove[j])
 	end
 
-	if entries[default] ~= nil then
-		entries[default].default = true
+	if entries[ENV.default] ~= nil then
+		entries[ENV.default].default = true
 	elseif parent_idx ~= 0 then
 		entries[parent_idx].default = true
 	end
 
-	default = 0
+	ENV.default = 0
 
 	return entries
 end
@@ -185,10 +188,13 @@ function ACTIONS.insert(entry)
 		return
 	end
 
-	local collection = entry._env.parent --[[@as Rabbit*Carrot.Collection]]
+	local collection = LIST.buffers[LIST.scope()]
+	if entry._env ~= nil then
+		collection = entry._env.parent --[[@as Rabbit*Carrot.Collection]]
+	else
+		entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value, siblings = { { idx = true } } }
+	end
 	local real = real_target(collection)
-
-	entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value }
 
 	local idx = entry._env.idx
 	if entry._env.siblings[1].idx == false then
@@ -223,7 +229,7 @@ function ACTIONS.insert(entry)
 		SET.add(real.list, copy_id, idx)
 	end
 
-	default = entry._env.idx
+	ENV.default = entry._env.idx
 
 	LIST.carrot:__Save()
 
@@ -233,6 +239,7 @@ end
 ---
 function ACTIONS.collect(entry)
 	local parent = LIST.buffers[LIST.scope()] ---@type Rabbit*Carrot.Collection
+	local folder = LIST.carrot[ENV.cwd.value]
 
 	if entry._env ~= nil then
 		parent = LIST.collections[entry._env.parent.ctx.id]
@@ -241,19 +248,31 @@ function ACTIONS.collect(entry)
 	end
 
 	local new_id = vim.uv.hrtime()
+	while folder[tostring(new_id)] ~= nil do
+		new_id = vim.uv.hrtime()
+	end
 	local new_collection = LIST.collections[new_id]
 	local new_real = real_target(new_collection)
 	local p_real = real_target(parent)
 	new_real.parent = parent.ctx.id
 
 	local dx = entry._env.siblings[1].idx == false and -1 or 0
-	default = entry._env.idx
-	SET.add(p_real.list, new_id, default + dx)
+	ENV.default = entry._env.idx
+	SET.add(p_real.list, new_id, math.max(1, ENV.default + dx))
 
 	LIST.carrot:__Save()
 
-	vim.defer_fn(function()
+	local function do_rename()
 		require("rabbit.term.listing").handle_callback(ACTIONS.rename(new_collection))
+	end
+
+	vim.defer_fn(function()
+		if entry.idx == false then
+			TERM.feed("<Down>")
+			vim.defer_fn(do_rename, 25)
+		else
+			do_rename()
+		end
 	end, 25)
 
 	return parent
@@ -396,7 +415,7 @@ function ACTIONS.delete(entry)
 			path = entry.path,
 			name = real.filename[entry.path],
 		}
-		default = entry._env.idx
+		ENV.default = entry._env.idx
 		SET.del(real.list, entry.path)
 	elseif entry.type == "collection" then
 		assert(entry.idx ~= false, "Cannot delete the move-up collection")
@@ -417,15 +436,16 @@ function ACTIONS.delete(entry)
 		}
 
 		SET.del(real.list, entry.ctx.id)
-		default = entry._env.idx
+		ENV.default = entry._env.idx
 	else
 		error("Unreachable")
 	end
 
 	LIST.carrot:__Save()
-	if default == #entry._env.siblings then
-		default = default - 1
+	if ENV.default == #entry._env.siblings then
+		ENV.default = ENV.default - 1
 	end
+	INIT.empty.actions.insert = true
 	return entry._env.parent
 end
 
@@ -445,15 +465,22 @@ function ACTIONS.cut(entry)
 	end
 
 	local dx = entry._env.siblings[1].idx == false and -1 or 0
-	default = math.max(1, math.min(entry._env.idx + dx, #real.list)) - dx
+	ENV.default = math.max(1, math.min(entry._env.idx + dx, #real.list)) - dx
 
 	LIST.carrot:__Save()
 
+	INIT.empty.actions.paste = #LIST.yank > 0
 	return entry._env.parent
 end
 
 function ACTIONS.paste(entry)
-	local parent = LIST.collections[entry._env.parent.ctx.id]
+	local parent = LIST.buffers[LIST.scope()]
+	if entry._env ~= nil then
+		parent = LIST.collections[entry._env.parent.ctx.id]
+	else
+		entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value, siblings = { { idx = true } } }
+	end
+
 	local real = real_target(parent)
 	local dx = entry._env.idx
 	if entry._env.siblings[1].idx == false then
@@ -493,7 +520,7 @@ function ACTIONS.paste(entry)
 	end
 
 	LIST.carrot:__Save()
-	default = entry._env.idx
+	ENV.default = entry._env.idx
 	return parent
 end
 
@@ -527,7 +554,7 @@ function ACTIONS.yank(entry)
 		end
 	end
 
-	default = entry._env.idx
+	ENV.default = entry._env.idx
 
 	return entry._env.parent
 end

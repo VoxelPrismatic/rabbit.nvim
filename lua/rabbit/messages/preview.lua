@@ -266,14 +266,6 @@ local function possibly_closed(data)
 
 	data.bufid = vim.api.nvim_create_buf(false, true)
 
-	vim.api.nvim_create_autocmd("BufLeave", {
-		buffer = data.bufid,
-		callback = function()
-			vim.api.nvim_win_set_buf(data.winid, UI._hov[data.winid])
-			vim.api.nvim_buf_delete(data.bufid, { force = true })
-		end,
-	})
-
 	local timer, err = vim.uv.new_timer()
 	assert(timer ~= nil, err)
 
@@ -295,6 +287,14 @@ local function possibly_closed(data)
 			if not is_err then
 				highlight_search()
 			end
+
+			vim.api.nvim_create_autocmd("BufLeave", {
+				buffer = data.bufid,
+				callback = function()
+					vim.api.nvim_win_set_buf(data.winid, UI._hov[data.winid])
+					vim.api.nvim_buf_delete(data.bufid, { force = true })
+				end,
+			})
 		end)
 	end)
 	return true

@@ -54,7 +54,7 @@ return function(data)
 		return
 	end
 
-	local line = UI._fg.lines:nr(linenr)
+	local line = UI._fg.lines:nr(linenr - 1) or ""
 	local _, startchar = line:find("\u{a0}")
 	local startcol = vim.fn.strdisplaywidth(line:sub(1, startchar))
 
@@ -117,7 +117,7 @@ return function(data)
 			return
 		end
 
-		if #new_name ~= 0 then
+		if #new_name ~= 0 and #valid_name ~= 0 then
 			rename_ws.extmarks:set({
 				line = 1,
 				col = 0,

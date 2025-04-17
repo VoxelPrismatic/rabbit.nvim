@@ -107,6 +107,15 @@ function LIST.load(path)
 		::continue::
 	end
 
+	setmetatable(LIST.carrot, {
+		__index = function(_, key)
+			assert(type(key) == "string", "Expected string, got " .. type(key))
+			local c = {}
+			LIST.carrot[key] = c
+			return c
+		end,
+	})
+
 	LIST.carrot:__Save()
 end
 
@@ -134,25 +143,23 @@ local function create_collection(self, id)
 		LIST.real[ENV.cwd.value] = real_target
 	end
 
+	local carrot_target = LIST.carrot[ENV.cwd.value]
+
 	local str_id = tostring(id)
 	if rawget(real_target, str_id) ~= nil then
 		local collection = real_target[str_id]
-		local real_obj = LIST.carrot[ENV.cwd.value][str_id]
-		collection.label = {
-			text = real_obj.name,
-			hl = {
-				"rabbit.types.collection",
-				"rabbit.paint." .. real_obj.color,
-			},
-		}
+		local real_obj = carrot_target[str_id]
+		if real_obj ~= nil then
+			collection.label = {
+				text = real_obj.name,
+				hl = {
+					"rabbit.types.collection",
+					"rabbit.paint." .. real_obj.color,
+				},
+			}
 
-		return collection
-	end
-
-	local carrot_target = LIST.carrot[ENV.cwd.value]
-	if carrot_target == nil then
-		carrot_target = {}
-		LIST.carrot[ENV.cwd.value] = carrot_target
+			return collection
+		end
 	end
 
 	local collection = carrot_target[str_id]
