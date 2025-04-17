@@ -29,12 +29,13 @@
 	<hr/>
 </div>
 
+
 - [Rabbit.nvim](#rabbitnvim)
 	- [Why](#why)
+	- [Preview](#preview)
 	- [Install](#install)
 	- [Usage](#usage)
 	- [Configuration](#configuration)
-	- [Preview](#preview)
 - [Plugins](/lua/rabbit/plugins)
 	- [![trail][rabbit.trail]][wiki.trail]
 	- [![carrot][rabbit.carrot]][wiki.carrot]
@@ -86,6 +87,17 @@ intuitive experience. You can customize almost every part of it, so it fits righ
 - **`:ls`**
 	1. Does not tell you what buffers are open
 		- Rabbit does, and, which were recently closed!
+
+
+## Preview
+
+
+
+https://github.com/user-attachments/assets/95d26ac7-b58e-42c5-915d-766c9172ed06
+
+*apologies for the crappy quality, wayland is sucky
+
+
 
 ## Install
 ```lua
