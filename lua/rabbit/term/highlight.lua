@@ -167,12 +167,18 @@ function HL.set_lines(kwargs)
 		for hl, priority in pairs(inter) do
 			if type(hl) == "number" then
 				-- ignore
-			elseif type(priority) == "boolean" and priority == true then
-				inter:add(hl)
+			elseif type(priority) == "boolean" then
+				if priority == true then
+					inter:add(hl)
+				end
 				inter[hl] = nil
-			elseif type(priority) == "number" and priority > 0 then
-				inter:put(priority, hl)
+			elseif type(priority) == "number" then
+				if priority > 0 then
+					inter:put(priority, hl)
+				end
 				inter[hl] = nil
+			else
+				error("Invalid highlight priority: " .. vim.inspect({ key = hl, value = priority }))
 			end
 		end
 
