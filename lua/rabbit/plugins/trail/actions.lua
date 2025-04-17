@@ -4,6 +4,7 @@ local CONFIG = require("rabbit.config")
 local TERM = require("rabbit.util.term")
 local SET = require("rabbit.util.set")
 local PLUGIN_CONFIG = require("rabbit.plugins.trail.config")
+local MEM = require("rabbit.util.mem")
 
 ---@type Rabbit.Plugin.Actions
 ---@diagnostic disable-next-line: missing-fields
@@ -193,23 +194,17 @@ end
 ---@return string
 local function check_rename(entry, new_name)
 	if new_name == "" then
-		return tostring(entry.ctx.winid)
+		new_name = tostring(entry.ctx.winid)
 	end
 
+	local names = {}
 	for _, winobj in pairs(LIST.real.wins) do
-		if winobj ~= entry and winobj.label.text == new_name then
-			local _, _, count, match = new_name:find("(%++)([0-9]*)$")
-			if match == nil and count == nil then
-				return check_rename(entry, new_name .. "+")
-			elseif match == "" and count ~= "" then
-				return check_rename(entry, new_name .. #count)
-			else
-				local new_idx = tostring(tonumber(match) + 1)
-				return check_rename(entry, new_name:sub(1, -#new_idx - 1) .. new_idx)
-			end
+		if winobj.ctx.winid ~= entry.ctx.winid then
+			names[winobj.label.text] = true
 		end
 	end
-	return new_name
+
+	return MEM.next_name(names, new_name)
 end
 
 ---@param entry Rabbit*Trail.Win.User
@@ -339,12 +334,7 @@ function ACTIONS.delete(entry)
 end
 
 function ACTIONS.yank(entry)
-	TERM.feed("<Esc>")
-	local start_idx = vim.fn.getpos("v")[2]
-	local end_idx = vim.fn.getpos(".")[2]
-	if start_idx > end_idx then
-		start_idx, end_idx = end_idx, start_idx
-	end
+	local start_idx, end_idx = TERM.get_yank()
 
 	LIST.clean_bufs(LIST.yank)
 	LIST.yank = SET.new()
@@ -361,24 +351,8 @@ function ACTIONS.yank(entry)
 end
 
 function ACTIONS.cut(entry)
-	TERM.feed("<Esc>")
-	local start_idx = vim.fn.getpos("v")[2]
-	local end_idx = vim.fn.getpos(".")[2]
-	if start_idx > end_idx then
-		start_idx, end_idx = end_idx, start_idx
-	end
-
-	LIST.clean_bufs(LIST.yank)
-	LIST.yank = SET.new()
-	local siblings = entry._env.siblings --[[@as Rabbit*Trail.Buf[]=]]
-	for i = end_idx, start_idx, -1 do
-		local sibling = siblings[i]
-		assert(sibling.type == "file", "only files can be yanked")
-		table.insert(LIST.yank, 1, sibling.bufid)
-		entry._env.parent.ctx.bufs:del(sibling.bufid)
-	end
-
-	default = start_idx
+	ACTIONS.yank(entry)
+	entry._env.parent.ctx.bufs:del(LIST.yank)
 
 	return entry._env.parent
 end
