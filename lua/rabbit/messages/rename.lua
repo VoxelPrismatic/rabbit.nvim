@@ -193,6 +193,7 @@ return function(data)
 			entry.default = false
 			new_entry.default = true
 			local old_cur = UI._fg.cursor:get()
+			data.apply(entry, new_name)
 			UI.redraw_entry(entry)
 			UI._fg.cursor:set(old_cur[1] + dx, curpos + startcol)
 			UI.apply_actions()
