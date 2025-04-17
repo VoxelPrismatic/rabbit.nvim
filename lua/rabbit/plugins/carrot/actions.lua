@@ -3,6 +3,8 @@ local LIST = require("rabbit.plugins.carrot.list")
 local SET = require("rabbit.util.set")
 local CONFIG = require("rabbit.config")
 local ICONS = require("rabbit.util.icons")
+local TERM = require("rabbit.util.term")
+local MEM = require("rabbit.util.mem")
 
 local default = 0
 
@@ -29,16 +31,19 @@ local function deep_copy_collection(id)
 		for i, entry in ipairs(collection.list) do
 			if type(entry) == "string" then
 				-- pass
-			elseif type(entry) == "number" and id_map[entry] == nil then
-				table.insert(to_copy, entry)
-				local new_id = vim.uv.hrtime()
-				while folder[tostring(new_id)] ~= nil do
-					-- This should never happen, but I would like to avoid collisions
-					new_id = vim.uv.hrtime()
+			elseif type(entry) == "number" then
+				if id_map[entry] == nil then
+					table.insert(to_copy, entry)
+					local new_id = vim.uv.hrtime()
+					while folder[tostring(new_id)] ~= nil do
+						-- This should never happen, but I would like to avoid collisions
+						new_id = vim.uv.hrtime()
+					end
+					id_map[entry] = new_id
+					collection.list[i] = id_map[entry]
 				end
-				id_map[entry] = new_id
-				collection.list[i] = id_map[entry]
 			else
+				vim.print(entry)
 				error("Unreachable")
 			end
 		end
@@ -65,7 +70,7 @@ function ACTIONS.children(entry)
 	local env = entry._env
 	entry = LIST.collections[entry.ctx.id]
 	entry._env = env
-	LIST.buffers[0] = entry
+	LIST.buffers[LIST.scope()] = entry
 
 	entry._env = entry._env or { cwd = ENV.cwd.value }
 
@@ -118,8 +123,9 @@ function ACTIONS.children(entry)
 		end
 		c.idx = false
 		c.actions.rename = false
-		c.actions.insert = LIST.recent ~= 0
+		c.actions.insert = LIST.recent ~= nil
 		c.actions.delete = false
+		c.actions.paste = #LIST.yank > 0
 		table.insert(entries, c)
 	end
 
@@ -132,8 +138,9 @@ function ACTIONS.children(entry)
 			local c = LIST.files[e]:as(ENV.winid)
 			c.actions.parent = not top_level
 			c.actions.delete = true
-			c.actions.insert = LIST.recent ~= 0
+			c.actions.insert = LIST.recent ~= nil
 			c.actions.rename = true
+			c.actions.paste = #LIST.yank > 0
 			local fakename = real.filename[c.path]
 			if fakename then
 				c.label = {
@@ -146,8 +153,9 @@ function ACTIONS.children(entry)
 			local c = LIST.collections[e]
 			c.actions.parent = not top_level
 			c.actions.rename = true
-			c.actions.insert = LIST.recent ~= 0
+			c.actions.insert = LIST.recent ~= nil
 			c.default = false
+			c.actions.paste = #LIST.yank > 0
 			c.ctx.real.parent = entry.ctx.id
 			table.insert(entries, c)
 			if c == entry._env.parent then
@@ -224,67 +232,90 @@ end
 
 ---
 function ACTIONS.collect(entry)
-	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Carrot.Collection
+	local parent = LIST.buffers[LIST.scope()] ---@type Rabbit*Carrot.Collection
+
 	if entry._env ~= nil then
-		collection = LIST.collections[entry._env.parent.ctx.id]
-	end
-	entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value }
-
-	local idx = vim.uv.hrtime()
-	local c = LIST.collections[idx]
-
-	local pt = entry._env.idx
-	if collection.ctx.real.parent ~= -1 then
-		pt = math.max(1, pt - 1)
+		parent = LIST.collections[entry._env.parent.ctx.id]
+	else
+		entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value, siblings = { { idx = true } } }
 	end
 
-	c.ctx.real.parent = collection.ctx.id
-	SET.add(collection.ctx.real.list, idx, pt)
+	local new_id = vim.uv.hrtime()
+	local new_collection = LIST.collections[new_id]
+	local new_real = real_target(new_collection)
+	local p_real = real_target(parent)
+	new_real.parent = parent.ctx.id
+
+	local dx = entry._env.siblings[1].idx == false and -1 or 0
 	default = entry._env.idx
+	SET.add(p_real.list, new_id, default + dx)
+
 	LIST.carrot:__Save()
 
 	vim.defer_fn(function()
-		require("rabbit.term.listing").handle_callback(ACTIONS.rename(c))
+		require("rabbit.term.listing").handle_callback(ACTIONS.rename(new_collection))
 	end, 25)
 
-	return collection
+	return parent
 end
 
-function ACTIONS.parent(_)
-	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Carrot.Collection
+function ACTIONS.parent(entry)
+	local collection = LIST.buffers[LIST.scope()] ---@type Rabbit*Carrot.Collection
+	if entry._env ~= nil then
+		collection = LIST.collections[entry._env.parent.ctx.id]
+	end
 	return LIST.collections[collection.ctx.real.parent]
 end
 
 ---@param entry Rabbit*Carrot.Collection
+---@return table<string, true> names
+local function collect_names(entry)
+	local names = {}
+	local real = real_target(entry)
+	for _, obj in ipairs(real.list) do
+		if type(obj) == "string" then
+			local name = real.filename[obj]
+			if name ~= nil then
+				names[name] = true
+			end
+		elseif type(obj) == "number" then
+			local collection = LIST.carrot[ENV.cwd.value][tostring(obj)]
+			assert(collection ~= nil, "Collection not found")
+			names[collection.name] = true
+		else
+			error("Unexpected object type: " .. type(obj))
+		end
+	end
+
+	return names
+end
+
+---@param entry Rabbit*Carrot.Collection | Rabbit*Trail.Buf
 ---@param new_name string
 ---@return string
 local function check_rename(entry, new_name)
 	if new_name == "" then
 		if entry.type == "file" then
-			local e = entry --[[@as Rabbit*Trail.Buf]]
-			return "./" .. vim.fs.basename(e.path)
+			entry = entry --[[@as Rabbit*Trail.Buf]]
+			return "./" .. vim.fs.basename(entry.path)
 		end
 		return string.format("%04x", math.random(1, 65535))
 	end
 
-	for _, collection in pairs(entry._env.siblings) do
-		collection = collection --[[@as Rabbit*Carrot.Collection]]
-		if collection.type ~= "collection" then
-			-- pass
-		elseif collection ~= entry and collection.ctx.real.name == new_name then
-			local _, _, count, match = new_name:find("(%++)([0-9]*)$")
-			if match == nil and count == nil then
-				return check_rename(entry, new_name .. "+")
-			elseif match == "" and count ~= "" then
-				return check_rename(entry, new_name .. #count)
-			else
-				local new_idx = tostring(tonumber(match) + 1)
-				return check_rename(entry, new_name:sub(1, -#new_idx - 1) .. new_idx)
-			end
+	local names = collect_names(entry._env.parent --[[@as Rabbit*Carrot.Collection]])
+	if entry.type == "collection" then
+		entry = entry --[[@as Rabbit*Carrot.Collection]]
+		names[entry.ctx.real.name] = nil
+	elseif entry.type == "file" then
+		entry = entry --[[@as Rabbit*Trail.Buf]]
+		local real = real_target(entry._env.parent --[[@as Rabbit*Carrot.Collection]])
+		local fakename = real.filename[entry.path]
+		if fakename ~= nil then
+			names[fakename] = nil
 		end
 	end
 
-	return new_name
+	return MEM.next_name(names, new_name)
 end
 
 ---@param entry Rabbit*Carrot.Collection
@@ -374,7 +405,7 @@ function ACTIONS.delete(entry)
 
 		local copied, id_map = deep_copy_collection(entry.ctx.id)
 		for old_id, _ in pairs(id_map) do
-			folder[old_id] = nil
+			folder[tostring(old_id)] = nil
 		end
 
 		---@type Rabbit*Carrot.Yank.Collection
@@ -395,6 +426,109 @@ function ACTIONS.delete(entry)
 	if default == #entry._env.siblings then
 		default = default - 1
 	end
+	return entry._env.parent
+end
+
+function ACTIONS.cut(entry)
+	ACTIONS.yank(entry)
+
+	local real = real_target(entry._env.parent --[[@as Rabbit*Carrot.Collection]])
+
+	for _, obj in ipairs(LIST.yank) do
+		if obj.type == "file" then
+			obj = obj --[[@as Rabbit*Carrot.Yank.File]]
+			SET.del(real.list, obj.path)
+		elseif obj.type == "collection" then
+			obj = obj --[[@as Rabbit*Carrot.Yank.Collection]]
+			SET.del(real.list, obj.id)
+		end
+	end
+
+	local dx = entry._env.siblings[1].idx == false and -1 or 0
+	default = math.max(1, math.min(entry._env.idx + dx, #real.list)) - dx
+
+	LIST.carrot:__Save()
+
+	return entry._env.parent
+end
+
+function ACTIONS.paste(entry)
+	local parent = LIST.collections[entry._env.parent.ctx.id]
+	local real = real_target(parent)
+	local dx = entry._env.idx
+	if entry._env.siblings[1].idx == false then
+		dx = dx - 1
+	end
+
+	local folder = LIST.carrot[ENV.cwd.value]
+	local names = collect_names(parent)
+
+	for i, obj in ipairs(LIST.yank) do
+		if obj.type == "file" then
+			obj = obj --[[@as Rabbit*Carrot.Yank.File]]
+			SET.add(real.list, obj.path, dx + i - 1)
+			local new_name = MEM.next_name(names, obj.name)
+			real.filename[obj.path] = new_name
+			names[new_name] = true
+		elseif obj.type == "collection" then
+			obj = obj --[[@as Rabbit*Carrot.Yank.Collection]]
+			local root_id = obj.id_map[obj.id]
+			local root_obj = obj.copied[root_id]
+			for id, copy in pairs(obj.copied) do
+				folder[tostring(id)] = copy
+			end
+
+			root_obj.parent = parent.ctx.id
+			SET.add(real.list, root_id, dx + i - 1)
+
+			-- Re-copy for consecutive paste actions
+			obj.copied, obj.id_map = deep_copy_collection(root_id)
+			obj.id = root_id
+
+			root_obj.name = MEM.next_name(names, root_obj.name)
+			names[root_obj.name] = true
+		else
+			error("Unreachable")
+		end
+	end
+
+	LIST.carrot:__Save()
+	default = entry._env.idx
+	return parent
+end
+
+function ACTIONS.yank(entry)
+	local start_idx, end_idx = TERM.get_yank()
+	local real = real_target(entry._env.parent --[[@as Rabbit*Carrot.Collection]])
+	if entry._env.siblings[1].idx == false then
+		start_idx = start_idx - 1
+		end_idx = end_idx - 1
+	end
+
+	LIST.yank = {}
+	for i = start_idx, end_idx do
+		local obj = real.list[i]
+		if type(obj) == "string" then
+			table.insert(LIST.yank, {
+				type = "file",
+				path = obj,
+				name = real.filename[obj],
+			})
+		elseif type(obj) == "number" then
+			local copied, id_map = deep_copy_collection(obj)
+			table.insert(LIST.yank, {
+				type = "collection",
+				id = obj,
+				copied = copied,
+				id_map = id_map,
+			})
+		else
+			error("Unreachable")
+		end
+	end
+
+	default = entry._env.idx
+
 	return entry._env.parent
 end
 
