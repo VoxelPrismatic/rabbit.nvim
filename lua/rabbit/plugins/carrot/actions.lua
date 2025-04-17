@@ -4,7 +4,48 @@ local SET = require("rabbit.util.set")
 local CONFIG = require("rabbit.config")
 local ICONS = require("rabbit.util.icons")
 
-local selection = 10000
+local default = 0
+
+-- Deep copy a collection
+---@param id integer Collection ID
+---@return table<integer, Rabbit*Carrot.Collection.Dump> collections Copied collections
+---@return table<integer, integer> old_new_map Old ID -> New ID mapping
+local function deep_copy_collection(id)
+	---@type table<integer, Rabbit*Carrot.Collection.Dump>
+	local copied = {}
+	local to_copy = { id }
+	---@type table<integer, integer>
+	local id_map = {
+		[id] = vim.uv.hrtime(),
+	}
+
+	while #to_copy > 0 do
+		local old_id = table.remove(to_copy, 1)
+		local collection = vim.deepcopy(LIST.collections[old_id].ctx.real)
+		local folder = LIST.carrot[ENV.cwd.value]
+		collection.parent = id_map[collection.parent]
+		copied[id_map[old_id]] = collection
+
+		for i, entry in ipairs(collection.list) do
+			if type(entry) == "string" then
+				-- pass
+			elseif type(entry) == "number" and id_map[entry] == nil then
+				table.insert(to_copy, entry)
+				local new_id = vim.uv.hrtime()
+				while folder[tostring(new_id)] ~= nil do
+					-- This should never happen, but I would like to avoid collisions
+					new_id = vim.uv.hrtime()
+				end
+				id_map[entry] = new_id
+				collection.list[i] = id_map[entry]
+			else
+				error("Unreachable")
+			end
+		end
+	end
+
+	return copied, id_map
+end
 
 ---@param entry Rabbit*Carrot.Collection
 ---@return Rabbit*Carrot.Collection.Dump real
@@ -32,10 +73,15 @@ function ACTIONS.children(entry)
 	local parent_idx = 0
 
 	assert(real ~= nil, "Unreachable: Rabbit Collection should have a Twig Collection")
-	if type(LIST.recent) == "table" and entry.ctx.id == LIST.recent.id then
-		-- Do not permit moving a collection to itself
-		LIST.recent = 0
-		require("rabbit.plugins.carrot.init").empty.actions.insert = LIST.recent ~= 0
+
+	local recent = LIST.recent
+	if recent ~= nil and recent.type == "collection" then
+		recent = recent --[[@as Rabbit*Carrot.Yank.Collection]]
+		if recent.id == entry.ctx.id then
+			-- Do not permit moving a collection to itself
+			LIST.recent = nil
+			require("rabbit.plugins.carrot.init").empty.actions.insert = false
+		end
 	end
 
 	if real.parent ~= -1 then
@@ -114,24 +160,25 @@ function ACTIONS.children(entry)
 		table.remove(real.list, to_remove[j])
 	end
 
-	if selection <= #entries and #entries > 0 then
-		entries[selection].default = true
+	if entries[default] ~= nil then
+		entries[default].default = true
 	elseif parent_idx ~= 0 then
 		entries[parent_idx].default = true
 	end
 
-	selection = 10000
+	default = 0
 
 	return entries
 end
 
 ---@param entry Rabbit*Carrot.Collection
 function ACTIONS.insert(entry)
-	if LIST.recent == 0 then
+	if LIST.recent == nil then
 		return
 	end
 
-	local collection = LIST.buffers[ENV.bufid] ---@type Rabbit*Carrot.Collection
+	local collection = entry._env.parent --[[@as Rabbit*Carrot.Collection]]
+	local real = real_target(collection)
 
 	entry._env = entry._env or { idx = 1, cwd = ENV.cwd.value }
 
@@ -139,26 +186,36 @@ function ACTIONS.insert(entry)
 	if entry._env.siblings[1].idx == false then
 		idx = math.max(1, idx - 1)
 	end
-	if type(LIST.recent) == "string" then
-		SET.add(collection.ctx.real.list, LIST.recent, idx)
-	elseif type(LIST.recent) == "table" then
+
+	local recent = LIST.recent
+
+	if recent == nil then
+		-- pass
+	elseif recent.type == "file" then
+		recent = recent --[[@as Rabbit*Carrot.Yank.File]]
+		SET.add(real.list, recent.path, idx)
+		real.filename[recent.path] = recent.name
+	elseif recent.type == "collection" then
+		recent = recent --[[@as Rabbit*Carrot.Yank.Collection]]
+
 		local folder = LIST.carrot[ENV.cwd.value]
-		local target = folder[tostring(LIST.recent.id)]
-		local parent = folder[tostring(target.parent)]
-		local current = folder[tostring(collection.ctx.id)]
-		SET.del(parent.list, LIST.recent.id)
-		SET.add(current.list, LIST.recent.id, idx)
-		for id, value in
-			pairs(LIST.recent --[[@as table]])
-		do
-			if id ~= "id" then
-				folder[tostring(id)] = value
+		local copy_id = recent.id_map[recent.id]
+		local copy_root = recent.copied[copy_id]
+		if copy_root.parent == nil then
+			for new_id, obj in pairs(recent.copied) do
+				folder[tostring(new_id)] = obj
 			end
+		else
+			local parent = folder[tostring(copy_root.parent)]
+			SET.del(parent.list, copy_id)
 		end
-		target.parent = collection.ctx.id
+
+		copy_root.parent = collection.ctx.id
+
+		SET.add(real.list, copy_id, idx)
 	end
 
-	selection = entry._env.idx
+	default = entry._env.idx
 
 	LIST.carrot:__Save()
 
@@ -183,7 +240,7 @@ function ACTIONS.collect(entry)
 
 	c.ctx.real.parent = collection.ctx.id
 	SET.add(collection.ctx.real.list, idx, pt)
-	selection = entry._env.idx
+	default = entry._env.idx
 	LIST.carrot:__Save()
 
 	vim.defer_fn(function()
@@ -300,40 +357,43 @@ end
 
 ---@param entry Rabbit*Carrot.Collection | Rabbit*Trail.Buf
 function ACTIONS.delete(entry)
+	local real = real_target(entry._env.parent --[[@as Rabbit*Carrot.Collection]])
 	if entry.type == "file" then
 		entry = entry --[[@as Rabbit*Trail.Buf]]
-		LIST.recent = entry.path
-		selection = entry._env.idx
-		local real = LIST.collections[entry._env.parent.ctx.id].ctx.real
+		LIST.recent = {
+			type = "file",
+			path = entry.path,
+			name = real.filename[entry.path],
+		}
+		default = entry._env.idx
 		SET.del(real.list, entry.path)
 	elseif entry.type == "collection" then
 		assert(entry.idx ~= false, "Cannot delete the move-up collection")
 		entry = LIST.collections[entry.ctx.id]
-		local to_delete = SET.new({ entry.ctx.id })
 		local folder = LIST.carrot[ENV.cwd.value]
 
-		LIST.recent = { id = entry.ctx.id, [entry.ctx.id] = entry.ctx.real }
-
-		while #to_delete > 0 do
-			local parent_id = tostring(to_delete:pop())
-			for id, collection in pairs(folder) do
-				if tostring(collection.parent) == parent_id then
-					LIST.recent[id] = collection
-					folder[id] = nil
-					to_delete:add(id)
-				end
-			end
+		local copied, id_map = deep_copy_collection(entry.ctx.id)
+		for old_id, _ in pairs(id_map) do
+			folder[old_id] = nil
 		end
 
-		SET.del(entry._env.parent.ctx.real.list, entry.ctx.id)
-		selection = entry._env.idx
+		---@type Rabbit*Carrot.Yank.Collection
+		LIST.recent = {
+			type = "collection",
+			id = entry.ctx.id,
+			copied = copied,
+			id_map = id_map,
+		}
+
+		SET.del(real.list, entry.ctx.id)
+		default = entry._env.idx
 	else
 		error("Unreachable")
 	end
 
 	LIST.carrot:__Save()
-	if selection == #entry._env.siblings then
-		selection = selection - 1
+	if default == #entry._env.siblings then
+		default = default - 1
 	end
 	return entry._env.parent
 end

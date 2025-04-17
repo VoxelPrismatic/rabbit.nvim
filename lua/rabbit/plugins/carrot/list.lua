@@ -33,10 +33,6 @@ local LIST = {
 	-- { path: Collection }
 	carrot = { __Dest = "twig.json", __Save = MEM.Write },
 
-	---@type table<string, Rabbit*Carrot.Collection>
-	-- Memory pointers to collections to prevent duplicates
-	slots = {},
-
 	---@type table<integer, Rabbit*Carrot.Collection>
 	-- { collection id: Collection }
 	collections = {},
@@ -50,7 +46,27 @@ local LIST = {
 
 	---@type table<string, table<integer, Rabbit*Carrot.Collection>>
 	real = {},
+
+	---@type Rabbit*Carrot.Yank
+	recent = nil,
+
+	---@type Rabbit*Carrot.Yank[]
+	yank = {},
 }
+
+---@class Rabbit*Carrot.Yank
+---@field type string
+
+---@class Rabbit*Carrot.Yank.File: Rabbit*Carrot.Yank
+---@field type "file"
+---@field path string
+---@field name string
+
+---@class Rabbit*Carrot.Yank.Collection: Rabbit*Carrot.Yank
+---@field type "collection"
+---@field id integer
+---@field copied table<integer, Rabbit*Carrot.Collection.Dump>
+---@field id_map table<integer, integer>
 
 -- Loads collection data from disk
 ---@param path string File path
@@ -60,15 +76,26 @@ function LIST.load(path)
 		if type(collections) ~= "table" then
 			goto continue
 		end
+
 		local to_delete = SET.new({ SET.keys(collections) })
+
 		to_delete:del("0")
 		local queue = SET.new({ "0" })
+		local seen = {}
 		while #queue > 0 do
 			local id = tostring(queue:pop())
-			for _, value in ipairs(collections[id].list) do
+			seen[id] = true
+			local list = collections[id].list
+			for i = #list, 1, -1 do
+				local value = list[i]
 				if type(value) == "number" then
-					queue:add(tostring(value))
-					to_delete:del(tostring(value))
+					local v_id = tostring(value)
+					if seen[v_id] then
+						table.remove(list, i)
+					else
+						queue:add(v_id)
+						to_delete:del(v_id)
+					end
 				end
 			end
 		end
@@ -185,9 +212,5 @@ setmetatable(LIST.files, {
 		return c
 	end,
 })
-
--- Recently deleted entry
----@type integer | string | table
-LIST.recent = 0
 
 return LIST

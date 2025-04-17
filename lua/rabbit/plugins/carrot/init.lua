@@ -38,7 +38,10 @@ function PLUG.list()
 	for _, bufid in ipairs(TRAIL.major.ctx.bufs) do
 		local bufobj = TRAIL.bufs[bufid]
 		if bufobj.ctx.listed and MEM.exists(bufobj.path) then
-			LIST.recent = bufobj.path
+			LIST.recent = {
+				type = "file",
+				path = bufobj.path,
+			}
 			PLUG.empty.actions.insert = true
 			break
 		end
