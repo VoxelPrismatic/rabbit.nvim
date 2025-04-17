@@ -330,4 +330,43 @@ end
 
 MEM.cache = real_cache
 
+-- Add +# to the end of the name until a name is unique
+---@param names table<string, true> | string[] Taken names
+---@param name string The name to check
+---@param suffix? string After the corrected name, eg ".lua" –> `new_file+1.lua`
+---@return string new_name
+function MEM.next_name(names, name, suffix)
+	for _, n in ipairs(names) do
+		names[n] = true
+	end
+
+	local _, _, count, match = name:find("(%++)([0-9]*)$")
+	local tmp_idx = (count or "") .. (match or "")
+
+	name = name:gsub("(%++)([0-9]*)$", "")
+	local i = 0
+
+	if count ~= nil then
+		i = #count
+	end
+
+	if match ~= nil and match ~= "" then
+		i = tonumber(match) + 1
+	end
+
+	suffix = suffix or ""
+
+	local ret = name .. tmp_idx .. suffix
+	while names[ret] do
+		if i > 0 then
+			ret = name .. "+" .. i .. suffix
+		else
+			ret = name .. "+" .. suffix
+		end
+		i = i + 1
+	end
+
+	return ret
+end
+
 return MEM
