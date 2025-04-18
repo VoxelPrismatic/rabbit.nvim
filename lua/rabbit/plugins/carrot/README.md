@@ -72,6 +72,7 @@ vim.keymap.set("n", "<C-s>", carrot.select_fn(vim.fn.getcwd, 4, 4, 4, 4))
 	- Fixed Bugs
 		- No longer hangs on cyclical collections
 		- Actually scope properly
+		- Now renames the first collection when hovering over the 'up' entry
 	- Known Issues
 		- *none*
 	- New Features
