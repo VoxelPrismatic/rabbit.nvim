@@ -57,9 +57,8 @@ WS.win = {
 	o = vim.wo[0],
 
 	-- Window configuration
-	---@type vim.api.keyset.win_config | nil
-	---@overload fun(): vim.api.keyset.win_config
-	config = {},
+	---@type Rabbit.Stack.WinConfig
+	config = nil,
 
 	-- Check if the window exists
 	exists = function(self)

@@ -1,3 +1,4 @@
+local WINCONFIG = require("rabbit.term.stack.winconfig")
 local TERM = {}
 
 -- Wraps text into lines
@@ -54,29 +55,13 @@ function TERM.feed(keys)
 end
 
 -- Returns the current window configuration
----@return vim.api.keyset.win_config | nil "Nil if window doesn't exist"
+---@return Rabbit.Stack.WinConfig | nil "Nil if window doesn't exist"
 function TERM.win_config(winid)
-	local ok, conf = pcall(vim.api.nvim_win_get_config, winid)
-	if not ok then
+	if not vim.api.nvim_win_is_valid(winid) then
 		return nil
 	end
 
-	conf.width = conf.width or vim.api.nvim_win_get_width(winid)
-	conf.height = conf.height or vim.api.nvim_win_get_height(winid)
-	if conf.row == nil or conf.col == nil then
-		conf.row, conf.col = unpack(vim.api.nvim_win_get_position(winid))
-	end
-
-	return setmetatable(conf, {
-		__call = function(self)
-			local new_conf = TERM.win_config(winid)
-			assert(new_conf ~= nil, "Invalid window ID: " .. winid)
-			for k, v in pairs(new_conf) do
-				self[k] = v
-			end
-			return self
-		end,
-	})
+	return WINCONFIG.New(winid)
 end
 
 -- Returns the real column number, taking into account UTF-8 characters
