@@ -15,7 +15,7 @@ local EXTMARKS = setmetatable({
 })
 
 function EXTMARKS.new(workspace)
-	return setmetatable({ target = workspace }, { __index = EXTMARKS })
+	return setmetatable({ target = workspace }, { __index = vim.deepcopy(EXTMARKS) })
 end
 
 ---@class (exact) Rabbit.Stack.Kwargs.AddExtmark

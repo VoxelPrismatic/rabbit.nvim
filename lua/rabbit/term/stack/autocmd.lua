@@ -12,7 +12,7 @@ local AUTOCMD = {
 -- Creates a new autocmd manager
 ---@param workspace Rabbit.Stack.Workspace
 function AUTOCMD.new(workspace)
-	return setmetatable({ target = workspace }, { __index = AUTOCMD })
+	return setmetatable({ target = workspace }, { __index = vim.deepcopy(AUTOCMD) })
 end
 
 ---@param self Rabbit.Stack.Autocmd.Event

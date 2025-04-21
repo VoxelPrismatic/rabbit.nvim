@@ -6,7 +6,7 @@ local CURSOR = {
 }
 
 function CURSOR.new(workspace)
-	return setmetatable({ target = workspace }, { __index = CURSOR })
+	return setmetatable({ target = workspace }, { __index = vim.deepcopy(CURSOR) })
 end
 
 -- Gets the window's cursor position

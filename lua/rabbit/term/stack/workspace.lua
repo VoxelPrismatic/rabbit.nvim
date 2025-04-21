@@ -116,7 +116,7 @@ function WS.from(bufid, winid, append)
 		ns = 0,
 		children = SET.new(),
 		container = false,
-	}, { __index = WS })
+	}, { __index = vim.deepcopy(WS) })
 
 	ws.keys = KEYS.new(ws)
 	ws.lines = LINES.new(ws)

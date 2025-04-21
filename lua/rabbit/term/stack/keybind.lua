@@ -149,7 +149,7 @@ local KEYS = {
 -- Creates a new keybind manager
 ---@param workspace Rabbit.Stack.Workspace
 function KEYS.new(workspace)
-	return setmetatable({ target = workspace }, { __index = KEYS })
+	return setmetatable({ target = workspace }, { __index = vim.deepcopy(KEYS) })
 end
 
 -- Adds a keybind to this workspace

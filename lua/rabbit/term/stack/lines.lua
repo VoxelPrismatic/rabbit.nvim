@@ -8,7 +8,7 @@ local LINES = {
 }
 
 function LINES.new(workspace)
-	return setmetatable({ target = workspace }, { __index = LINES })
+	return setmetatable({ target = workspace }, { __index = vim.deepcopy(LINES) })
 end
 
 -- Gets the lines from the buffer

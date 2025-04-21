@@ -213,13 +213,24 @@ local function create_search(search)
 	fg_config.height = fg_config.height - 2
 	fg_config.row = 3
 
+	local icons = {} ---@type string[]
+	for _, field in ipairs(search.fields) do
+		table.insert(icons, field.icon)
+	end
+
 	local sg_config = fg_config:Raw()
 	sg_config.row = 1
 	sg_config.height = 1
+	local select_config = vim.deepcopy(sg_config)
+	select_config.width = (#icons + 1) * 2
+	sg_config.width = fg_config.width - select_config.width
+	select_config.col = sg_config.width + sg_config.col
+
+	search.open = math.min(#icons, math.max(search.open or 1, 1))
 
 	UI._sg = STACK.ws.scratch({
-		focus = false,
-		ns = "rabbit.search",
+		focus = true,
+		ns = "rabbit.search.input",
 		config = sg_config,
 		parent = UI._bg,
 		name = "Rabbit: Search",
@@ -229,35 +240,65 @@ local function create_search(search)
 			relativenumber = false,
 		},
 		lines = {
-			"",
+			search.fields[search.open].content,
 			"1234",
-			"456",
 		},
 		many = true,
 	})
-	UI._sg.autocmd:add({
+
+	UI._sg.cursor:set(1, 1)
+
+	local selector = STACK.ws.scratch({
+		focus = false,
+		ns = "rabbit.search.selector",
+		config = select_config,
+		parent = UI._sg,
+		name = "Rabbit: Search Selector",
+		---@diagnostic disable-next-line: missing-fields
+		wo = {
+			number = false,
+			relativenumber = false,
+		},
+		lines = {
+			" " .. table.concat(icons, " ") .. " ",
+			"1234",
+		},
+		many = true,
+	})
+
+	local mark = {
+		col = 0,
+		line = 0,
+		name = "cursorline",
+		ns = "rabbit.search.cursorline",
+		opts = {
+			hl_eol = true,
+			hl_group = "NormalFloat",
+			end_line = 1,
+			end_col = 0,
+			strict = false,
+		},
+	}
+
+	local cmds = {
 		BufLeave = function()
 			UI._sg.win.o.cursorline = false
-			UI._sg.extmarks:set({
-				col = 0,
-				line = 1,
-				name = "cursorline",
-				ns = "rabbit.search.cursorline",
-				opts = {
-					hl_eol = true,
-					hl_group = "NormalFloat",
-					end_line = 2,
-					end_col = 2,
-				},
-			})
+			UI._sg.extmarks:set(mark)
+			selector.win.o.cursorline = false
+			selector.extmarks:set(mark)
 		end,
 		WinEnter = function()
 			UI._sg.win.o.cursorline = true
 			UI._sg.extmarks:del("cursorline")
+			selector.win.o.cursorline = true
+			selector.extmarks:del("cursorline")
 		end,
-	})
-	UI._sg:focus()
-	UI._sg.cursor:set(2, 1)
+	}
+
+	UI._sg.autocmd:add(cmds)
+	selector.autocmd:add(cmds)
+
+	UI._bg:add_parents(UI._sg, selector)
 end
 
 -- Actually lists the entries. Also calls `apply_actions` at the end
@@ -270,6 +311,8 @@ function UI.list(collection)
 		error("Invalid children")
 	end
 
+	UI._fg:focus()
+
 	if collection.type == "search" and UI._sg == nil then
 		create_search(collection)
 	elseif collection.type == "collection" and UI._sg ~= nil then
@@ -280,8 +323,6 @@ function UI.list(collection)
 		fg_config.height = fg_config.height + 2
 		fg_config.row = 1
 	end
-
-	UI._fg:focus()
 
 	UI._priority_legend = {}
 	UI._entries = collection.actions.children(collection)
