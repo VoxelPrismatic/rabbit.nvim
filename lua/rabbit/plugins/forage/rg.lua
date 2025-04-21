@@ -2,10 +2,6 @@ local RG = {}
 
 ---@class Rabbit*Forage.Kwargs.Ripgrep
 ---@field search_zip? boolean (-z) Search in zip files.
----@field case?
----| "ignore" # (-i) Ignore case.
----| "strict" # (-s) Case-sensitive.
----| "smart" # (-S) Smart case.
 ---@field encoding? string (-E) Specify the text encoding.
 ---@field engine?: --engine
 ---| "default" # Usually the fastest and should be good for most use cases.
@@ -19,10 +15,6 @@ local RG = {}
 ---| "line" # (-x) Match the whole line. (Surround patterns with ^ and $)
 ---| "word" # (-w) Match the whole word. (Surround patterns with \b)
 ---@field unicode? boolean Enable unicode support for all patterns given to ripgrep
----@field line_endings?
----| "null" # (--null-data) Treat NUL as a line terminator; useful when searching in binary files.
----| "crlf" # (--crlf) Treat \r\n as a line terminator instead of just \n.
----| "lf" # (--no-crlf) Disable crlf checking
 ---@field follow_symlinks? boolean Follow symlinks when searching
 ---@field search_hidden? boolean Search hidden files
 
@@ -86,14 +78,6 @@ function RG.find(text, kwargs, ...)
 		table.insert(command, "-z")
 	end
 
-	if kwargs.case == "ignore" then
-		table.insert(command, "-i")
-	elseif kwargs.case == "strict" then
-		table.insert(command, "-s")
-	elseif kwargs.case == "smart" then
-		table.insert(command, "-S")
-	end
-
 	if kwargs.encoding then
 		table.insert(command, "--encoding=" .. kwargs.encoding)
 	end
@@ -128,32 +112,6 @@ function RG.find(text, kwargs, ...)
 		table.insert(command, "--no-multiline-dotall")
 	end
 
-	if kwargs.unicode == true then
-		table.insert(command, "--unicode")
-	elseif kwargs.unicode == false then
-		table.insert(command, "--no-unicode")
-	end
-
-	if kwargs.line_endings == "null" then
-		table.insert(command, "--null-data")
-	elseif kwargs.line_endings == "crlf" then
-		table.insert(command, "--crlf")
-	elseif kwargs.line_endings == "lf" then
-		table.insert(command, "--no-crlf")
-	end
-
-	if kwargs.follow_symlinks == true then
-		table.insert(command, "--follow")
-	elseif kwargs.follow_symlinks == false then
-		table.insert(command, "--no-follow")
-	end
-
-	if kwargs.search_hidden == true then
-		table.insert(command, "--hidden")
-	elseif kwargs.search_hidden == false then
-		table.insert(command, "--no-hidden")
-	end
-
 	return run_rg(command)
 end
 
@@ -183,4 +141,155 @@ end
 ---@field abs { start: integer, end_: integer } Absolute position of the submatch.
 ---@field match string Matched text.
 
+---@type Rabbit.Message.Options
+RG.options = {
+	type = "options",
+	class = "message",
+	options = {
+		{
+			type = "list",
+			label = "Casing",
+			style = {
+				set = "",
+				float = "",
+				reset = "",
+			},
+			entries = {
+				{
+					label = "Smart",
+					single = true,
+					tri = false,
+					flags = {
+						set = "-S",
+					},
+				},
+				{
+					label = "Ignore",
+					single = true,
+					tri = false,
+					flags = {
+						set = "-i",
+					},
+				},
+				{
+					id = "strict",
+					label = "Strict",
+					single = true,
+					tri = false,
+					flags = {
+						set = "-s",
+					},
+				},
+			},
+		},
+		{
+			type = "list",
+			label = "Line endings",
+			style = {
+				set = "",
+				float = "",
+				reset = "",
+			},
+			entries = {
+				{
+					label = "Unix",
+					synopsis = "Standard line terminator of \n",
+					single = true,
+					tri = false,
+					flags = {
+						set = "--no-crlf",
+					},
+				},
+				{
+					label = "Null",
+					synopsis = "Treat NUL as a line terminator; useful when searching in binary files",
+					single = true,
+					tri = false,
+					flags = {
+						set = "--null-data",
+					},
+				},
+				{
+					label = "Windows",
+					synopsis = "Use \r\n as line terminators instead of just \n",
+					single = true,
+					tri = false,
+					flags = {
+						set = "--crlf",
+					},
+				},
+			},
+		},
+		{
+			type = "list",
+			label = "Toggles",
+			style = {
+				set = "",
+				reset = "",
+				float = "",
+			},
+			entries = {
+				{
+					label = "Follow Symlinks",
+					single = false,
+					tri = true,
+					flags = {
+						set = "--follow",
+						reset = "--no-follow",
+					},
+				},
+				{
+					label = "Include Hidden",
+					single = false,
+					tri = true,
+					flags = {
+						set = "--hidden",
+						reset = "--no-hidden",
+					},
+				},
+				{
+					label = "Unicode in RegEx",
+					single = false,
+					tri = true,
+					flags = {
+						set = "--unicode",
+						reset = "--no-unicode",
+					},
+				},
+			},
+		},
+	},
+}
+
+local function rg_children() end
+
+---@type Rabbit.Entry.Search
+RG.root = {
+	class = "entry",
+	type = "search",
+	label = {
+		text = "Grep",
+		hl = { "rabbit.types.collection", "rabbit.paint.rose" },
+	},
+	fields = {
+		{
+			default = "",
+			icon = "",
+			name = "query",
+		},
+		{
+			default = "",
+			icon = "",
+			name = "filter",
+		},
+		{
+			default = "",
+			icon = "",
+			name = "flags",
+		},
+	},
+	actions = {
+		children = rg_children,
+	},
+}
 return RG

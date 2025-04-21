@@ -1,7 +1,8 @@
 local TRAIL = require("rabbit.plugins.trail.list")
 local LIST = require("rabbit.plugins.forage.list")
 local ENV = require("rabbit.plugins.forage.env")
----
+local RIPGREP = require("rabbit.plugins.forage.rg")
+
 ---@type Rabbit.Plugin.Actions
 ---@diagnostic disable-next-line: missing-fields
 local ACTIONS = {}
@@ -18,7 +19,7 @@ local ACTIONS = {}
 function ACTIONS.children(entry)
 	assert(entry.type == "collection")
 	local listing = LIST.quickscore()
-	local entries = {} ---@type Rabbit.Entry[]
+	local entries = { RIPGREP.root } ---@type Rabbit.Entry[]
 	for i, v in ipairs(listing) do
 		local obj = vim.deepcopy(TRAIL.bufs[v.path]:as(ENV.winid)) --[[@as Rabbit*Forage.Buf]]
 		obj.ctx.via = "forage"
