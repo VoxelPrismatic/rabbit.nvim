@@ -214,15 +214,7 @@ function BOX.make(w, h, config, parts)
 
 		for i, v in ipairs(ps) do
 			local p = (config.parts or {})[v] or parts[v] or tostring(v)
-			if type(p) == "string" then
-				table.insert(cb_parts, hl_chars(str_parts, case, nil, p, true))
-			elseif type(p) == "function" then
-				local t = hl_chars(str_parts, case, nil, p())
-				table.insert(cb_parts, t)
-			elseif type(p) == "table" then
-				local t = hl_chars(str_parts, case, nil, unpack(p))
-				table.insert(cb_parts, t)
-			end
+			table.insert(cb_parts, hl_chars(str_parts, case, nil, BOX.resolve(p)))
 
 			if i < #ps then
 				hl_chars(str_parts, case, nil, section.join or " ", false)
@@ -295,6 +287,21 @@ function BOX.make(w, h, config, parts)
 	do_part(sides.r, h - 2, config.right_side)
 
 	return sides
+end
+
+---@param part Rabbit.Cls.Box.Part
+---@return string text
+---@return boolean highlight
+function BOX.resolve(part)
+	local highlight = true
+	while type(part) == "function" do
+		part, highlight = part()
+	end
+	if type(part) == "table" then
+		part, highlight = unpack(part)
+	end
+
+	return part, highlight
 end
 
 return BOX
