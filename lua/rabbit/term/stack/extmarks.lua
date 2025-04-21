@@ -11,6 +11,7 @@ local EXTMARKS = setmetatable({
 	__index = function(self, key)
 		assert(self.target ~= nil, "Cannot get extmarks from nil workspace")
 		assert(type(key) == "string", "Extmark key must be a string")
+		return self.marks[key]
 	end,
 })
 
@@ -29,6 +30,7 @@ end
 ---@param kwargs Rabbit.Stack.Kwargs.AddExtmark
 ---@return integer
 function EXTMARKS:set(kwargs)
+	kwargs = vim.deepcopy(kwargs)
 	local ns = kwargs.ns or self.target.ns
 	if type(ns) == "string" then
 		ns = vim.api.nvim_create_namespace(ns)
