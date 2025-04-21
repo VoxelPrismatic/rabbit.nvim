@@ -19,11 +19,8 @@ local UI = {
 	-- List of entries currently on screen
 	_entries = {}, ---@type Rabbit.Entry[]
 
-	-- Parent collection that generated entries on screen
-	_parent = nil, ---@type Rabbit.Entry.Collection
-
 	-- Should be the same as _parent
-	_display = nil, ---@type Rabbit.Entry.Collection
+	_display = nil, ---@type Rabbit.Entry.Collection | Rabbit.Entry.Search
 
 	-- Keymaps currently bound
 	_keys = {}, ---@type Rabbit.Table.Set<string>
@@ -54,6 +51,9 @@ local UI = {
 
 	-- Foreground window, featuring entries
 	_fg = nil, ---@type Rabbit.Stack.Workspace
+
+	-- Search window, featuring input box and config button
+	_sg = nil, ---@type Rabbit.Stack.Workspace
 
 	-- History of plugins
 	_plugin_history = SET.new(), ---@type Rabbit.Table.Set<string>
@@ -203,13 +203,38 @@ function UI.normalize_plugin(plugin)
 end
 
 -- Actually lists the entries. Also calls `apply_actions` at the end
----@param collection Rabbit.Entry.Collection
+---@param collection Rabbit.Entry.Collection | Rabbit.Entry.Search
 ---@return Rabbit.Entry[]
 function UI.list(collection)
 	if collection.actions.children == true then
 		collection.actions.children = UI._plugin.actions.children
 	elseif collection.actions.children == false then
 		error("Invalid children")
+	end
+
+	if collection.type == "search" and UI._sg == nil then
+		local fg_config = UI._fg.win.config
+		fg_config.height = fg_config.height - 2
+		fg_config.row = 3
+
+		local sg_config = fg_config:Raw()
+		sg_config.row = 1
+		sg_config.height = 1
+
+		UI._sg = STACK.ws.scratch({
+			focus = false,
+			ns = "rabbit.search",
+			config = sg_config,
+			parent = UI._bg,
+			name = "Rabbit: Search",
+		})
+	elseif collection.type == "collection" and UI._sg ~= nil then
+		UI._sg:close()
+		UI._sg = nil
+
+		local fg_config = UI._fg.win.config
+		fg_config.height = fg_config.height + 2
+		fg_config.row = 1
 	end
 
 	UI._fg:focus()
@@ -385,7 +410,7 @@ end
 ---@param entry Rabbit.Entry
 ---@return Rabbit.Term.HlLine
 function UI.highlight(entry)
-	if entry.type == "collection" then
+	if entry.type ~= "file" or entry.label ~= nil then
 		entry = entry --[[@as Rabbit.Entry.Collection]]
 		return {
 			type(entry.label) == "string" and { text = entry.label, hl = { "rabbit.paint.iris" }, align = "left" }
@@ -395,14 +420,9 @@ function UI.highlight(entry)
 				or entry.tail
 				or {},
 		}
-	elseif entry.type ~= "file" then
-		error("Highlight not implemented for type: " .. entry.type)
 	end
 
 	entry = entry --[[@as Rabbit.Entry.File]]
-	if entry.label then
-		return { entry.label }
-	end
 
 	---@diagnostic disable-next-line: missing-fields
 	entry = entry --[[@as Rabbit.Entry.File]]
@@ -589,6 +609,7 @@ function UI.apply_actions()
 	UI._keys = SET.new()
 	UI._plugins = {}
 	local all_actions = SET.new() ---@type Rabbit.Table.Set<string>
+	local renamed = e.action_label or {}
 
 	e.actions = e.actions or {}
 
@@ -628,7 +649,7 @@ function UI.apply_actions()
 		end
 
 		UI._fg.keys:add({
-			label = action,
+			label = renamed[action] or action,
 			keys = keys,
 			callback = function()
 				UI.handle_callback(cb(e))
@@ -747,35 +768,37 @@ function UI.marquee_legend()
 end
 
 -- Handles callback data
----@param data? Rabbit.Response
-function UI.handle_callback(data)
-	if data == false then
+---@param ... Rabbit.Response
+function UI.handle_callback(...)
+	if #{ ... } == 0 then
+		UI.close()
 		return
 	end
 
-	if data == nil then
-		return UI.close()
-	end
-
-	if data.class == "entry" then
-		data = data --[[@as Rabbit.Entry]]
-		if data.type == "collection" then
-			data = data --[[@as Rabbit.Entry.Collection]]
-			UI._parent = data
-			return UI.list(UI._parent)
+	for _, data in ipairs({ ... }) do
+		if data == false then
+			-- pass
+		elseif data.class == "entry" then
+			data = data --[[@as Rabbit.Entry]]
+			if data.type == "collection" then
+				data = data --[[@as Rabbit.Entry.Collection]]
+				UI._parent = data
+				UI.list(UI._parent)
+			end
+		elseif data.class == "message" then
+			require("rabbit.messages").Handle(data)
+		else
+			error("Callback data not implemented: " .. vim.inspect(data))
 		end
-	elseif data.class == "message" then
-		return require("rabbit.messages").Handle(data)
 	end
-
-	error("Callback data not implemented: " .. vim.inspect(data))
 end
 
 -- Draws the border around the listing
 ---@param ws Rabbit.Stack.Workspace
 function UI.draw_border(ws)
 	local config = CONFIG.boxes.rabbit
-	local final_height = ws.win.config.height - (CONFIG.window.legend and 1 or 0)
+	local win_config = ws.win.config:Raw()
+	local final_height = win_config.height - (CONFIG.window.legend and 1 or 0)
 
 	---@type { [string]: Rabbit.Cls.Box.Part }
 	local border_parts = {
@@ -788,7 +811,7 @@ function UI.draw_border(ws)
 
 	local tail = config.chars.emphasis
 	local join_char, _, text = BOX.join_for(config, border_parts, "rabbit", "plugin", "head")
-	local tail_len = (ws.win.config.width - 2) / 2 - vim.api.nvim_strwidth(text) - vim.api.nvim_strwidth(join_char)
+	local tail_len = (win_config.width - 2) / 2 - vim.api.nvim_strwidth(text) - vim.api.nvim_strwidth(join_char)
 
 	if tail_len > 0 then
 		tail = tail:rep(tail_len)
@@ -811,17 +834,25 @@ function UI.draw_border(ws)
 		["rabbit.types.plugin"] = c,
 	})
 
-	local sides = BOX.make(ws.win.config.width, final_height, config, border_parts)
+	local sides = BOX.make(win_config.width, final_height, config, border_parts)
 	local lines = sides:to_hl({
 		border_hl = "rabbit.types.plugin",
 		title_hl = "rabbit.types.title",
 	}).lines
 
+	if UI._sg ~= nil then
+		lines[3] = {
+			text = BOX.resolve(config.parts.search_left or "┣") .. BOX.resolve(config.parts.search_mid or "━")
+				:rep(win_config.width - 2) .. BOX.resolve(config.parts.search_right or "┫"),
+			hl = "rabbit.types.plugin",
+		}
+	end
+
 	HL.set_lines({
 		bufnr = UI._bg.buf.id,
 		ns = UI._bg.ns,
 		lines = lines,
-		width = ws.win.config.width,
+		width = win_config.width,
 		lineno = 0,
 		strict = false,
 		many = true,
@@ -834,7 +865,7 @@ end
 ---@return vim.api.keyset.win_config
 function UI.rect(win, z)
 	local spawn = CONFIG.window.spawn
-	local config = STACK._.user.win.config
+	local config = STACK._.user.win.config:Raw()
 
 	local calc_width = spawn.width
 	local calc_height = spawn.height
