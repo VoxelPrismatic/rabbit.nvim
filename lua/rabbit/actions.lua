@@ -19,7 +19,7 @@ function ACTIONS.select(entry)
 	assert(entry.class == "entry", "[Rabbit]: Expected entry, got " .. entry.class)
 
 	entry = entry --[[@as Rabbit.Entry]]
-	if entry.type == "collection" then
+	if entry.type == "collection" or entry.type == "search" then
 		return entry --[[@as Rabbit.Entry.Collection]]
 	end
 

@@ -261,7 +261,9 @@ RG.options = {
 	},
 }
 
-local function rg_children() end
+function RG.children()
+	return { RG.root }
+end
 
 ---@type Rabbit.Entry.Search
 RG.root = {
@@ -289,7 +291,8 @@ RG.root = {
 		},
 	},
 	actions = {
-		children = rg_children,
+		children = RG.children,
+		select = true,
 	},
 }
 return RG

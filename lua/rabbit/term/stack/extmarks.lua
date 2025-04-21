@@ -5,7 +5,7 @@ local EXTMARKS = setmetatable({
 	target = nil,
 
 	-- Marks by name
-	---@type table<string, integer>
+	---@type table<string, { id: integer, ns: integer }>
 	marks = {},
 }, {
 	__index = function(self, key)
@@ -34,9 +34,16 @@ function EXTMARKS:set(kwargs)
 		ns = vim.api.nvim_create_namespace(ns)
 	end
 
+	if kwargs.name and self.marks[kwargs.name] and kwargs.opts.id == nil then
+		kwargs.opts.id = self.marks[kwargs.name].id
+	end
+
 	local id = vim.api.nvim_buf_set_extmark(self.target.buf.id, ns, kwargs.line, kwargs.col, kwargs.opts)
 	if kwargs.name then
-		self.marks[kwargs.name] = id
+		self.marks[kwargs.name] = {
+			id = id,
+			ns = ns,
+		}
 	end
 	return id
 end
@@ -49,6 +56,15 @@ function EXTMARKS:clear(ns)
 		ns = vim.api.nvim_create_namespace(ns)
 	end
 	vim.api.nvim_buf_clear_namespace(self.target.buf.id, ns, 0, -1)
+end
+
+-- Delete an extmark given a name
+---@param name string
+function EXTMARKS:del(name)
+	if self.marks[name] then
+		vim.api.nvim_buf_del_extmark(self.target.buf.id, self.marks[name].ns, self.marks[name].id)
+		self.marks[name] = nil
+	end
 end
 
 return EXTMARKS
