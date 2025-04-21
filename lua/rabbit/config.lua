@@ -606,8 +606,8 @@ C.boxes = {
 					"plugin",
 
 					-- Emphasis suffix that fills the rest of the half of the width
-					-- "= trail =========-----------------"
-					-- "= carrot ========-----------------"
+					-- "═ trail ═════════─────────────────"
+					-- "═ carrot ════════─────────────────"
 					"tail",
 				},
 				case = "lower",
@@ -627,6 +627,11 @@ C.boxes = {
 			-- - "plugin"
 			-- - "tail"
 			---@see Rabbit.Cls.Box.parts
+
+			-- These are used in search listings, like fzf, rg, or find
+			search_left = "┣",
+			search_mid = "━",
+			search_right = "┫",
 		},
 	},
 
@@ -679,6 +684,7 @@ C.boxes = {
 		},
 	},
 
+	---@type Rabbit.Cls.Box
 	popup = {
 		top_left = "╔",
 		top_right = "┓",

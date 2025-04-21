@@ -7,11 +7,13 @@
 ---@field actions table
 ---@field default? boolean Automatically hover over this entry by default
 ---@field synopsis? Rabbit.Term.HlLine.NoAlign A description of the entry. Wrapping is handled automatically
+---@field action_label? table<string, string> Rename action labels
+---@field label? Rabbit.Entry._.Label
 
 ---@class Rabbit.Entry._.Environment
 ---@field cwd string The current working directory.
 ---@field idx integer The index of the file in the list.
----@field parent Rabbit.Entry.Collection The parent collection.
+---@field parent Rabbit.Entry.Collection | Rabbit.Entry.Search The parent collection.
 ---@field siblings Rabbit.Entry[] The siblings.
 ---@field entry Rabbit.Entry The current entry.
 ---@field real? integer The real index as shown in the listing. Nil if index was disabled

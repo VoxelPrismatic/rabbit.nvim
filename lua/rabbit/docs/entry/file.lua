@@ -6,7 +6,7 @@
 ---@field target_winid integer The window number the file should be opened in.
 ---@field actions Rabbit.Entry.File.Actions The actions to perform on the file.
 ---@field jump? Rabbit.Entry.File.Jump The line number and column to highlight
----@field label? Rabbit.Term.HlLine Label to display
+---@field label? Rabbit.Term.HlLine Label to display. If nil, it will use the relative path handler.
 
 ---@class (exact) Rabbit.Entry.File.Jump
 ---@field line integer Highlight line number

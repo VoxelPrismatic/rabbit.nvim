@@ -79,7 +79,7 @@ end
 ---@type Rabbit.Action.Delete
 ACTIONS.delete = not_implemented("delete")
 
----@alias Rabbit.Action.Children fun(entry: Rabbit.Entry.Collection): Rabbit.Entry[]
+---@alias Rabbit.Action.Children fun(entry: Rabbit.Entry.Collection | Rabbit.Entry.Search): Rabbit.Entry[]
 ---@type Rabbit.Action.Children
 ACTIONS.children = not_implemented("children")
 
