@@ -16,10 +16,15 @@ local ACTIONS = {}
 ---@field siblings Rabbit*Forage.Score[]
 ---@field idx integer
 
+local search_tools = {
+	RIPGREP.root,
+}
+
 function ACTIONS.children(entry)
 	assert(entry.type == "collection")
 	local listing = LIST.quickscore()
-	local entries = { RIPGREP.root } ---@type Rabbit.Entry[]
+	---@type Rabbit.Entry[]
+	local entries = vim.deepcopy(search_tools)
 	for i, v in ipairs(listing) do
 		local obj = vim.deepcopy(TRAIL.bufs[v.path]:as(ENV.winid)) --[[@as Rabbit*Forage.Buf]]
 		obj.ctx.via = "forage"
@@ -27,6 +32,11 @@ function ACTIONS.children(entry)
 		obj.ctx.siblings = listing
 		obj.ctx.idx = i
 		table.insert(entries, obj)
+	end
+
+	if entries[ENV.default] ~= nil then
+		entries[ENV.default].default = true
+		ENV.default = 0
 	end
 	return entries
 end
@@ -57,6 +67,7 @@ function ACTIONS.delete(entry)
 		table.remove(listing, ctx.idx)
 	end
 
+	ENV.default = math.min(entry._env.idx, #listing + #search_tools)
 	return LIST.default
 end
 
