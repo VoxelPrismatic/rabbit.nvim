@@ -196,8 +196,8 @@ return function(data)
 
 		rename_success = true
 		data.apply(entry, new_name)
-		local new_rename = UI.find_action("rename", entry._env.siblings[idx + dx])
-		if new_rename ~= nil then
+		local new_rename, _, exists = UI.bind_callback("rename", entry._env.siblings[idx + dx])
+		if exists then
 			ignore_leave = true
 			entry.default = false
 			new_entry.default = true
@@ -206,9 +206,7 @@ return function(data)
 			UI._fg.cursor:set(old_cur[1] + dx, curpos + startcol)
 			UI.apply_actions()
 			rename_ws.autocmd:clear()
-			vim.defer_fn(function()
-				UI.handle_callback(new_rename(new_entry))
-			end, 5)
+			UI.defer_callback(new_rename())
 		else
 			vim.cmd("stopinsert")
 			UI._bg:focus()

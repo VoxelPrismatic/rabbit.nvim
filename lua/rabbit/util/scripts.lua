@@ -7,7 +7,7 @@ function SCRIPTS.select(plugin, idx)
 	UI.spawn(plugin)
 	for _, entry in ipairs(UI._entries) do
 		if entry._env.real == idx then
-			UI.handle_callback(UI.find_action("select", entry)(entry))
+			UI.bind_callback("select", entry)()
 			return
 		end
 	end

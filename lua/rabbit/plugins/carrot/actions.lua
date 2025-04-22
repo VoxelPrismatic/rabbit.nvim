@@ -262,20 +262,7 @@ function ACTIONS.collect(entry)
 
 	LIST.carrot:__Save()
 
-	local function do_rename()
-		require("rabbit.term.listing").handle_callback(ACTIONS.rename(new_collection))
-	end
-
-	vim.defer_fn(function()
-		if entry.idx == false then
-			TERM.feed("<Down>")
-			vim.defer_fn(do_rename, 25)
-		else
-			do_rename()
-		end
-	end, 25)
-
-	return parent
+	return parent, ACTIONS.rename(new_collection)
 end
 
 function ACTIONS.parent(entry)
@@ -387,6 +374,7 @@ function ACTIONS.rename(entry)
 			check = check_rename,
 			color = false,
 			name = entry._env.parent.ctx.real.filename[entry.path] or "",
+			entry = entry,
 		}
 	end
 
@@ -400,6 +388,7 @@ function ACTIONS.rename(entry)
 			type = "color",
 			apply = apply_color,
 			color = entry.ctx.real.color,
+			entry = entry,
 		},
 		name = entry.ctx.real.name,
 	}

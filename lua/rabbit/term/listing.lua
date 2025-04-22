@@ -510,9 +510,7 @@ function UI.place_entry(kwargs)
 				label = "Select entry " .. kwargs.idx,
 				shown = false,
 				keys = { tostring(kwargs.idx) },
-				callback = function()
-					UI.handle_callback(UI.find_action("select", entry)(entry))
-				end,
+				callback = UI.bind_callback(entry, "select"),
 				mode = "n",
 			})
 		end
@@ -744,8 +742,8 @@ end
 
 ---@param action string
 ---@param entry Rabbit.Entry
----@return fun(e: Rabbit.Entry) | nil
----@return string[]
+---@return fun(e: Rabbit.Entry) | nil cb
+---@return string[] keys
 function UI.find_action(action, entry)
 	local callback = entry.actions[action]
 	if callback == false or callback == nil then
@@ -814,15 +812,15 @@ function UI.apply_actions()
 	UI._fg.keys:clear()
 
 	if e.actions.parent then
-		local _, val = pcall(UI.find_action("parent", e) or function() end, e)
+		local val = UI.bind_callback("parent", e)()
 		if val == UI._display then
 			all_actions:del("parent")
 		end
 	end
 
 	for _, action in ipairs(all_actions) do
-		local cb, keys = UI.find_action(action, e)
-		if #keys == 0 or cb == nil then
+		local cb, keys, exists = UI.bind_callback(action, e)
+		if #keys == 0 or not exists then
 			goto continue
 		end
 
@@ -839,9 +837,7 @@ function UI.apply_actions()
 		UI._fg.keys:add({
 			label = renamed[action] or action,
 			keys = keys,
-			callback = function()
-				UI.handle_callback(cb(e))
-			end,
+			callback = cb,
 			mode = mode,
 			hl = "rabbit.types.plugin",
 			shown = shown,
@@ -896,7 +892,7 @@ function UI.apply_actions()
 	end
 
 	if e.actions.hover then
-		UI.handle_callback(UI.find_action("hover", e)(e))
+		UI.bind_callback(e, "hover")()
 	else
 		UI.cancel_hover()
 	end
@@ -979,6 +975,49 @@ function UI.handle_callback(...)
 			error("Callback data not implemented: " .. vim.inspect(data))
 		end
 	end
+end
+
+-- Binds a callback given an entry and action to perform
+---@param entry Rabbit.Entry
+---@param action string
+---@return fun() cb
+---@return string[] keys
+---@return boolean exists
+function UI.bind_callback(action, entry, handle)
+	local cb, keys
+
+	if type(action) == "function" then
+		cb, keys = action, {}
+	else
+		cb, keys = UI.find_action(action, entry)
+	end
+
+	cb = cb or function() end
+	local wrap = function()
+		return cb(entry)
+	end
+
+	if handle then
+		wrap = UI.wrap_callback(wrap)
+	end
+
+	return wrap, keys, true
+end
+
+-- Wraps a callback to a function
+---@param data Rabbit.Response
+---@return fun()
+function UI.wrap_callback(data)
+	return function()
+		UI.handle_callback(data)
+	end
+end
+
+-- Defers a callback
+---@param data Rabbit.Response
+---@param ms? integer | 5
+function UI.defer_callback(data, ms)
+	vim.defer_fn(UI.wrap_callback(data), ms or CONFIG.system.defer or 5)
 end
 
 -- Draws the border around the listing

@@ -834,6 +834,10 @@ C.system = {
 	-- of the window width
 	---@type number
 	wrap = 0.9,
+
+	-- Default delay in ms when calling vim.defer_fn. If your system
+	-- is slow, you may want to increase this
+	defer = 5,
 }
 
 -- Default scoping function
