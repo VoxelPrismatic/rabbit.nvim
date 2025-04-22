@@ -427,22 +427,29 @@ function UI.list(collection)
 	_ = pcall(vim.api.nvim_buf_clear_namespace, UI._fg.buf, UI._fg.ns, 0, -1)
 
 	if #UI._entries > 0 then
-		local j = 0
-		local r = 0
-
-		local auto_default = nil
-		local man_default = nil
-
-		local idx_len = #tostring(#UI._entries)
+		local count = 0
+		for _, entry in ipairs(UI._entries) do
+			if entry.idx ~= false then
+				count = count + 1
+			end
+		end
+		---@type Rabbit.Kwargs.PlaceEntry
+		local kwargs = {
+			entry = UI._entries[1],
+			idx = 0,
+			line = 0,
+			pad = #tostring(count),
+		}
 
 		for i, entry in ipairs(UI._entries) do
-			j = i
-			auto_default, man_default, r = UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
+			kwargs.entry = entry
+			kwargs.line = i
+			UI.place_entry(kwargs)
 		end
 
 		UI._fg.buf.o.modifiable = true
-		UI._fg.cursor:set(man_default or auto_default or 1, 0)
-		vim.api.nvim_buf_set_lines(UI._fg.buf.id, j, -1, false, {})
+		UI._fg.cursor:set(kwargs.man_default or kwargs.auto_default or 1, 0)
+		vim.api.nvim_buf_set_lines(UI._fg.buf.id, kwargs.line, -1, false, {})
 	else
 		UI._fg.buf.o.modifiable = true
 		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.win.config.width)
@@ -463,30 +470,20 @@ end
 -- **WARNING:** This entry must be placed first (must have _env set)
 ---@param entry Rabbit.Entry
 function UI.redraw_entry(entry)
-	UI.place_entry(entry, entry._env.idx, entry._env.real - 1, #tostring(#UI._entries))
-end
+	local count = 0
+	for _, e in ipairs(entry._env.siblings) do
+		if e.idx ~= false then
+			count = count + 1
+		end
+	end
 
----@param entry Rabbit.Entry
----@param j number Index (line number).
----@param r number Real index.
----@param idx_len number String length of max index.
----@param auto_default? number Default index to select.
----@param man_default? number Manual index to select.
----@return number | nil "auto_default"
----@return number | nil "man_default"
----@return number "real index"
-function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
-	UI._fg.buf.o.modifiable = true
-
-	entry._env = {
-		idx = j,
-		real = entry.idx and r + 1 or nil,
+	UI.place_entry({
 		entry = entry,
-		siblings = UI._entries,
-		parent = UI._display,
-		cwd = UI._plugin._env.cwd.value,
-		ident = "",
-	}
+		line = entry._env.idx,
+		idx = entry._env.real - 1,
+		pad = #tostring(count),
+	})
+end
 
 	for k, v in ipairs(entry.actions) do
 		if v == false or v == nil then
@@ -505,26 +502,54 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 			error("Invalid action for " .. k .. ": Expected table, function, or boolean; got " .. type(v))
 		end
 	end
+---@class Rabbit.Kwargs.PlaceEntry
+---@field entry Rabbit.Entry
+---@field line integer Line number to place the entry at
+---@field idx integer Display index
+---@field pad integer Number of spaces to pad the index with
+---@field auto_default? integer Automatic default selection (first one with index shown)
+---@field man_default? integer Manual default selection (with default set)
+
+-- Places an entry
+---@param kwargs Rabbit.Kwargs.PlaceEntry
+function UI.place_entry(kwargs)
+	UI._fg.buf.o.modifiable = true
 
 	local idx
+	local entry = kwargs.entry
+
 	if entry.idx ~= false then
-		r = r + 1
-		auto_default = auto_default or j
-		man_default = entry.default and (man_default or j) or man_default
-		idx = ("0"):rep(idx_len - #tostring(r)) .. r .. "."
-		if r < 10 and entry.actions.select then
-			vim.keymap.set("n", tostring(r), function()
-				UI.handle_callback(UI.find_action("select", entry)(entry))
-			end, {
-				buffer = UI._fg.buf.id,
+		kwargs.idx = kwargs.idx + 1
+		kwargs.auto_default = kwargs.auto_default or kwargs.idx
+		idx = (" "):rep(kwargs.pad - #tostring(kwargs.idx)) .. kwargs.idx .. "."
+		if kwargs.idx < 10 and entry.actions.select then
+			UI._fg.keys:add({
+				label = "Select entry " .. kwargs.idx,
+				shown = false,
+				keys = { tostring(kwargs.idx) },
+				callback = function()
+					UI.handle_callback(UI.find_action("select", entry)(entry))
+				end,
+				mode = "n",
 			})
 		end
 	else
-		idx = ("—"):rep(idx_len + 1)
-		man_default = entry.default and (man_default or j) or man_default
+		idx = ("—"):rep(kwargs.pad + 1)
 	end
 
-	entry._env.ident = " " .. idx .. "\u{a0}"
+	if kwargs.man_default == nil and entry.default then
+		kwargs.man_default = kwargs.idx
+	end
+
+	entry._env = {
+		idx = kwargs.line,
+		real = entry.idx and kwargs.idx or nil,
+		entry = entry,
+		siblings = UI._entries,
+		parent = UI._display,
+		cwd = UI._plugin._env.cwd.value,
+		ident = " " .. idx .. "\u{a0}",
+	}
 
 	UI._fg.lines:set({
 		{
@@ -536,15 +561,14 @@ function UI.place_entry(entry, j, r, idx_len, auto_default, man_default)
 	}, {
 		many = false,
 		strict = false,
-		start = j - 1,
+		start = kwargs.line - 1,
 	})
 
 	if entry.synopsis and CONFIG.window.synopsis.mode == "always" then
-		UI.synopsis(entry, j)
+		UI.synopsis(entry, kwargs.line)
 	end
 
 	UI._fg.buf.o.modifiable = false
-	return auto_default, man_default, r
 end
 
 -- Creates the synopsis for a particular entry
