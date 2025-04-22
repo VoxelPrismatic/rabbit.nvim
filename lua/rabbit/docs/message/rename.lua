@@ -4,3 +4,4 @@
 ---@field check fun(entry: Rabbit.Entry, new_name: string): string Returns the corrected name. Does not apply the change yet
 ---@field name string Existing name of the entry.
 ---@field color Rabbit.Message.Color | false Immediately handles this callback after the entry is done being renamed
+---@field entry? Rabbit.Entry The entry being renamed. This is optional.

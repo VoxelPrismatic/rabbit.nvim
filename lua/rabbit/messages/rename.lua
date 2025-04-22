@@ -48,7 +48,15 @@ local priority_legend = {
 ---@param data Rabbit.Message.Rename
 return function(data)
 	local linenr, curpos = unpack(UI._fg.cursor:get())
-	local entry = UI._entries[linenr] ---@type Rabbit.Entry
+	local entry = data.entry
+	if entry == nil then
+		entry = UI._entries[linenr]
+	else
+		linenr = entry._env.idx
+	end
+
+	assert(entry ~= nil, "No entry to rename")
+
 	if not entry.actions.rename then
 		vim.notify("Attempt to rename an entry that cannot be renamed.", vim.log.levels.ERROR)
 		return
