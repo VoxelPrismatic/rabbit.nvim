@@ -194,14 +194,6 @@ function WS.scratch(opts)
 	end
 	ws.ns = ns
 
-	for k, b in pairs(opts.wo or {}) do
-		ws.win.o[k] = b
-	end
-
-	for k, b in pairs(opts.bo or {}) do
-		ws.buf.o[k] = b
-	end
-
 	if opts.lines then
 		ws.lines:set(opts.lines, {
 			ns = ws.ns,
@@ -209,6 +201,14 @@ function WS.scratch(opts)
 			end_ = -1,
 			many = opts.many,
 		})
+	end
+
+	for k, b in pairs(opts.wo or {}) do
+		ws.win.o[k] = b
+	end
+
+	for k, b in pairs(opts.bo or {}) do
+		ws.buf.o[k] = b
 	end
 
 	if opts.cursor then
@@ -275,6 +275,7 @@ end
 ---@param focus_buf? boolean Focus the buffer, too
 ---@return boolean Success
 function WS:focus(focus_buf)
+	SHARED.last_scratch = vim.uv.hrtime()
 	local ok = pcall(vim.api.nvim_set_current_win, self.win.id or 0)
 	if focus_buf then
 		ok = ok and pcall(vim.api.nvim_set_current_buf, self.buf.id or 0)

@@ -275,21 +275,22 @@ RG.root = {
 	},
 	fields = {
 		{
-			default = "",
+			content = "type shit here",
 			icon = "",
 			name = "query",
 		},
 		{
-			default = "",
+			content = "",
 			icon = "",
 			name = "filter",
 		},
 		{
-			default = "",
+			content = "",
 			icon = "",
 			name = "flags",
 		},
 	},
+	open = 1,
 	actions = {
 		children = RG.children,
 		select = true,

@@ -74,7 +74,7 @@ local function new_bind(kwargs)
 	end
 	mode = SET.new(mode)
 
-	assert(#kwargs.mode > 0, "Keybinds must have at least one mode")
+	assert(#mode > 0, "Keybinds must have at least one mode")
 
 	local keys = kwargs.keys or {}
 	if type(keys) == "string" then
@@ -153,26 +153,32 @@ function KEYS.new(workspace)
 end
 
 -- Adds a keybind to this workspace
----@param kwargs Rabbit.Stack.Kwargs.Keybind
+---@param ... Rabbit.Stack.Kwargs.Keybind
 ---@return Rabbit.Term.HlLine[] "Legend entry"
-function KEYS:add(kwargs)
+function KEYS:add(...)
 	assert(self.target ~= nil, "Cannot add keybinds to nil workspace")
 
-	local keys = new_bind(kwargs)
-	for _, new in ipairs(keys) do
-		for i = #self.binds, 1, -1 do
-			local old = self.binds[i]
-			old.keys:del(new.keys)
-			if #old.keys == 0 or old:conflict(new) then
-				table.remove(self.binds, i):del(self.target.buf.id)
+	local ret = {}
+	for _, kwargs in ipairs({ ... }) do
+		local keys = new_bind(kwargs)
+		for _, new in ipairs(keys) do
+			for i = #self.binds, 1, -1 do
+				local old = self.binds[i]
+				old.keys:del(new.keys)
+				if #old.keys == 0 or old:conflict(new) then
+					table.remove(self.binds, i):del(self.target.buf.id)
+				end
 			end
-		end
 
-		new:set(self.target.buf.id)
-		table.insert(self.binds, new)
+			new:set(self.target.buf.id)
+			table.insert(self.binds, new)
+		end
+		if keys[1].shown then
+			table.insert(ret, keys[1]:legend(kwargs.align))
+		end
 	end
 
-	return keys[1].shown and keys[1]:legend(kwargs.align) or {}
+	return ret
 end
 
 -- Removes keybinds from this workspace
