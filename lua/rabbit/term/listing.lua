@@ -20,7 +20,7 @@ local UI = {
 	_entries = {}, ---@type Rabbit.Entry[]
 
 	-- Should be the same as _parent
-	_display = nil, ---@type Rabbit.Entry.Collection | Rabbit.Entry.Search
+	_display = nil, ---@type Rabbit.Entry.Collection
 
 	-- Keymaps currently bound
 	_keys = {}, ---@type Rabbit.Table.Set<string>
@@ -52,11 +52,12 @@ local UI = {
 	-- Foreground window, featuring entries
 	_fg = nil, ---@type Rabbit.Stack.Workspace
 
-	-- Search window, featuring input box and config button
-	_sg = nil, ---@type Rabbit.Stack.Workspace
-
 	-- History of plugins
 	_plugin_history = SET.new(), ---@type Rabbit.Table.Set<string>
+
+	-- Enable close debugger
+	---@type boolean
+	_dbg = false,
 }
 
 ---@param key string | string[]
@@ -86,7 +87,7 @@ function UI.spawn(plugin)
 	ACTIONS = ACTIONS or require("rabbit.actions")
 
 	if #STACK._.open > 0 then
-		UI.close()
+		UI.close(true)
 	end
 
 	for _, winid in ipairs(vim.api.nvim_list_wins()) do
@@ -143,10 +144,6 @@ function UI.spawn(plugin)
 			ModeChanged = UI.marquee_legend,
 		},
 	})
-
-	UI._fg.autocmd:add("WinEnter", function()
-		UI._fg.win.o.cursorline = true
-	end)
 
 	UI._fg.children:add(UI._bg.id) -- Treat these as the same layer
 
@@ -206,199 +203,8 @@ function UI.normalize_plugin(plugin)
 	end
 end
 
--- Creates a search window
----@param search Rabbit.Entry.Search
-local function create_search(search)
-	local fg_config = UI._fg.win.config
-	fg_config.height = fg_config.height - 2
-	fg_config.row = 3
-
-	local icons = {} ---@type string[]
-	for _, field in ipairs(search.fields) do
-		table.insert(icons, field.icon)
-	end
-
-	local sg_config = fg_config:Raw()
-	sg_config.row = 1
-	sg_config.height = 1
-	local select_config = vim.deepcopy(sg_config)
-	select_config.width = #icons * 2 + 1
-	sg_config.width = fg_config.width - select_config.width
-	select_config.col = sg_config.width + sg_config.col
-
-	search.open = math.min(#icons, math.max(search.open or 1, 1))
-
-	UI._sg = STACK.ws.scratch({
-		focus = true,
-		ns = "rabbit.search.input",
-		config = sg_config,
-		parent = UI._bg,
-		name = "Rabbit: Search",
-		---@diagnostic disable-next-line: missing-fields
-		wo = {
-			number = false,
-			relativenumber = false,
-		},
-		lines = {
-			search.fields[search.open].content,
-			"",
-		},
-		many = true,
-	})
-
-	UI._sg.cursor:set(1, 0)
-
-	local selector = STACK.ws.scratch({
-		focus = false,
-		ns = "rabbit.search.selector",
-		config = select_config,
-		parent = UI._sg,
-		name = "Rabbit: Search Selector",
-		---@diagnostic disable-next-line: missing-fields
-		wo = {
-			number = false,
-			relativenumber = false,
-		},
-		---@diagnostic disable-next-line: missing-fields
-		bo = {
-			readonly = true,
-		},
-		lines = {
-			" " .. table.concat(icons, " "),
-			"",
-		},
-		many = true,
-	})
-
-	local mark = {
-		col = 0,
-		line = 0,
-		name = "cursorline",
-		ns = "rabbit.search.cursorline",
-		opts = {
-			hl_eol = true,
-			hl_group = "NormalFloat",
-			end_line = 1,
-			end_col = 0,
-			strict = false,
-		},
-	}
-
-	local cmds = {
-		WinLeave = function(evt)
-			UI._fg.win.o.cursorline = true
-			UI._sg.win.o.cursorline = false
-			UI._sg.extmarks:set(mark)
-			selector.win.o.cursorline = false
-			selector.extmarks:set(mark)
-			UI._priority_legend = {}
-		end,
-		WinEnter = function()
-			UI._fg.win.o.cursorline = false
-			UI._sg.win.o.cursorline = true
-			UI._sg.extmarks:del("cursorline")
-			selector.win.o.cursorline = true
-			selector.extmarks:del("cursorline")
-		end,
-		BufLeave = UI.maybe_close,
-	}
-
-	local function cursor_moved()
-		local cursor = UI._sg.cursor:get()
-		if cursor[1] == 1 then
-			return
-		end
-
-		local lines = UI._sg.lines:get()
-		UI._sg.cursor:set(1, 0)
-		if #lines > 2 then
-			UI._sg.lines:set({ table.concat(lines, ""), "" })
-		end
-		UI._fg:focus()
-		cmds.WinLeave()
-	end
-
-	local function selector_moved()
-		local cursor = selector.cursor:get()
-		if cursor[1] == 1 then
-			return
-		end
-
-		local lines = selector.lines:get()
-		if #lines > 2 then
-			selector.lines:set({ lines[1], "" })
-		end
-		selector.cursor:set(1, 0)
-		UI._fg:focus()
-		cmds.WinLeave()
-	end
-
-	UI._sg.autocmd:add(cmds)
-	UI._sg.autocmd:add({
-		CursorMoved = cursor_moved,
-		CursorMovedI = cursor_moved,
-		WinEnter = function()
-			UI._priority_legend = UI._sg.keys:legend()
-		end,
-		InsertEnter = function()
-			UI._priority_legend = UI._sg.keys:legend({ mode = "i" })
-		end,
-		InsertLeave = function()
-			UI._priority_legend = UI._sg.keys:legend()
-		end,
-	})
-	selector.autocmd:add(cmds)
-	selector.autocmd:add({
-		CursorMoved = selector_moved,
-		InsertEnter = function()
-			TERM.feed("<Esc>")
-		end,
-		CursorMovedI = function()
-			TERM.feed("<Esc>")
-		end,
-		WinEnter = function()
-			if vim.fn.mode() == "i" then
-				TERM.feed("<Esc>")
-			end
-			UI._priority_legend = selector.keys:legend()
-		end,
-		InsertLeave = function()
-			UI._priority_legend = selector.keys:legend()
-		end,
-	})
-
-	UI._sg.keys:add({
-		label = "close",
-		keys = CONFIG.keys.close,
-		shown = CONFIG.window.legend.close,
-		mode = "n",
-		callback = function()
-			UI.close()
-		end,
-	}, {
-		label = "field",
-		keys = CONFIG.keys.close,
-		shown = true,
-		mode = "i",
-		callback = function()
-			selector:focus()
-			TERM.feed("<Esc>")
-		end,
-	})
-	selector.keys:add({
-		label = "close",
-		keys = CONFIG.keys.close,
-		shown = CONFIG.window.legend.close,
-		mode = "n",
-		callback = function()
-			selector:close()
-		end,
-	})
-	UI._bg:add_parents(UI._sg, selector)
-end
-
 -- Actually lists the entries. Also calls `apply_actions` at the end
----@param collection Rabbit.Entry.Collection | Rabbit.Entry.Search
+---@param collection Rabbit.Entry.Collection
 ---@return Rabbit.Entry[]
 function UI.list(collection)
 	if collection.actions.children == true then
@@ -408,18 +214,6 @@ function UI.list(collection)
 	end
 
 	UI._fg:focus()
-
-	if collection.type == "search" and UI._sg == nil then
-		create_search(collection)
-	elseif collection.type == "collection" and UI._sg ~= nil then
-		UI._sg:close()
-		UI._sg = nil
-
-		local fg_config = UI._fg.win.config
-		fg_config.height = fg_config.height + 2
-		fg_config.row = 1
-	end
-
 	UI._priority_legend = {}
 	UI._entries = collection.actions.children(collection)
 	UI._display = collection
@@ -427,18 +221,12 @@ function UI.list(collection)
 	_ = pcall(vim.api.nvim_buf_clear_namespace, UI._fg.buf, UI._fg.ns, 0, -1)
 
 	if #UI._entries > 0 then
-		local count = 0
-		for _, entry in ipairs(UI._entries) do
-			if entry.idx ~= false then
-				count = count + 1
-			end
-		end
 		---@type Rabbit.Kwargs.PlaceEntry
 		local kwargs = {
 			entry = UI._entries[1],
 			idx = 0,
 			line = 0,
-			pad = #tostring(count),
+			pad = UI.get_pad(),
 		}
 
 		for i, entry in ipairs(UI._entries) do
@@ -470,19 +258,25 @@ end
 -- **WARNING:** This entry must be placed first (must have _env set)
 ---@param entry Rabbit.Entry
 function UI.redraw_entry(entry)
+	UI.place_entry({
+		entry = entry,
+		line = entry._env.idx,
+		idx = entry._env.real - 1,
+		pad = UI.get_pad(),
+	})
+end
+
+-- Gets the padding length
+---@return integer pad
+function UI.get_pad()
 	local count = 0
-	for _, e in ipairs(entry._env.siblings) do
+	for _, e in ipairs(UI._entries) do
 		if e.idx ~= false then
 			count = count + 1
 		end
 	end
 
-	UI.place_entry({
-		entry = entry,
-		line = entry._env.idx,
-		idx = entry._env.real - 1,
-		pad = #tostring(count),
-	})
+	return #tostring(count)
 end
 
 ---@class Rabbit.Kwargs.PlaceEntry
@@ -501,16 +295,23 @@ function UI.place_entry(kwargs)
 	local idx
 	local entry = kwargs.entry
 
-	if entry.idx ~= false then
+	if entry.type == "search" then
+		if kwargs.line ~= 1 then
+			error("Search entries must be placed first")
+		end
+		entry = entry --[[@as Rabbit.Entry.Search]]
+		entry.idx = false
+		idx = entry.fields[entry.open].name .. ":"
+	elseif entry.idx ~= false then
 		kwargs.idx = kwargs.idx + 1
-		kwargs.auto_default = kwargs.auto_default or kwargs.idx
+		kwargs.auto_default = kwargs.auto_default or kwargs.line
 		idx = (" "):rep(kwargs.pad - #tostring(kwargs.idx)) .. kwargs.idx .. "."
 		if kwargs.idx < 10 and entry.actions.select then
 			UI._fg.keys:add({
 				label = "Select entry " .. kwargs.idx,
 				shown = false,
 				keys = { tostring(kwargs.idx) },
-				callback = UI.bind_callback(entry, "select"),
+				callback = UI.bind_callback("select", entry, true),
 				mode = "n",
 			})
 		end
@@ -519,7 +320,7 @@ function UI.place_entry(kwargs)
 	end
 
 	if kwargs.man_default == nil and entry.default then
-		kwargs.man_default = kwargs.idx
+		kwargs.man_default = kwargs.line
 	end
 
 	entry._env = {
@@ -545,7 +346,21 @@ function UI.place_entry(kwargs)
 		start = kwargs.line - 1,
 	})
 
-	if entry.synopsis and CONFIG.window.synopsis.mode == "always" then
+	if entry.type == "search" then
+		UI._fg.extmarks:set({
+			line = 0,
+			col = 0,
+			ns = "rabbit.search.line",
+			name = "search_line",
+			opts = {
+				end_col = 0,
+				strict = false,
+				virt_lines = {
+					{ { ("─"):rep(UI._fg.win.config.width), "rabbit.types.plugin" } },
+				},
+			},
+		})
+	elseif entry.synopsis and CONFIG.window.synopsis.mode == "always" then
 		UI.synopsis(entry, kwargs.line)
 	end
 
@@ -592,19 +407,62 @@ function UI.synopsis(entry, id)
 	})
 end
 
+-- Normalizes a label
+---@param text string | Rabbit.Term.HlLine
+---@param hl string | string[]
+---@param align string
+---@return Rabbit.Term.HlLine
+local function normalize_label(text, hl, align)
+	text = text or {}
+	if type(text) == "table" then
+		return text
+	end
+
+	if type(hl) == "string" then
+		hl = { hl }
+	end
+
+	return {
+		text = text,
+		hl = hl,
+		align = align,
+	}
+end
+
 -- Creates the highlights for a particular entry
 ---@param entry Rabbit.Entry
 ---@return Rabbit.Term.HlLine
 function UI.highlight(entry)
-	if entry.type ~= "file" or entry.label ~= nil then
+	if entry.type == "search" then
+		entry = entry --[[@as Rabbit.Entry.Search]]
+		local ret = {
+			{ text = entry.fields[entry.open].content, align = "left" },
+			{ text = " ", align = "right" },
+		}
+		for idx, field in ipairs(entry.fields) do
+			local hl = idx == entry.open and "rabbit.types.reverse" or "rabbit.types.index"
+			if idx == entry.open then
+				ret[#ret].hl = hl
+			end
+			table.insert(ret, {
+				{
+					text = field.icon,
+					hl = hl,
+					align = "right",
+				},
+				{
+					text = " ",
+					hl = hl,
+					align = "right",
+				},
+			})
+		end
+		return ret
+	elseif entry.type ~= "file" or entry.label ~= nil then
 		entry = entry --[[@as Rabbit.Entry.Collection]]
 		return {
-			type(entry.label) == "string" and { text = entry.label, hl = { "rabbit.paint.iris" }, align = "left" }
-				or entry.label
-				or {},
-			type(entry.tail) == "string" and { text = entry.tail, hl = { "rabbit.types.tail" }, align = "right" }
-				or entry.tail
-				or {},
+			normalize_label(entry.label, "rabbit.paint.iris", "left"),
+			normalize_label(entry.tail, "rabbit.types.tail", "right"),
 		}
 	end
 
@@ -819,7 +677,7 @@ function UI.apply_actions()
 	end
 
 	for _, action in ipairs(all_actions) do
-		local cb, keys, exists = UI.bind_callback(action, e)
+		local cb, keys, exists = UI.bind_callback(action, e, true)
 		if #keys == 0 or not exists then
 			goto continue
 		end
@@ -892,7 +750,7 @@ function UI.apply_actions()
 	end
 
 	if e.actions.hover then
-		UI.bind_callback(e, "hover")()
+		UI.bind_callback("hover", e, true)()
 	else
 		UI.cancel_hover()
 	end
@@ -954,11 +812,6 @@ end
 -- Handles callback data
 ---@param ... Rabbit.Response
 function UI.handle_callback(...)
-	if #{ ... } == 0 then
-		UI.close()
-		return
-	end
-
 	for _, data in ipairs({ ... }) do
 		if data == false then
 			-- pass
@@ -979,7 +832,8 @@ end
 
 -- Binds a callback given an entry and action to perform
 ---@param entry Rabbit.Entry
----@param action string
+---@param action string | fun(entry: Rabbit.Entry): Rabbit.Response
+---@param handle? boolean Also handle the callback
 ---@return fun() cb
 ---@return string[] keys
 ---@return boolean exists
@@ -1005,16 +859,20 @@ function UI.bind_callback(action, entry, handle)
 end
 
 -- Wraps a callback to a function
----@param data Rabbit.Response
+---@param data Rabbit.Recursive<Rabbit.Response>
 ---@return fun()
 function UI.wrap_callback(data)
 	return function()
+		while type(data) == "function" do
+			data = data()
+		end
+		UI.draw_border()
 		UI.handle_callback(data)
 	end
 end
 
 -- Defers a callback
----@param data Rabbit.Response
+---@param data Rabbit.Recursive<Rabbit.Response>
 ---@param ms? integer | 5
 function UI.defer_callback(data, ms)
 	vim.defer_fn(UI.wrap_callback(data), ms or CONFIG.system.defer or 5)
@@ -1022,6 +880,10 @@ end
 
 -- Draws the border around the listing
 function UI.draw_border()
+	if not UI._bg.buf:exists() then
+		return
+	end
+
 	local config = CONFIG.boxes.rabbit
 	local win_config = UI._bg.win.config:Raw()
 	local final_height = win_config.height - (CONFIG.window.legend and 1 or 0)
@@ -1037,7 +899,7 @@ function UI.draw_border()
 
 	local tail = config.chars.emphasis
 	local join_char, _, text = BOX.join_for(config, border_parts, "rabbit", "plugin", "head")
-	local tail_len = (win_config.width - 2) / 2 - vim.api.nvim_strwidth(text) - vim.api.nvim_strwidth(join_char)
+	local tail_len = (win_config.width - 2) / 2 - vim.api.nvim_strwidth(text .. join_char)
 
 	if tail_len > 0 then
 		tail = tail:rep(tail_len)
@@ -1045,10 +907,14 @@ function UI.draw_border()
 
 	border_parts.tail = { tail, false }
 
+	local is_search = #UI._entries > 0 and UI._entries[1].type == "search"
+
 	if type(config.right_side) == "table" then
-		local top_off = UI._sg ~= nil and 2 or 0
+		local top_off = is_search and 2 or 0
 		local off = 2 + top_off
-		local cur_line, max_line = vim.fn.line(".") - 1, vim.fn.line("$")
+		local cur_line, max_line = unpack(vim.api.nvim_win_call(UI._fg.win.id, function()
+			return { vim.fn.line(".") - 1, vim.fn.line("$") }
+		end))
 		local scroll_height = final_height - off
 
 		local base = config.right_side.base
@@ -1070,14 +936,6 @@ function UI.draw_border()
 		border_hl = "rabbit.types.plugin",
 		title_hl = "rabbit.types.title",
 	}).lines
-
-	if UI._sg ~= nil then
-		lines[3] = {
-			text = BOX.resolve(config.parts.search_left or "┣") .. BOX.resolve(config.parts.search_mid or "━")
-				:rep(win_config.width - 2) .. BOX.resolve(config.parts.search_right or "┫"),
-			hl = "rabbit.types.plugin",
-		}
-	end
 
 	HL.set_lines({
 		bufnr = UI._bg.buf.id,
@@ -1157,9 +1015,14 @@ function UI.rect(win, z)
 end
 
 -- Closes the window
-function UI.close()
+---@param dbg? boolean Crashes when
+function UI.close(dbg)
 	if #STACK._.open == 0 then
 		return
+	end
+
+	if not dbg and UI._dbg then
+		error("Debugging")
 	end
 
 	_ = STACK._.user:focus(true)
@@ -1173,12 +1036,10 @@ function UI.close()
 
 	UI._plugin._env.open = false
 	UI._priority_legend = {}
-	UI._sg = nil
 end
 
 -- Closes the window ONLY if the latest window is NOT generated by CTX via the scratch function
 function UI.maybe_close()
-	UI._fg.win.o.cursorline = false
 	if vim.uv.hrtime() - STACK._.last_scratch < 250 * 1000000 then
 		return
 	end

@@ -28,19 +28,18 @@ local function deep_copy_collection(id)
 		copied[id_map[old_id]] = collection
 
 		for i, entry in ipairs(collection.list) do
-			if type(entry) == "string" then
+			if type(entry) == "string" or id_map[entry] ~= nil then
 				-- pass
 			elseif type(entry) == "number" then
-				if id_map[entry] == nil then
-					table.insert(to_copy, entry)
-					local new_id = vim.uv.hrtime()
-					while folder[tostring(new_id)] ~= nil do
-						-- This should never happen, but I would like to avoid collisions
-						new_id = vim.uv.hrtime()
-					end
-					id_map[entry] = new_id
-					collection.list[i] = id_map[entry]
+				table.insert(to_copy, entry)
+				local new_id = vim.uv.hrtime()
+				-- This should never happen, but I would like to avoid collisions
+				while folder[tostring(new_id)] ~= nil do
+					new_id = vim.uv.hrtime()
 				end
+
+				id_map[entry] = new_id
+				collection.list[i] = new_id
 			else
 				vim.print(entry)
 				error("Unreachable")

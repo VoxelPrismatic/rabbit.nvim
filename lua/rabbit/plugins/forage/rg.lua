@@ -262,11 +262,11 @@ RG.options = {
 }
 
 function RG.children()
-	return { RG.root }
+	return { RG.search }
 end
 
 ---@type Rabbit.Entry.Search
-RG.root = {
+RG.search = {
 	class = "entry",
 	type = "search",
 	label = {
@@ -292,8 +292,26 @@ RG.root = {
 	},
 	open = 1,
 	actions = {
-		children = RG.children,
-		select = true,
+		select = false,
+		rename = true,
+	},
+	action_label = {
+		rename = "edit",
 	},
 }
+
+---@type Rabbit.Entry.Collection
+RG.root = {
+	class = "entry",
+	type = "collection",
+	label = {
+		text = "Ripgrep",
+		hl = { "rabbit.types.collection", "rabbit.paint.tree" },
+	},
+	actions = {
+		select = true,
+		children = RG.children,
+	},
+}
+
 return RG

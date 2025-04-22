@@ -3,6 +3,7 @@ local MSG = {
 	rename = require("rabbit.messages.rename"),
 	menu = require("rabbit.messages.menu"),
 	color = require("rabbit.messages.color"),
+	close = require("rabbit.messages.close"),
 }
 
 function MSG.Handle(data)

@@ -2,6 +2,7 @@ local UI = require("rabbit.term.listing")
 local TERM = require("rabbit.util.term")
 local STACK = require("rabbit.term.stack")
 local SET = require("rabbit.util.set")
+local CONFIG = require("rabbit.config")
 
 local color_ws ---@type Rabbit.Stack.Workspace
 
@@ -99,7 +100,7 @@ return function(data)
 			color_ws:close()
 			UI._fg:focus()
 			TERM.feed(continue_key)
-		end, 5)
+		end, CONFIG.system.defer or 5)
 	end
 
 	color_ws.autocmd:add({

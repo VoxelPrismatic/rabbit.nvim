@@ -2,6 +2,7 @@ local UI = require("rabbit.term.listing")
 local HL = require("rabbit.term.highlight")
 local TERM = require("rabbit.util.term")
 local STACK = require("rabbit.term.stack")
+local CONFIG = require("rabbit.config")
 
 local rename_ws ---@type Rabbit.Stack.Workspace
 
@@ -206,7 +207,7 @@ return function(data)
 			UI._fg.cursor:set(old_cur[1] + dx, curpos + startcol)
 			UI.apply_actions()
 			rename_ws.autocmd:clear()
-			UI.defer_callback(new_rename())
+			new_rename()
 		else
 			vim.cmd("stopinsert")
 			UI._bg:focus()
@@ -214,7 +215,7 @@ return function(data)
 				rename_ws:close()
 				UI._fg:focus()
 				TERM.feed(continue_key)
-			end, 5)
+			end, CONFIG.system.defer or 5)
 		end
 	end
 
@@ -247,5 +248,6 @@ return function(data)
 	end
 
 	UI._priority_legend = HL.split(priority_legend)
+	UI.draw_border()
 	text_changed()
 end

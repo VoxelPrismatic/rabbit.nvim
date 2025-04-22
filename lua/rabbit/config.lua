@@ -74,6 +74,11 @@ C.colors = {
 		-- Highlight group: `rabbit.types.plugin`
 		---@type Rabbit.Color
 		plugin = { fg = "#000000" },
+
+		-- This is just here for transparency. It is updated with the plugin's color.
+		-- Highlight group: `rabbit.types.reverse`
+		---@type Rabbit.Color
+		reverse = { fg = ":NormalFloat#bg", bg = ":rabbit.types.plugin#fg" },
 	},
 
 	-- How file entries are highlighted

@@ -295,7 +295,7 @@ function ACTIONS.delete(entry)
 
 	-- Closes the associated buffer
 	---@param write? boolean
-	---@return Rabbit.Entry.Collection | Rabbit.Entry.Search
+	---@return Rabbit.Entry.Collection
 	local function close(write)
 		migrate_closing_buf(entry.bufid)
 
