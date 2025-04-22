@@ -485,23 +485,6 @@ function UI.redraw_entry(entry)
 	})
 end
 
-	for k, v in ipairs(entry.actions) do
-		if v == false or v == nil then
-			entry.actions[k] = nil
-		elseif v == true then
-			entry.actions[k] = {
-				action = k,
-				callback = UI._plugin.actions[v] or ACTIONS[v],
-			}
-		elseif type(v) == "function" then
-			entry.actions[k] = {
-				action = k,
-				callback = v,
-			}
-		elseif type(v) ~= "table" then
-			error("Invalid action for " .. k .. ": Expected table, function, or boolean; got " .. type(v))
-		end
-	end
 ---@class Rabbit.Kwargs.PlaceEntry
 ---@field entry Rabbit.Entry
 ---@field line integer Line number to place the entry at
