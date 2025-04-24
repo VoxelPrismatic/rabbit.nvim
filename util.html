@@ -2354,6 +2354,545 @@
 			</ul>
 		</article>
 	</details>
+	<table id="term-api" class="hr">
+		<tr>
+			<td>
+				<h2>Term API</h2>
+			</td>
+			<td>
+				<hr>
+			</td>
+			<td>
+				<vim -norm --="3">
+					local
+					<vim -cls>TERM</vim>
+					=
+					<vim -builtin -fn>require</vim>(<vim -str>"rabbit.util.term"</vim>)
+				</vim>
+			</td>
+		</tr>
+	</table>
+	<details data-id="TERM.feed">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>TERM</vim>.<vim -fn>feed</vim>(<vim -prop>keys</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -str bold>nil</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Feeds keys and escape codes to the terminal
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Purpose</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			Shorthand for:<br>
+			<vim -norm nospace -->
+				<vim -builtin>vim</vim>
+				<vim>.</vim>
+				<vim -prop>fn</vim>
+				<vim>.</vim>
+				<vim -fn>feedkeys</vim>
+				<vim>(</vim>
+				<vim -builtin>vim</vim>
+				<vim>.</vim>
+				<vim -prop>api</vim>
+				<vim>.</vim>
+				<vim -fn>nvim_replace_termcodes</vim>
+				<vim>(</vim>
+				<vim -prop>keys</vim>
+				<vim>, </vim>
+				<vim -str bold>true</vim>
+				<vim>, </vim>
+				<vim -str bold>true</vim>
+				<vim>, </vim>
+				<vim -str bold>true</vim>
+				<vim>), </vim>
+				<vim -str>"n"</vim>
+				<vim>)</vim>
+			</vim>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>keys</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							Keys to feed to the terminal
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="TERM.realcol">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>TERM</vim>.<vim -fn>realcol</vim>()
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>column:</vim>
+								<vim -builtin>integer</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns the current column, accounting for UTF-8 characters
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td nowrap>
+							<vim -comment>column:</vim>
+							<vim -builtin -->integer</vim>
+						</td>
+						<td>
+							Current column, accounting for UTF-8 characters. Eg,
+							although of a nerd-font character consumes three bytes, it only
+							consumes one column. This returns the 0-indexed real column.
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="TERM.realplace">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm nospace -->
+							<vim -cls>TERM</vim>
+							<vim>.</vim>
+							<vim -fn>realplace</vim>
+							<vim>(</vim>
+							<vim -prop>row</vim>
+							<vim>, </vim>
+							<vim -prop>col</vim>
+							<vim>, </vim>
+							<vim -prop title="Optional">win</vim>
+							<vim>)</vim>
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -str bold>nil</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Places the cursor at a specific position, accounting for UTF-8 characters
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>row</td>
+						<td>
+							<vim -builtin -->integer</vim>
+						</td>
+						<td>
+							1-indexed row
+						</td>
+					</tr>
+					<tr>
+						<td>col</td>
+						<td>
+							<vim -builtin -->integer</vim>
+						</td>
+						<td>
+							1-indexed column. If out of bounds, it will be truncated to the line length
+						</td>
+					</tr>
+					<tr>
+						<td>win</td>
+						<td>
+							<vim -builtin title="Optional" -->integer</vim>
+						</td>
+						<td>
+							Window ID. If <vim -str bold -->nil</vim>, the current window is used. This
+							is used to retrieve the current buffer ID
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="TERM.win_config">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>TERM</vim>.<vim -fn>win_config</vim>(<vim -prop>win</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<a href="https://github.com/voxelprismatic/rabbit.nvim/blob/rewrite/lua/rabbit/term/stack/winconfig.lua"
+									target="_blank">
+									<vim -cls>Rabbit.Stack.WinConfig</vim>
+								</a>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns the configuration of a window, including position and width
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>win</td>
+						<td>
+							<vim -builtin -->integer</vim>
+						</td>
+						<td>
+							Window ID
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td rowspan="2">config</td>
+						<td>
+							<vim -norm -->
+								<a href="https://github.com/voxelprismatic/rabbit.nvim/blob/rewrite/lua/rabbit/term/stack/winconfig.lua"
+									target="_blank">
+									<vim -cls>Rabbit.Stack.WinConfig</vim>
+								</a>
+							</vim>
+						</td>
+						<td>
+							Window configuration
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str bold -->nil</vim>
+						</td>
+						<td>
+							Window does not exist
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ul>
+				<li>Assigning any properties will apply immediately</li>
+			</ul>
+		</article>
+	</details>
+	<details data-id="TERM.get_yank">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>TERM</vim>.<vim -fn>get_yank</vim>(<vim -prop title="Optional">escape</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>start_idx:</vim>
+								<vim -builtin>integer</vim>
+							</li>
+							<li>
+								<vim -comment>end_idx:</vim>
+								<vim -builtin>integer</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns the start and end lines of the current visual selection
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>escape</td>
+						<td>
+							<vim -builtin>boolean</vim>
+						</td>
+						<td>
+							Whether to exit visual mode after getting the selection details.
+							Defaults to <vim -str bold -->true</vim>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -comment>start_idx:</vim>
+							<vim -builtin -->integer</vim>
+						</td>
+						<td>
+							Start line (1-indexed)
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str>2</vim>
+						</td>
+						<td>
+							<vim -comment>end_idx:</vim>
+							<vim -builtin -->integer</vim>
+						</td>
+						<td>
+							End line (1-indexed)
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ol>
+				<li>Sorting <vim -->start_idx</vim> and <vim -->end_idx</vim> is handled automatically</li>
+				<li>The clipboard is not touched. This only provides the start and end lines of the selection</li>
+			</ol>
+		</article>
+	</details>
+	<details data-id="TERM.syllables[]">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>TERM</vim>.<vim -fn>syllables</vim>[<vim -prop>word</vim>]
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>syllables:</vim>
+								<vim -norm>
+									<vim -builtin>string</vim>[]
+								</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						A table which contains the syllables of a given word.
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>key</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>word</td>
+						<td>
+							<vim -builtin>string</vim>
+						</td>
+						<td>
+							The word to get the syllables of
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -comment>syllables:</vim>
+							<vim -norm -->
+								<vim -builtin>string</vim>[]
+							</vim>
+						</td>
+						<td>
+							A list of syllables
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ul>
+				<li>
+					This is a table, not a function. This way, syllables are cached instead of
+					having to recompute them every time.
+				</li>
+			</ul>
+		</article>
+	</details>
 </body>
 
 </html>

@@ -331,7 +331,6 @@ vim[--] {
 	background-color: var(--sakura-layer-surface);
 	padding: 1px 8px;
 	padding-right: calc(8px + var(--ital-pad));
-	padding-left: calc(8px + var(--ital-pad));
 	border-radius: 4px;
 	display: inline-block;
 
