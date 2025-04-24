@@ -14,8 +14,8 @@
 	<meta property="og:image:type" content="image/png">
 	<meta property="twitter:image" content="./rabbit.png">
 	<meta property="twitter:card" content="summary">
-	<metaproperty="twitter:title" content="Rabbit.nvim | Utilities">
-		<meta property="twitter:description" content="Documentation for Rabbit.nvim's utilites">
+	<meta property="twitter:title" content="Rabbit.nvim | Utilities">
+	<meta property="twitter:description" content="Documentation for Rabbit.nvim's utilites">
 </head>
 
 <body>
@@ -42,7 +42,7 @@
 			</td>
 		</tr>
 	</table>
-	<details>
+	<details data-id="@Rabbit.Mem.RelPath">
 		<summary id="Rabbit.Mem.RelPath">Rabbit.Mem.RelPath<span vim="@comment">: table</span></summary>
 		<article>
 			Relative filepath details
@@ -134,7 +134,7 @@
 			</div>
 		</article>
 	</details>
-	<details>
+	<details data-id="@Rabbit.Writeable">
 		<summary id="Rabbit.Writeable">Rabbit.Writeable<span vim="@comment">: table</span></summary>
 		<article>
 			JSON data that you can save with ease
@@ -191,7 +191,7 @@
 			</td>
 		</tr>
 	</table>
-	<details>
+	<details data-id="MEM.rel_path">
 		<summary>
 			<table class="call">
 				<tr>
@@ -268,7 +268,7 @@
 			</div>
 		</article>
 	</details>
-	<details>
+	<details data-id="MEM.Read">
 		<summary>
 			<table class="call">
 				<tr>
@@ -278,11 +278,13 @@
 						</vim>
 						<ol class="ret">
 							<li>
-								<a href="#Rabbit.Writeable>">
+								<vim -comment>Set:</vim>
+								<a href="#Rabbit.Writeable">
 									<vim -cls>Rabbit.Writeable</vim>
 								</a>
 							</li>
 							<li>
+								<vim -comment>success:</vim>
 								<vim -builtin>boolean</vim>
 							</li>
 						</ol>
@@ -337,16 +339,20 @@
 					</tr>
 					<tr>
 						<td>→</td>
-						<td><a href="#Rabbit.Writeable">
+						<td nowrap>
+							<vim -comment>Set:</vim>
+							<a href="#Rabbit.Writeable">
 								<vim -cls -->Rabbit.Writeable</vim>
-							</a></td>
+							</a>
+						</td>
 						<td>File contents. If the file doesn't exist, returns an empty Rabbit.Writeable</td>
 					</tr>
 					<tr>
 						<td>
 							<vim -str>2</vim>
 						</td>
-						<td>
+						<td nowrap>
+							<vim -comment>success:</vim>
 							<vim -builtin -->boolean</vim>
 						</td>
 						<td>If the file exists</td>
@@ -355,13 +361,14 @@
 			</div>
 		</article>
 	</details>
-	<details>
+	<details data-id="MEM.Write">
 		<summary>
 			<table class="call">
 				<tr>
 					<td>
 						<vim -norm -->
-							<vim -cls>MEM</vim>.<vim -fn>Write</vim>(<vim -prop>data</vim>, <vim -prop>dest</vim>)
+							<vim -cls>MEM</vim>.<vim -fn>Write</vim>(<vim -prop>data</vim>,
+							<vim -prop>dest</vim>)
 						</vim>
 						<ol class="ret">
 							<li>
@@ -397,7 +404,9 @@
 						<td>
 							<vim -builtin -->table</vim>
 						</td>
-						<td>File contents<br><b>WARNING:</b> Cannot be <a href="#Rabbit.Writeable">Rabbit.Writeable</a>
+						<td>File contents<br><b>WARNING:</b>
+							Cannot be
+							<a href="#Rabbit.Writeable">Rabbit.Writeable</a>
 						</td>
 					</tr>
 					<tr>
@@ -406,6 +415,457 @@
 							<vim -builtin -->string</vim>
 						</td>
 						<td>File path</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="MEM.next_name">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>MEM</vim>.<vim -fn>next_name</vim>(<vim -prop>names</vim>,
+							<vim -prop>name</vim>,
+							<vim -prop title="Optional">suffix</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>new_name:</vim>
+								<vim -builtin>string</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Add
+						<vim -->+#</vim>
+						to the end of the name until it's unique
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td rowspan="2">names</td>
+						<td nowrap>
+							<vim -norm -->
+								<vim -builtin>table</vim>&lt;<vim -builtin>string</vim>,
+								<vim -str bold>true</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							Taken names. The keys are names to ensure no duplicates
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -builtin -->string<vim -norm>[]</vim>
+							</vim>
+						</td>
+						<td>
+							Taken names. Converted to
+							<vim -norm -->
+								<vim -builtin>table</vim>&lt;<vim -builtin>string</vim>,
+								<vim -str bold>true</vim>&gt;
+							</vim>
+							to ensure uniqueness
+						</td>
+					</tr>
+					<tr>
+						<td>suffix</td>
+						<td>
+							<vim -builtin title="Optional" -->string</vim>
+						</td>
+						<td>
+							Suffix to append after the corrected name. Eg,
+							<vim -str -->".lua"</vim>
+							-&gt;
+							<vim -str -->"new_file+1.lua"</vim>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td nowrap>
+							<vim -comment>new_name:</vim>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							New, unique name
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ul>
+				<li>
+					This is shorthand for
+					<vim -norm -->
+						<vim -cls>MEM</vim>.<vim -fn>stat</vim>(<vim -prop>path</vim>)
+						~=
+						<vim -str bold>nil</vim>
+					</vim>
+				</li>
+			</ul>
+		</article>
+	</details>
+	<details data-id="MEM.exists">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>MEM</vim>.<vim -fn>exists</vim>(<vim -prop>path</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -builtin>boolean</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Checks if a file exists
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>path</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							File path
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->boolean</vim>
+						</td>
+						<td>
+							Whether the file exists
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="MEM.is_type">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>MEM</vim>.<vim -fn>is_type</vim>(<vim -prop>path</vim>,&nbsp;<vim -prop>...</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -builtin>boolean</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Checks if a file is a type
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>path</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							File path
+						</td>
+					</tr>
+					<tr>
+						<td rowspan="6">...</td>
+						<td>
+							<vim -str -->"file"</vim>
+						</td>
+						<td>
+							File
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str -->"directory"</vim>
+						</td>
+						<td>Directory</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str -->"socket"</vim>
+						</td>
+						<td>Socket</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str -->"fifo"</vim>
+						</td>
+						<td>FIFO</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str -->"char"</vim>
+						</td>
+						<td>Character device</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str -->"block"</vim>
+						</td>
+						<td>Block device</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->boolean</vim>
+						</td>
+						<td>
+							Whether the target file is any of the types provided
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ol>
+				<li>This function automatically resolves links. You may NOT check if a file is a link.</li>
+				<li>If the file does not exist, it returns false</li>
+				<li>If there are no types to check, but the file exists, it returns true</li>
+			</ol>
+		</article>
+	</details>
+	<details data-id="MEM.stat">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>MEM</vim>.<vim -fn>stat</vim>(<vim -prop>path</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>stat:</vim>
+								<vim -cls title="Optional">uv.fs_stat.result</vim>
+							</li>
+							<li>
+								<vim -comment>err:</vim>
+								<vim -builtin title="Optional">string</vim>
+							</li>
+							<li>
+								<vim -comment>err_name:</vim>
+								<vim -builtin title="Optional">string</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Shorthand for
+						<vim -->
+							<vim -cls>vim</vim>.<vim -cls>uv</vim>.<vim -fn>fs_stat</vim>(<vim -prop>...</vim>)
+						</vim>,
+						but automatically resolves links
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<br>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>path</td>
+						<td>
+							<vim -builtin -->string</vim>
+						</td>
+						<td>
+							File path
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td nowrap>
+							<vim -comment>stat:</vim>
+							<vim -cls title="Optional" -->uv.fs_stat.result</vim>
+						</td>
+						<td>
+							Stat result, resolving any links.
+							<vim -str bold -->nil</vim>
+							if err
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str>2</vim>
+						</td>
+						<td nowrap>
+							<vim -comment>err:</vim>
+							<vim -builtin title="Optional" -->string</vim>
+						</td>
+						<td>
+							Error message
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str>3</vim>
+						</td>
+						<td nowrap>
+							<vim -comment>err_name:</vim>
+							<vim -builtin title="Optional" -->string</vim>
+						</td>
+						<td>
+							Error name
+						</td>
 					</tr>
 				</table>
 			</div>
@@ -421,19 +881,184 @@
 			</td>
 			<td>
 				<vim -norm --="3">
-					local <vim -cls>SET</vim> = <vim -builtin -fn>require</vim>(<vim -str>"rabbit.util.set"</vim>)
+					local
+					<vim -cls>SET</vim>
+					=
+					<vim -builtin -fn>require</vim>(<vim -str>"rabbit.util.set"</vim>)
 				</vim>
 			</td>
 		</tr>
 	</table>
-	<details>
+	<details data-id="SET.keys">
 		<summary>
 			<table class="call">
 				<tr>
 					<td>
 						<vim -norm -->
-							local <vim -cls>obj</vim> = <vim -cls>SET</vim>.<vim -fn>new</vim>(<vim -prop
-								title="Optional">arr</vim>)
+							<vim -cls>SET</vim>.<vim -fn>keys</vim>(<vim -prop>t</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -norm>
+									<vim -builtin>any</vim>[]
+								</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns the keys of a table
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>t</td>
+						<td>
+							<vim -builtin>table</vim>
+						</td>
+						<td>
+							Table
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin>any</vim>[]
+						</td>
+						<td>
+							Table keys
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET.extend">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>SET</vim>.<vim -fn>extend</vim>(<vim -prop>...</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -norm>
+									<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+								</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns a new set with all the elements from the other tables
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>...</td>
+						<td>
+							<vim -norm -->
+								<vim -const>T</vim>[]
+							</vim>
+						</td>
+						<td>
+							Tables
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							New set
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET.new">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							local
+							<vim -cls>Set</vim>
+							=
+							<vim -cls>SET</vim>.<vim -fn>new</vim>(<vim -prop title="Optional">arr</vim>)
 						</vim>
 					</td>
 					<td>
@@ -460,15 +1085,1273 @@
 					</tr>
 					<tr>
 						<td>arr</td>
-						<td>
-							<vim -builtin title="Optional" -->any<vim -norm>[]</vim>
+						<td nowrap>
+							<vim title="Optional" -norm nospace -->
+								<vim -builtin>any</vim>
+								<vim>[]</vim>
 							</vim>
 						</td>
-						<td>Array of values. This array is deep-copied, and any duplicate values are immediately dropped
+						<td>Array of values. This array is deep-copied, and any duplicate
+							values are immediately dropped</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:add">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>add</vim>(<vim -prop>elem</vim>,
+							<vim -prop title="Optional">idx</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -builtin>self</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Adds a value to the set
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td rowspan="2">elem</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							Value to add
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -->
+								<vim -const>T</vim>[]
+							</vim>
+						</td>
+						<td>
+							Values to add
+						</td>
+					</tr>
+					<tr>
+						<td>idx</td>
+						<td>
+							<vim -builtin title="Optional" -->integer</vim>
+						</td>
+						<td>
+							Index to insert at
+							<ul>
+								<li>If negative, the value is inserted at the end. Eg, -1 = last, -2 = second to last
+								</li>
+								<li>Default:
+									<vim -str -->1</vim>
+								</li>
+							</ul>
 						</td>
 					</tr>
 				</table>
 			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->self</vim>
+						</td>
+						<td>
+							Itself for chaining multiple operations
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ul>
+				<li>When inserting many elements, the elements will be inserted in proper order, not reverse order</li>
+				<li>Should an element already exist, it will be moved to the new position</li>
+			</ul>
+		</article>
+	</details>
+	<details data-id="SET:pop">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>pop</vim>(<vim -prop title="Optional">idx</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>elem:</vim>
+								<vim -const>T</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Pops an element at index
+						<vim -prop -->idx</vim>
+						and returns it
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>idx</td>
+						<td>
+							<vim -builtin title="Optional" -->integer</vim>
+						</td>
+						<td>
+							Index to pop
+							<ul>
+								<li>If negative, the value is popped from the end. Eg, -1 = last, -2 = second to last
+								</li>
+								<li>Default:
+									<vim -str -->1</vim>
+								</li>
+							</ul>
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							Popped element
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:del">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>del</vim>(<vim -prop>elem</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -builtin>self</vim>
+							</li>
+							<li>
+								<vim -comment>count:</vim>
+								<vim -builtin>integer</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Removes elements from the set
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td rowspan="2">elem</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							Element to remove
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -->
+								<vim -const>T</vim>[]
+							</vim>
+						</td>
+						<td>
+							Elements to remove
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->self</vim>
+						</td>
+						<td>
+							Itself for chaining
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str>2</vim>
+						</td>
+						<td nowrap>
+							<vim -comment>count:</vim>
+							<vim -builtin -->integer</vim>
+						</td>
+						<td>
+							Number of elements removed
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:tog">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>tog</vim>(<vim -prop>elem</vim>,&nbsp;<vim -prop
+								title="Optional">include</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>state:</vim>
+								<vim -builtin>boolean</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Toggles an element in the set
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>elem</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							Element to toggle
+						</td>
+					</tr>
+					<tr>
+						<td rowspan="3">include</td>
+						<td>
+							<vim -str bold -->true</vim>
+						</td>
+						<td>
+							Include the element
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str bold -->false</vim>
+						</td>
+						<td>
+							Exclude the element
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -str bold -->nil</vim>
+						</td>
+						<td>
+							Toggle the element
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->boolean</vim>
+						</td>
+						<td>
+							If the element is in the set
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ul>
+				<li>You may not toggle multiple elements</li>
+			</ul>
+		</article>
+	</details>
+	<details data-id="SET:idx">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>idx</vim>(<vim -prop>elem</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>idx:</vim>
+								<vim -builtin title="Optional">integer</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns the index of an element
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>elem</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							Element to get the index of
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin title="Optional" -->integer</vim>
+						</td>
+						<td>
+							Index of the element.
+							<vim -str bold -->nil</vim>
+							if the element is not in the set
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:sub">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>sub</vim>(<vim -prop>elem</vim>,&nbsp;<vim -prop>new</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -builtin>self</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Substitutes an element for another
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td rowspan="2">elem</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							Element to substitute
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<vim -norm -->
+								<vim -const>T</vim>[]
+							</vim>
+						</td>
+						<td>
+							Elements to substitute
+						</td>
+					</tr>
+					<tr>
+						<td>new</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							New element
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->self</vim>
+						</td>
+						<td>
+							Itself for chaining
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ol>
+				<li>When substituting multiple elements, only the first will be substituted, the rest will be removed
+				</li>
+				<li>If the new element is already in the set, it will be moved to the first match</li>
+			</ol>
+		</article>
+	</details>
+	<details data-id="SET:AND">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>AND</vim>(<vim -prop>other</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>intersection:</vim>
+								<vim -norm>
+									<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+								</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns a new set in which all elements are present in both sets
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>other</td>
+						<td>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							Other set
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td nowrap>
+							<vim -comment>intersection:</vim>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							New set
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:OR">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>OR</vim>(<vim -prop>other</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>union:</vim>
+								<vim -norm>
+									<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+								</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns a new set in which all elements are present in either set
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>other</td>
+						<td>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							Other set
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td nowrap>
+							<vim -comment>union:</vim>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							New set
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:XOR">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>XOR</vim>(<vim -prop>other</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>difference:</vim>
+								<vim -norm>
+									<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+								</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns a new set in which all elements are present in exactly one of the sets
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>other</td>
+						<td>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							Other set
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td nowrap>
+							<vim -comment>difference:</vim>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							New set
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:map">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>map</vim>(<vim -prop>fn</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -comment>mapped:</vim>
+								<vim -norm>
+									<vim -cls>Set</vim>&lt;<vim -const>R</vim>&gt;
+								</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Returns a new set in which all elements are mapped by the function
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>fn</td>
+						<td nowrap>
+							<vim -norm -->
+								<vim -fn>fun</vim>(<vim -prop>key</vim>,
+								<vim -prop>elem</vim>:
+								<vim -const>T</vim>)
+								→
+								<vim -const title="Optional">R</vim>
+							</vim>
+						</td>
+						<td>
+							Mapping function. If the function returns
+							<vim -str bold -->nil</vim>, the element is removed
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td nowrap>
+							<vim -comment>mapped:</vim>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>R</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							New set
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ul>
+				<li>String keys will be mapped to string keys</li>
+			</ul>
+		</article>
+	</details>
+	<details data-id="SET:sort">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>sort</vim>(<vim -prop>fn</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -builtin>self</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Sorts the set
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>fn</td>
+						<td nowrap>
+							<vim -norm -->
+								<vim -fn>fun</vim>(<vim -prop>a</vim>:
+								<vim -const>T</vim>,
+								<vim -prop>b</vim>:
+								<vim -const>T</vim>)
+								→
+								<vim -builtin>boolean</vim>
+							</vim>
+						</td>
+						<td>
+							Sorting function
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->self</vim>
+						</td>
+						<td>
+							Itself for chaining
+						</td>
+					</tr>
+				</table>
+			</div>
+		</article>
+	</details>
+	<details data-id="SET:put">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>put</vim>(<vim -prop>idx</vim>,&nbsp;<vim -prop>elem</vim>)
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -builtin>self</vim>
+							</li>
+						</ol>
+					</td>
+					<td>
+						Puts an element into the slot
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Purpose</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<vim -norm -->
+				<vim -builtin>table</vim>.<vim -fn>insert</vim>
+			</vim>
+			does not work on integer
+			keys that are out of range. Eg, if
+			<vim -norm -->#<vim -prop>tbl</vim>
+			</vim>
+			returns
+			<vim -str -->10</vim>, but you have an element at 100, then
+			<vim -norm -->
+				<vim -builtin>table</vim>.<vim -fn>insert</vim>(<vim -prop>tbl</vim>,
+				<vim -str>100</vim>,
+				<vim -prop>elem</vim>)
+			</vim>
+			will
+			<i>overwrite</i>
+			the element at 100.
+			This function implements
+			<vim -norm nospace -->
+				<vim -builtin>table</vim>
+				<vim>.</vim>
+				<vim -fn>insert</vim>
+			</vim>
+			for integer keys out of bounds.<br><br>
+			This is incredibly useful for priority calculations for things like highlight groups, since
+			previous elements are retained even for priorities greater than the length of the list.
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Parameters</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th>param</th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>idx</td>
+						<td>
+							<vim -const -->integer</vim>
+						</td>
+						<td>
+							Index of the element
+						</td>
+					</tr>
+					<tr>
+						<td>elem</td>
+						<td>
+							<vim -const -->T</vim>
+						</td>
+						<td>
+							Element to put
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -builtin -->self</vim>
+						</td>
+						<td>
+							Itself for chaining
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ol>
+				<li>This does not remove duplicate elements</li>
+				<li>
+					For negative indexes, elements are made more negative.
+					Eg, if you insert an element (<vim -prop -->new</vim>) at
+					<vim -str -->-1</vim>, but
+					an element (<vim -prop -->old</vim>) is already there, then
+					<vim -prop -->old</vim>
+					is moved to
+					<vim -str -->-2</vim>
+					before
+					<vim -prop -->new</vim>
+					is inserted at
+					<vim -str -->-1</vim>.
+				</li>
+				<li>
+					inb4
+					<vim -norm -->
+						<vim -cls>Set</vim>:<vim -fn>put</vim>(<vim -str>99999999</vim>,&nbsp;<vim -prop>elem</vim>)
+					</vim>,
+					you filthy web devs
+				</li>
+			</ol>
+		</article>
+	</details>
+	<details data-id="SET:compact">
+		<summary>
+			<table class="call">
+				<tr>
+					<td>
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>compact</vim>()
+						</vim>
+						<ol class="ret">
+							<li>
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</li>
+						</ol>
+					</td>
+					<td>
+						Removes all empty slots. For use with
+						<vim -norm -->
+							<vim -cls>Set</vim>:<vim -fn>put</vim>
+						</vim>
+					</td>
+				</tr>
+			</table>
+		</summary>
+		<article>
+			<br>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Returns</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<div class="table-border">
+				<table>
+					<tr>
+						<th></th>
+						<th>type</th>
+						<th>details</th>
+					</tr>
+					<tr>
+						<td>→</td>
+						<td>
+							<vim -norm -->
+								<vim -cls>Set</vim>&lt;<vim -const>T</vim>&gt;
+							</vim>
+						</td>
+						<td>
+							Compacted set
+						</td>
+					</tr>
+				</table>
+			</div>
+			<table class="hr" vim="fg:rose">
+				<td>
+					<h3>Notes</h3>
+				</td>
+				<td>
+					<hr>
+				</td>
+			</table>
+			<ul>
+				<li>Negative indexes will be placed first</li>
+			</ul>
 		</article>
 	</details>
 </body>
