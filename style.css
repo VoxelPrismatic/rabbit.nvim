@@ -30,8 +30,8 @@ body {
 	--vim-bg: var(--sakura-layer-base);
 	color: var(--vim-fg);
 	background-color: var(--vim-bg);
-	font-family: "UbuntuMono NerdFont", "Ubuntu Mono", monospace;
-	max-width: 640px;
+	font-family: "Go Mono Nerd Font", "Ubuntu Mono Nerd Font", monospace;
+	max-width: 720px;
 	margin-left: auto;
 	margin-right: auto;
 	padding-left: 32px;
@@ -40,6 +40,10 @@ body {
 	margin-bottom: 32px;
 	line-height: 1.5;
 	font-size: 16px;
+}
+
+[nowrap] {
+	white-space: nowrap;
 }
 
 table.hr {
@@ -213,6 +217,7 @@ a {
 	font-style: italic;
 	color: var(--sakura-text-muted);
 	--vim-fg: var(--sakura-paint-muted);
+	font-size: var(--fz);
 }
 
 table.call {

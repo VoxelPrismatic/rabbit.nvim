@@ -7,6 +7,9 @@ vim {
 	text-decoration-color: var(--vim-sp);
 	background-color: var(--vim-bg);
 	color: var(--vim-fg);
+	--pad-ital: 2px;
+	--ital-pad: 0px;
+	padding-right: var(--ital-pad);
 }
 
 
@@ -228,6 +231,7 @@ vim[bold] {
 
 vim[ital] {
 	font-style: italic;
+	--ital-pad: var(--pad-ital);
 
 	&[ital="!"] {
 		font-style: normal;
@@ -285,6 +289,7 @@ vim[-builtin] {
 vim[-comment] {
 	--vim-fg: var(--sakura-text-subtle);
 	font-style: italic;
+	--ital-pad: var(--pad-ital);
 }
 
 vim[-keyword] {
@@ -295,16 +300,19 @@ vim[-keyword] {
 vim[-var] {
 	--vim-fg: var(--sakura-text-norm);
 	font-style: italic;
+	--ital-pad: var(--pad-ital);
 }
 
 vim[-prop] {
 	--vim-fg: var(--sakura-paint-iris);
 	font-style: italic;
+	--ital-pad: var(--pad-ital);
 }
 
 vim[-fn] {
 	--vim-fg: var(--sakura-paint-rose);
 	font-style: italic;
+	--ital-pad: var(--pad-ital);
 }
 
 vim[-cls] {
@@ -315,25 +323,39 @@ vim[-cls] {
 vim[-const] {
 	--vim-fg: var(--sakura-paint-gold);
 	font-style: italic;
+	--ital-pad: var(--pad-ital);
 }
 
 vim[--] {
 	--vim-bg: var(--sakura-layer-surface);
 	background-color: var(--sakura-layer-surface);
-	padding: 2px 4px;
+	padding: 1px 8px;
+	padding-right: calc(8px + var(--ital-pad));
+	padding-left: calc(8px + var(--ital-pad));
 	border-radius: 4px;
+	display: inline-block;
+
 	font-size: 14px;
+	--fz: 14px;
+
+	&[nospace] {
+		font-size: 0;
+	}
 
 	&[--="1"] {
-		font-size: 32px;
+		--fz: 32px;
 	}
 
 	&[--="2"] {
-		font-size: 24px;
+		--fz: 24px;
 	}
 
 	&[--="3"] {
-		font-size: 16px;
+		--fz: 16px;
+	}
+
+	&>* {
+		font-size: var(--fz);
 	}
 }
 
