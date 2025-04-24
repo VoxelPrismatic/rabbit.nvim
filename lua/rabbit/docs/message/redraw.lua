@@ -1,0 +1,3 @@
+---@class Rabbit.Message.Redraw: Rabbit.Message
+---@field type "redraw"
+---@field entry Rabbit.Entry

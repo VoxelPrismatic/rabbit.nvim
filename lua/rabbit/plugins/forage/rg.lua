@@ -292,7 +292,7 @@ RG.search = {
 	},
 	open = 1,
 	actions = {
-		select = false,
+		select = true,
 		rename = true,
 	},
 	action_label = {

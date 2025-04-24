@@ -4,6 +4,7 @@ local MSG = {
 	menu = require("rabbit.messages.menu"),
 	color = require("rabbit.messages.color"),
 	close = require("rabbit.messages.close"),
+	redraw = require("rabbit.messages.redraw"),
 }
 
 function MSG.Handle(data)

@@ -19,8 +19,19 @@ function ACTIONS.select(entry)
 	assert(entry.class == "entry", "[Rabbit]: Expected entry, got " .. entry.class)
 
 	entry = entry --[[@as Rabbit.Entry]]
-	if entry.type == "collection" or entry.type == "search" then
+	if entry.type == "collection" then
 		return entry --[[@as Rabbit.Entry.Collection]]
+	elseif entry.type == "search" then
+		entry = entry --[[@as Rabbit.Entry.Search]]
+		local selected = (TERM.realcol() - UI._fg.win.config.width) / 2 + #entry.fields + 1
+		if entry.fields[selected] then
+			entry.open = selected
+		end
+		return {
+			class = "message",
+			type = "redraw",
+			entry = entry,
+		}
 	end
 
 	assert(entry.type == "file", "[Rabbit]: Unsupported entry type: " .. entry.type)

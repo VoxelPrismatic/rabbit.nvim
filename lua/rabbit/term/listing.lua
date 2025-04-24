@@ -22,9 +22,6 @@ local UI = {
 	-- Should be the same as _parent
 	_display = nil, ---@type Rabbit.Entry.Collection
 
-	-- Keymaps currently bound
-	_keys = {}, ---@type Rabbit.Table.Set<string>
-
 	-- Preview border windows
 	_pre = {}, ---@type { [string]: Rabbit.Stack.Workspace }
 
@@ -261,7 +258,7 @@ function UI.redraw_entry(entry)
 	UI.place_entry({
 		entry = entry,
 		line = entry._env.idx,
-		idx = entry._env.real - 1,
+		idx = (entry._env.real or 1) - 1,
 		pad = UI.get_pad(),
 	})
 end
@@ -442,20 +439,27 @@ function UI.highlight(entry)
 		for idx, field in ipairs(entry.fields) do
 			local hl = idx == entry.open and "rabbit.types.reverse" or "rabbit.types.index"
 			if idx == entry.open then
-				ret[#ret].hl = hl
+				ret[#ret].text = ""
+				ret[#ret].hl = "rabbit.types.plugin"
 			end
 			table.insert(ret, {
-				{
-					text = field.icon,
-					hl = hl,
-					align = "right",
-				},
-				{
-					text = " ",
-					hl = hl,
-					align = "right",
-				},
+				text = field.icon,
+				hl = idx == entry.open and "rabbit.types.reverse" or "rabbit.types.index",
+				align = "right",
 			})
+			if idx == entry.open then
+				table.insert(ret, {
+					text = "",
+					hl = "rabbit.types.plugin",
+					align = "right",
+				})
+			else
+				table.insert(ret, {
+					text = " ",
+					hl = "rabbit.types.index",
+					align = "right",
+				})
+			end
 		end
 		return ret
 	elseif entry.type ~= "file" or entry.label ~= nil then
@@ -646,11 +650,6 @@ function UI.apply_actions()
 		end
 	end
 
-	for _, key in ipairs(UI._keys) do
-		_ = pcall(vim.keymap.del, "n", key, { buffer = UI._fg.buf.id })
-	end
-
-	UI._keys = SET.new()
 	UI._plugins = {}
 	local renamed = e.action_label or {}
 
@@ -665,6 +664,20 @@ function UI.apply_actions()
 	):del("hover")
 
 	UI._fg.keys:clear()
+	UI._fg.keys:add({
+		keys = { "<LeftMouse>" },
+		callback = function()
+			local mouse = vim.fn.getmousepos()
+			local line = vim.fn.line(".")
+			vim.api.nvim_win_set_cursor(0, { mouse.line, mouse.column - 1 })
+			if line == mouse.line then
+				UI.bind_callback("select", UI._entries[mouse.line], true)()
+			end
+		end,
+		shown = false,
+		mode = "n",
+		label = "mouse select",
+	})
 
 	if e.actions.parent then
 		local val = UI.bind_callback("parent", e)()
@@ -711,7 +724,6 @@ function UI.apply_actions()
 		local switches = type(plugin.opts.keys.switch) == "string" and { tostring(plugin.opts.keys.switch) }
 			or plugin.opts.keys.switch --[[@as table<string>]]
 
-		UI._keys:add(switches)
 		local part = UI._fg.keys:add({
 			label = name,
 			keys = switches,
