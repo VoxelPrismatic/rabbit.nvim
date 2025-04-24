@@ -1,53 +1,6 @@
 local WINCONFIG = require("rabbit.term.stack.winconfig")
 local TERM = {}
 
--- Wraps text into lines
----@param text string The text to wrap
----@param width number The width of the terminal
----@return string[]
-function TERM.wrap(text, width)
-	local line = " "
-	local lines = {}
-	for word in text:gmatch("%S+") do
-		if #(line .. word) + 1 >= width then
-			local continue = ""
-			local remainder = ""
-			if #word / width > 0.1 then
-				for syllable in word:gmatch("([aeiou]*[^aeiou]+)") do
-					if #remainder > 0 then
-						remainder = remainder .. syllable
-					elseif #(continue .. syllable .. line) + 1 >= width then
-						remainder = remainder .. syllable
-					else
-						continue = continue .. syllable
-					end
-				end
-
-				if #continue < 5 then
-					continue = ""
-					remainder = word
-				else
-					continue = continue .. "—"
-					remainder = "—" .. remainder
-				end
-			else
-				remainder = word
-			end
-
-			table.insert(lines, line .. continue)
-			line = " "
-			word = remainder
-		end
-
-		line = line .. word .. " "
-	end
-
-	if #line > 0 then
-		table.insert(lines, line)
-	end
-	return lines
-end
-
 -- Shorthand for vim.fn.feedkeys(vim.api.nvim_replace_termcodes(...), "n")
 ---@param keys string The text to feed
 function TERM.feed(keys)
@@ -131,5 +84,60 @@ function TERM.get_yank(escape)
 
 	return start_idx, end_idx
 end
+
+-- Returns the syllables of a word
+---@type table<string, string[]>
+TERM.syllables = setmetatable({}, {
+	---@param self table<string, string[]>
+	---@param word string
+	__index = function(self, word)
+		assert(type(word) == "string", "Expected string, got " .. type(word))
+		assert(word:find("%s") == nil, "Words cannot contain spaces")
+		assert(#word > 0, "Words cannot be empty")
+
+		local syllables = {}
+		local ptr = 1
+		local vowels = "[aeiou]"
+		local consts = "[^aeiou]"
+
+		while ptr <= #word do
+			-- Next vowel group
+			local vowel_start, vowel_end = word:find(vowels .. "+", ptr)
+
+			if vowel_start == nil then
+				break
+			end
+
+			-- Grab consonants around vowel group
+			local before_vowel = word:sub(ptr, vowel_start - 1)
+			local vowel_group = word:sub(vowel_start, vowel_end)
+			local after_vowel = ""
+
+			local const_start, const_end = word:find(consts .. "*", vowel_end + 1)
+			if const_start ~= nil then
+				after_vowel = word:sub(const_start, const_end)
+			else
+				const_end = vowel_end
+			end
+
+			-- Check if there are more vowels after const group
+			local next_vowel = word:find(vowels, const_end + 1)
+			if next_vowel and #after_vowel > 0 then
+				after_vowel = after_vowel:sub(1, -2) -- Remove last char
+				const_end = const_end - 1
+			end
+
+			table.insert(syllables, before_vowel .. vowel_group .. after_vowel)
+			ptr = const_end + 1
+		end
+
+		if ptr <= #word then
+			table.insert(syllables, word:sub(ptr))
+		end
+
+		self[word] = syllables
+		return syllables
+	end,
+})
 
 return TERM

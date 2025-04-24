@@ -1,5 +1,6 @@
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
+local TERM = require("rabbit.util.term")
 local HL = {}
 
 -- Will create a new highlight group
@@ -264,7 +265,8 @@ end
 ---@param width integer
 ---@param indent? string
 ---@param indent_override? string[]
----@return table<table<table<string, string | table<string>>>> To be passed to extmarks
+---@return ({ [1]: string, [2]: string | string[] })[][] To be passed to extmarks
+---@return Rabbit.Term.HlLine[] To be passed to HL.set_lines
 function HL.wrap(lines, width, indent, indent_override)
 	indent = indent or ""
 	indent_override = indent_override or {}
@@ -294,7 +296,7 @@ function HL.wrap(lines, width, indent, indent_override)
 			if vim.fn.strdisplaywidth(word) < max_word_len then
 				table.insert(syllables, { word, v.hl })
 			else
-				for syllable in word:gmatch("([aeiou]*[^aeiou]*)") do
+				for _, syllable in ipairs(TERM.syllables[word]) do
 					table.insert(syllables, { syllable, v.hl })
 				end
 			end
@@ -305,9 +307,10 @@ function HL.wrap(lines, width, indent, indent_override)
 		::continue::
 	end
 
+	---@type ({ [1]: string, [2]: string | string[] })[][]
+	local ret = {}
 	local line_width = width + 1
 	local last_line = {}
-	local ret = {}
 	local last_syllable = { " ", "Normal" }
 	local last_part = {}
 	for _, syllable in ipairs(syllables) do
@@ -345,7 +348,18 @@ function HL.wrap(lines, width, indent, indent_override)
 		last_part[1] = last_part[1] .. (" "):rep(fill)
 	end
 
-	return ret
+	local hl_ret = {}
+	for _, line in ipairs(ret) do
+		local hl_line = {}
+		for _, part in ipairs(line) do
+			table.insert(hl_line, {
+				text = part[1],
+				hl = part[2],
+			})
+		end
+	end
+
+	return ret, hl_ret
 end
 
 ---@class Rabbit.Term.HlLine.Loc

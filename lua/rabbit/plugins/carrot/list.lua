@@ -77,7 +77,7 @@ function LIST.load(path)
 			goto continue
 		end
 
-		local to_delete = SET.new({ SET.keys(collections) })
+		local to_delete = SET.new(SET.keys(collections))
 
 		to_delete:del("0")
 		local queue = SET.new({ "0" })

@@ -41,6 +41,7 @@
 	- [![carrot][rabbit.carrot]][wiki.carrot] ([docs][wiki.carrot])
 	- [![forage][rabbit.forage]][wiki.forage] ([docs][wiki.forage])
     - [![index][rabbit.index]][wiki.index] ([docs][wiki.index])
+    - [Make your own!](https://voxelprismatic.github.io/rabbit.nvim)
 
 [rabbit.trail]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FVoxelPrismatic%2Frabbit.nvim%2Frefs%2Fheads%2Frewrite%2Flua%2Frabbit%2Fplugins%2Ftrail%2FVERSION.json&query=%24.latest&style=flat&label=trail&labelColor=white&color=yellow
 [wiki.trail]: ./lua/rabbit/plugins/trail

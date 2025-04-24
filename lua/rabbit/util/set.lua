@@ -43,7 +43,7 @@ end
 function SET:add(elem, idx)
 	if idx == nil then
 		idx = 1
-	elseif idx < 1 then
+	elseif idx < 0 then
 		idx = idx + #self + 2
 	elseif type(idx) ~= "number" or math.floor(idx) ~= idx then
 		error("Expected integer, got " .. type(idx))
@@ -68,7 +68,12 @@ end
 ---@param idx? 1 | integer The index of the element to pop
 ---@return T elem The popped element
 function SET:pop(idx)
-	return table.remove(self, idx or 1)
+	if idx == nil then
+		idx = 1
+	elseif idx < 0 then
+		idx = idx + #self + 1
+	end
+	return table.remove(self, idx)
 end
 
 -- Removes an element (or elements) from the set
@@ -141,20 +146,17 @@ function SET:sub(elem, new)
 		elem = { elem }
 	end
 
-	local done = SET.idx(self, new) ~= nil
-
-	for _, e in ipairs(elem) do
-		local idx = SET.idx(self, e)
-		while idx do
-			if not done then
-				self[idx] = new
-				done = true
-			else
-				table.remove(self, idx)
-			end
-			idx = SET.idx(self, e)
-		end
+	local target = nil
+	while target == nil and #elem > 0 do
+		target = SET.idx(self, table.remove(elem, 1))
 	end
+	if target == nil then
+		return self
+	end
+
+	SET.pop(self, target)
+	SET.add(self, new, target)
+	SET.del(self, elem)
 
 	return self
 end
@@ -192,11 +194,11 @@ function SET:OR(elem)
 	return ret
 end
 
--- Returns logical XOR (exclusive OR)
+-- Returns logical XOR (difference)
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
 ---@param elem Rabbit.Table.Set<T>
----@return Rabbit.Table.Set<T> negate
+---@return Rabbit.Table.Set<T> difference
 function SET:XOR(elem)
 	local ret = SET.OR(self, elem)
 	ret:del(SET.AND(self, elem))
@@ -205,26 +207,41 @@ end
 
 -- Returns keys from pairs
 ---@param t table
----@return ...any
+---@return any[] keys
 function SET.keys(t)
 	local ret = {}
 	for k in pairs(t or {}) do
 		table.insert(ret, k)
 	end
-	return unpack(ret)
+	return ret
+end
+
+-- Creates a new set from multiple lists
+---@generic T
+---@param ... T[]
+---@return Rabbit.Table.Set<T>
+function SET.extend(...)
+	local ret = SET.new()
+	for _, v in ipairs({ ... }) do
+		ret:add(v)
+	end
+	return ret
 end
 
 -- Maps all elements in the set with a function
 ---@generic T
 ---@generic R
 ---@param self Rabbit.Table.Set<T>
----@param fn fun(idx: integer, elem: T): R?
----@param all_pairs boolean? True to use pairs() instead of ipairs()
+---@param fn fun(idx: integer | string, elem: T): R?
 ---@return Rabbit.Table.Set<R> mapped New set with mapped values
-function SET:map(fn, all_pairs)
+function SET:map(fn)
 	local ret = SET.new()
-	for k, v in (all_pairs and pairs or ipairs)(self) do
-		table.insert(ret, fn(k, v))
+	for k, v in pairs(self) do
+		if type(k) == "integer" then
+			table.insert(ret, fn(k, v))
+		else
+			ret[k] = fn(k, v)
+		end
 	end
 	return ret
 end
@@ -232,7 +249,7 @@ end
 -- Sorts the set
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
----@param fn fun(a: T, b: T): boolean?
+---@param fn fun(a: T, b: T): boolean
 ---@return Rabbit.Table.Set<T> self Self for chaining
 function SET:sort(fn)
 	table.sort(self, fn)
@@ -245,13 +262,23 @@ end
 ---@return Rabbit.Table.Set<T> compacted New compacted set
 function SET:compact()
 	local ret = SET.new()
+	local idxs = {}
 	for k, v in pairs(self) do
-		if type(k) == "string" then
-			ret[k] = v
+		if type(k) == "number" then
+			table.insert(idxs, k)
 		else
-			table.insert(ret, v)
+			ret[k] = v
 		end
 	end
+
+	table.sort(idxs, function(a, b)
+		return a > b
+	end)
+
+	for _, v in ipairs(idxs) do
+		ret:add(self[v])
+	end
+
 	return ret
 end
 
@@ -263,17 +290,21 @@ end
 ---@param elem T
 ---@return Rabbit.Table.Set<T> self Self for chaining
 function SET:put(idx, elem)
-	if idx <= #self + 1 then
-		table.insert(self, idx, elem)
+	assert(type(idx) == "number", "Expected integer, got " .. type(idx))
+	assert(math.floor(idx) == idx, "Expected integer, got " .. type(idx))
+
+	if idx <= #self + 1 and idx > 0 then
+		SET.add(self, elem, idx)
 		return self
 	end
+
+	local sign = idx <= 0 and -1 or 1
 
 	local swap = self[idx]
 	self[idx] = elem
 	while swap do
-		idx = idx + 1
-		self[idx] = swap
-		swap = self[idx]
+		idx = idx + sign
+		swap, self[idx] = self[idx], swap
 	end
 
 	return self

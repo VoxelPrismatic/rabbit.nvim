@@ -240,7 +240,7 @@ function UI.list(collection)
 		vim.api.nvim_buf_set_lines(UI._fg.buf.id, kwargs.line, -1, false, {})
 	else
 		UI._fg.buf.o.modifiable = true
-		local lines = TERM.wrap(UI._plugin.empty.msg, UI._fg.win.config.width)
+		local lines = HL.wrap({ text = UI._plugin.empty.msg }, UI._fg.win.config.width, " ")
 		table.insert(lines, "")
 		UI._fg.lines:set(lines, { end_ = -1, many = true })
 		UI._fg.cursor:set(#lines, 0)
@@ -652,20 +652,17 @@ function UI.apply_actions()
 
 	UI._keys = SET.new()
 	UI._plugins = {}
-	local all_actions = SET.new() ---@type Rabbit.Table.Set<string>
 	local renamed = e.action_label or {}
 
 	e.actions = e.actions or {}
 
-	all_actions
-		:add({
-			SET.keys(e.actions),
-			SET.keys(UI._plugin.actions),
-			SET.keys(UI._plugin.opts.keys),
-			SET.keys(ACTIONS),
-			SET.keys(CONFIG.keys),
-		})
-		:del("hover")
+	local all_actions = SET.extend(
+		SET.keys(e.actions),
+		SET.keys(UI._plugin.actions),
+		SET.keys(UI._plugin.opts.keys),
+		SET.keys(ACTIONS),
+		SET.keys(CONFIG.keys)
+	):del("hover")
 
 	UI._fg.keys:clear()
 
