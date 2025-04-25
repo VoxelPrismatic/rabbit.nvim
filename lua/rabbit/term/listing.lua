@@ -669,7 +669,11 @@ function UI.apply_actions()
 		callback = function()
 			local mouse = vim.fn.getmousepos()
 			local line = vim.fn.line(".")
-			vim.api.nvim_win_set_cursor(0, { mouse.line, mouse.column - 1 })
+			vim.api.nvim_win_set_cursor(mouse.winid, { mouse.line, mouse.column - 1 })
+			if mouse.winid ~= UI._fg.win.id then
+				vim.api.nvim_set_current_win(mouse.winid)
+				return
+			end
 			if line == mouse.line then
 				UI.bind_callback("select", UI._entries[mouse.line], true)()
 			end
