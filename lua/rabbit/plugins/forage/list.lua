@@ -1,11 +1,17 @@
 local MEM = require("rabbit.util.mem")
 local PLUGIN_CONFIG = require("rabbit.plugins.forage.config")
+local TRAIL = require("rabbit.plugins.trail.list")
+local ENV = require("rabbit.plugins.forage.env")
 
 ---@class Rabbit*Forage.List
 local LIST = {
 	---@type Rabbit*Forage.Memory
 	---@diagnostic disable-next-line: missing-fields
 	forage = {},
+
+	files = TRAIL.copy_bufs(function(c)
+		return c:as(ENV.winid)
+	end),
 }
 
 -- Get the scoped directory

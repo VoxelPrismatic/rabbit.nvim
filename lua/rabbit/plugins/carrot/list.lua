@@ -42,7 +42,15 @@ local LIST = {
 	buffers = {},
 
 	---@type table<integer | string, Rabbit*Trail.Buf>
-	files = {},
+	files = TRAIL.copy_bufs(function(c)
+		c.idx = true
+		c.default = false
+		c.actions.insert = true
+		c.actions.collect = true
+		c.actions.delete = true
+		c.actions.rename = true
+		return c:as(ENV.winid)
+	end),
 
 	---@type table<string, table<integer, Rabbit*Carrot.Collection>>
 	real = {},
@@ -222,16 +230,6 @@ setmetatable(LIST.collections, {
 
 setmetatable(LIST.buffers, {
 	__index = buffer_collection,
-})
-
-setmetatable(LIST.files, {
-	__index = function(_, key)
-		local c = vim.deepcopy(TRAIL.bufs[key])
-		c.actions.insert = true
-		c.actions.collect = true
-		c.idx = true
-		return c
-	end,
 })
 
 return LIST

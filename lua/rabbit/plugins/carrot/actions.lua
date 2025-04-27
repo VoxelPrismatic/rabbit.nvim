@@ -107,7 +107,7 @@ function ACTIONS.children(entry)
 			parent = c.ctx.real.parent
 			while parent > 0 do
 				local p = LIST.collections[parent]
-				if #c.label == 4 then
+				if #c.label >= 4 then
 					table.insert(c.label, 1, {
 						text = CONFIG.window.overflow.distance_char,
 						hl = "rabbit.files.path",
@@ -124,10 +124,10 @@ function ACTIONS.children(entry)
 		end
 		c.idx = false
 		c.actions.rename = false
-		c.actions.insert = LIST.recent ~= nil
 		c.actions.delete = false
-		c.actions.paste = #LIST.yank > 0
 		c.actions.visual = false
+		c.actions.insert = LIST.recent ~= nil
+		c.actions.paste = #LIST.yank > 0
 		table.insert(entries, c)
 	end
 
@@ -137,11 +137,9 @@ function ACTIONS.children(entry)
 		if e == vim.NIL or e == nil then
 			table.insert(to_remove, i)
 		elseif type(e) == "string" then
-			local c = LIST.files[e]:as(ENV.winid)
+			local c = LIST.files[e]
 			c.actions.parent = not top_level
-			c.actions.delete = true
 			c.actions.insert = LIST.recent ~= nil
-			c.actions.rename = true
 			c.actions.paste = #LIST.yank > 0
 			local fakename = real.filename[c.path]
 			if fakename then
@@ -153,10 +151,10 @@ function ACTIONS.children(entry)
 			table.insert(entries, c)
 		else
 			local c = LIST.collections[e]
+			c.default = false
 			c.actions.parent = not top_level
 			c.actions.rename = true
 			c.actions.insert = LIST.recent ~= nil
-			c.default = false
 			c.actions.paste = #LIST.yank > 0
 			c.ctx.real.parent = entry.ctx.id
 			table.insert(entries, c)

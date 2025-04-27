@@ -190,6 +190,7 @@ local buf_meta = {}
 ---@return Rabbit*Trail.Buf
 function buf_meta:__index(bufid)
 	if type(bufid) == "string" then
+		bufid = vim.fn.fnamemodify(bufid, ":p")
 		for _, obj in pairs(LIST.real.bufs) do
 			if obj.path == bufid then
 				-- Update actions and whatnot
@@ -397,6 +398,22 @@ function LIST.traverse_layout(win_layout)
 
 	traverse(win_layout)
 	return ret
+end
+
+-- Creates a deep copy operation on the buffer list, allowing for easy extension
+---@param fn fun(e: Rabbit*Trail.Buf): Rabbit*Trail.Buf? Any additional actions you want to perform on the entry
+---@return table<integer | string, Rabbit*Trail.Buf>
+function LIST.copy_bufs(fn)
+	fn = fn or function() end
+	return setmetatable({}, {
+		__index = function(_, key)
+			local c = vim.deepcopy(LIST.bufs[key])
+			return fn(c) or c
+		end,
+		__new_index = function(_, _, _)
+			error("Read-only")
+		end,
+	})
 end
 
 return LIST
