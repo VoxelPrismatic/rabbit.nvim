@@ -72,7 +72,7 @@ local PLUGIN_CONFIG = {
         - Oxide erroneous sort
         - Oxide crashing if deleted file during session
     - Known Issues
-        - Filtering does nothing
+        - *none*
     - New Features
         - Ripgrep search!
         - Ripgrep warns if `rg` is not available

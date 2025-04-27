@@ -348,11 +348,11 @@ RG.search = {
 			icon = "",
 			name = "query",
 		},
-		{
-			content = "",
-			icon = "",
-			name = "filter",
-		},
+		-- {
+		-- 	content = "",
+		-- 	icon = "",
+		-- 	name = "filter",
+		-- },
 		{
 			content = "-m 50",
 			icon = "",
