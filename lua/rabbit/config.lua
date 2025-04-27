@@ -843,6 +843,14 @@ C.system = {
 	-- Default delay in ms when calling vim.defer_fn. If your system
 	-- is slow, you may want to increase this
 	defer = 5,
+
+	-- Maximum number of search results to display before quitting.
+	-- Set to an obscenely large number to disable the limit.
+	-- For slower systems, use a lower number.
+	-- NOTE: Due to limitations, you may not receive the maximum set here,
+	-- however, only the first `max_results` will be processed.
+	---@type number
+	max_results = 150,
 }
 
 -- Default scoping function

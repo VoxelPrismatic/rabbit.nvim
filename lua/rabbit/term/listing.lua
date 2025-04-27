@@ -331,6 +331,8 @@ function UI.place_entry(kwargs)
 		ident = " " .. idx .. "\u{a0}",
 	}
 
+	UI._entries[kwargs.line] = entry
+
 	UI._fg.lines:set({
 		{
 			text = entry._env.ident,
@@ -676,7 +678,10 @@ function UI.apply_actions()
 				return
 			end
 			if line == mouse.line then
-				UI.bind_callback("select", UI._entries[mouse.line], true)()
+				local ok, cb = pcall(UI.bind_callback, "select", UI._entries[mouse.line], true)
+				if ok then
+					cb()
+				end
 			end
 		end,
 		shown = false,
@@ -921,11 +926,8 @@ function UI.draw_border()
 
 	border_parts.tail = { tail, false }
 
-	local is_search = #UI._entries > 0 and UI._entries[1].type == "search"
-
 	if type(config.right_side) == "table" then
-		local top_off = is_search and 2 or 0
-		local off = 2 + top_off
+		local off = 2
 		local cur_line, max_line = unpack(vim.api.nvim_win_call(UI._fg.win.id, function()
 			return { vim.fn.line(".") - 1, vim.fn.line("$") }
 		end))
@@ -937,7 +939,7 @@ function UI.draw_border()
 		local scroll_top = (cur_line / max_line * scroll_height)
 		local frac = math.floor(scroll_top)
 		scroll_top = math.min(frac + (scroll_top - frac < 0.5 and 0 or 1), scroll_height - scroll_len)
-		border_parts.scroll[1] = base:rep(scroll_top + top_off) .. (config.chars.scroll or base):rep(scroll_len)
+		border_parts.scroll[1] = base:rep(scroll_top) .. (config.chars.scroll or base):rep(scroll_len)
 	end
 
 	local c = UI._plugin.opts.color

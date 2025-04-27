@@ -2,83 +2,9 @@ local UI = require("rabbit.term.listing")
 local TS = require("rabbit.util.treesitter")
 local LIST = require("rabbit.plugins.forage.list")
 local MEM = require("rabbit.util.mem")
-local GLOBAL_CONFIG = require("rabbit.config")
 local HL = require("rabbit.term.highlight")
+local GLOBAL_CONFIG = require("rabbit.config")
 local RG = {}
-
----@class Rabbit*Forage.Kwargs.Ripgrep
----@field search_zip? boolean (-z) Search in zip files.
----@field encoding? string (-E) Specify the text encoding.
----@field engine?: --engine
----| "default" # Usually the fastest and should be good for most use cases.
----| "pcre2" # Generally useful when you want to use features such as look-around or backreferences.
----| "auto" # Dynamically choose between supported regex engines depending on the features used in a pattern on a best effort basis.
----@field fixed_strings? boolean (-F) Treat all patterns as literals instead of regular expressions.
----@field invert_match? boolean (-v) Invert match. That is, print non-matching lines.
----@field multiline? boolean (-U) Multiline search
----@field multiline_dotall? boolean The `.` pattern will also match newlines
----@field regexp?: Pattern matching
----| "line" # (-x) Match the whole line. (Surround patterns with ^ and $)
----| "word" # (-w) Match the whole word. (Surround patterns with \b)
----@field unicode? boolean Enable unicode support for all patterns given to ripgrep
----@field follow_symlinks? boolean Follow symlinks when searching
----@field search_hidden? boolean Search hidden files
-
--- Processes proc output
----@param proc vim.SystemCompleted
----@return table<string, Rabbit*Forage.Match.Ripgrep[]>
-function RG.process_rg(proc)
-	local ret = {}
-
-	local last_line = ""
-	for line in proc.stdout:gmatch("[^\r\n]+") do
-		local ok, data = pcall(vim.json.decode, last_line .. line)
-		if not ok then
-			last_line = last_line .. line
-			goto continue
-		end
-
-		last_line = ""
-
-		if data.type ~= "match" then
-			goto continue
-		end
-
-		data = data.data --[[@as Ripgrep.Match.Data]]
-
-		local target = ret[data.path.text]
-		if target == nil then
-			target = {}
-			ret[data.path.text] = target
-		end
-
-		---@type Rabbit*Forage.Match.Ripgrep
-		local match = {
-			text = data.lines.text,
-			line = data.line_number,
-			parts = {},
-		}
-
-		for _, submatch in ipairs(data.submatches) do
-			table.insert(match.parts, {
-				rel = {
-					start = submatch.start,
-					end_ = submatch["end"],
-				},
-				abs = {
-					start = data.absolute_offset + submatch.start,
-					end_ = data.absolute_offset + submatch["end"],
-				},
-				match = submatch.match.text,
-			})
-		end
-
-		table.insert(target, match)
-
-		::continue::
-	end
-	return ret
-end
 
 ---@class Ripgrep.Match
 ---@field type "match"
@@ -95,16 +21,6 @@ end
 ---@field match { text: string } Matched text
 ---@field start integer Column number of the beginning of the match
 ---@field end integer Column number of the end of the match
-
----@class Rabbit*Forage.Match.Ripgrep
----@field text string Line text.
----@field line integer Line number of the match.
----@field parts Rabbit*Forage.Match.Ripgrep.Submatch[] List of submatches
-
----@class Rabbit*Forage.Match.Ripgrep.Submatch
----@field rel { start: integer, end_: integer } Relative position of the submatch.
----@field abs { start: integer, end_: integer } Absolute position of the submatch.
----@field match string Matched text.
 
 ---@type Rabbit.Message.Options
 RG.options = {
@@ -227,7 +143,142 @@ RG.options = {
 }
 
 function RG.children()
+	vim.defer_fn(function()
+		RG.process_rename(RG.search, RG.search.fields[RG.search.open].content)
+	end, GLOBAL_CONFIG.system.defer)
 	return { RG.search }
+end
+
+-- Processes ripgrep output
+---@param proc vim.SystemCompleted
+function RG.ripgrep(proc)
+	local jump_list = {} ---@type table<string, Rabbit.Entry.File.Jump[]>
+	local rel_paths = {} ---@type table<string, Rabbit.Term.HlLine[]>
+	UI._entries = { RG.search }
+	vim.schedule(function()
+		UI._fg.buf.o.modifiable = true
+		UI._fg.lines:set({}, {
+			end_ = -1,
+			start = 2,
+			many = true,
+		})
+		UI._fg.buf.o.modifiable = false
+	end)
+
+	local entry_no = 1
+	local line_no = 0
+	for line in proc.stdout:gmatch("[^\r\n]+") do
+		if line:gsub("%s+", "") == "" then
+			goto continue
+		end
+
+		if line_no > GLOBAL_CONFIG.system.max_results then
+			return
+		end
+
+		line_no = line_no + 1
+
+		local data = vim.json.decode(line) --[[@as Ripgrep.Match]]
+
+		if data.type ~= "match" then
+			goto continue
+		end
+
+		local match = data.data --[[@as Ripgrep.Match.Data]]
+
+		local jumps = jump_list[match.path.text]
+		if jumps == nil then
+			jumps = {}
+			jump_list[match.path.text] = jumps
+		end
+
+		for _, submatch in ipairs(match.submatches) do
+			table.insert(jumps, {
+				line = match.line_number,
+				col = submatch.start,
+				end_ = submatch["end"],
+			})
+		end
+
+		vim.schedule(function()
+			local file = LIST.files[match.path.text]
+			file.jump = {
+				line = match.line_number,
+				col = match.submatches[1].start,
+				end_ = match.submatches[1]["end"],
+				others = jumps,
+			}
+
+			---@param lines Rabbit.Term.HlLine[]
+			local function write_entry(lines)
+				file.synopsis = rel_paths[match.path.text]
+				if file.synopsis == nil then
+					local relpath = MEM.rel_path(match.path.text)
+					file.synopsis = {
+						{
+							text = relpath.dir,
+							hl = { "rabbit.files.path" },
+						},
+						{
+							text = relpath.name,
+							hl = { "rabbit.files.file" },
+						},
+					}
+					rel_paths[match.path.text] = file.synopsis
+				end
+				file.label = RG.trim_ts(lines, match)
+				if #file.label > 0 then
+					vim.schedule(function()
+						UI.place_entry({
+							entry = file,
+							idx = entry_no - 1,
+							line = entry_no + 1,
+							pad = 0,
+						})
+						entry_no = entry_no + 1
+					end)
+				end
+			end
+
+			local parser = TS.parser_from_filename[match.path.text]
+			if parser ~= nil then
+				parser:parse(match.lines.text:gsub("%s+$", ""), write_entry)
+			else
+				write_entry({ text = match.lines.text:gsub("%s+$", ""), hl = {} })
+			end
+		end)
+
+		::continue::
+	end
+end
+
+---@param line Rabbit.Term.HlLine[]
+---@param match Ripgrep.Match.Data
+---@return Rabbit.Term.HlLine[]
+function RG.trim_ts(line, match)
+	local chars = HL.split(line)
+	for _, m in ipairs(match.submatches) do
+		for c = m.start + 1, m["end"] do
+			if chars[c] ~= nil then
+				local tbl = chars[c].hl
+				if type(tbl) ~= "table" then
+					tbl = { tbl }
+					chars[c].hl = tbl
+				end
+				table.insert(tbl, "CurSearch")
+			end
+		end
+	end
+
+	for _ = 1, match.submatches[1].start - UI._fg.win.config.width / 3 * 2 do
+		table.remove(chars, 1)
+	end
+
+	while #chars > 0 and chars[1].text:match("^%s+") do
+		table.remove(chars, 1)
+	end
+
+	return chars
 end
 
 -- Runs rg asynchronously
@@ -236,90 +287,7 @@ local function async_rg(entry)
 	if entry.fields[1].content == "" then
 		return
 	end
-	vim.system(
-		{ "rg", "--json", entry.fields[1].content, "./", "-m", "50" },
-		{ text = true },
-		vim.schedule_wrap(function(proc)
-			UI._fg.buf.o.modifiable = true
-			UI._fg.lines:set({}, {
-				end_ = -1,
-				start = 2,
-				many = true,
-			})
-			UI._fg.buf.o.modifiable = false
-			local i = 1
-			local rg = RG.process_rg(proc)
-			for file, matches in pairs(rg) do
-				i = i + 1
-				local parser = TS.parser_from_filename[file]
-				local e = LIST.files[file]
-				local relpath = MEM.rel_path(e.path)
-				e.synopsis = {
-					{ text = relpath.dir, hl = { "rabbit.files.path" } },
-					{ text = relpath.name, hl = { "rabbit.files.file" } },
-				}
-				for _, match in ipairs(matches) do
-					for _, m in ipairs(match.parts) do
-						if e.jump then
-							table.insert(e.jump.others, {
-								line = match.line,
-								col = m.rel.start,
-								end_ = m.rel.end_,
-							})
-						else
-							e.jump = {
-								line = match.line,
-								col = m.rel.start,
-								end_ = m.rel.end_,
-								others = {},
-							}
-						end
-					end
-					if match.text:gsub("%s+$", "") == "" then
-						i = i - 1
-					elseif parser ~= nil then
-						parser:parse(match.text:gsub("%s+$", ""), function(lines)
-							local ee = vim.tbl_extend("force", {}, e) -- shallow copy
-							lines = HL.split(lines)
-							for _, m in ipairs(match.parts) do
-								for c = m.rel.start + 1, m.rel.end_ do
-									if lines[c] ~= nil then
-										local tbl = lines[c].hl
-										if type(tbl) ~= "table" then
-											tbl = { tbl }
-											lines[c].hl = tbl
-										end
-										table.insert(tbl, "CurSearch")
-									end
-								end
-							end
-
-							for _ = 1, match.parts[1].rel.start - UI._fg.win.config.width / 4 do
-								table.remove(lines, 1)
-							end
-
-							while #lines > 0 and lines[1].text:match("^%s+") do
-								table.remove(lines, 1)
-							end
-
-							if #lines == 0 then
-								i = i - 1
-							else
-								ee.label = lines
-
-								UI.place_entry({
-									entry = ee,
-									idx = i - 2,
-									line = i,
-									pad = 0,
-								})
-							end
-						end)
-					end
-				end
-			end
-		end)
-	)
+	vim.system({ "rg", "--json", entry.fields[1].content, "./", "-m", "50" }, { text = true }, RG.ripgrep)
 end
 
 RG.timer = vim.uv.new_timer()
@@ -327,7 +295,7 @@ RG.timer = vim.uv.new_timer()
 ---@param entry Rabbit.Entry.Search
 ---@param new_name string
 ---@return string
-local function process_rename(entry, new_name)
+function RG.process_rename(entry, new_name)
 	entry.fields[entry.open].content = new_name
 	if RG.timer == nil then
 		local err
@@ -346,8 +314,8 @@ local function rename(entry)
 	return {
 		class = "message",
 		type = "rename",
-		apply = process_rename,
-		check = process_rename,
+		apply = RG.process_rename,
+		check = RG.process_rename,
 		color = false,
 		name = entry.fields[entry.open].content,
 	}
