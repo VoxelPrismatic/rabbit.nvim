@@ -1,19 +1,37 @@
+local HL = require("rabbit.term.highlight")
 local UI = require("rabbit.term.listing")
 local BOX = require("rabbit.term.border")
 local CONFIG = require("rabbit.config")
 local STACK = require("rabbit.term.stack")
+local TERM = require("rabbit.util.term")
 
 ---@param data Rabbit.Message.Menu
 return function(data)
-	if #data.options == 0 then
-		return
+	if data.options == nil or #data.options == 0 then
+		data.options = {
+			{
+				label = "Ok",
+				callback = function()
+					return UI._display
+				end,
+			},
+		}
 	end
 
-	if #data.options == 1 then
+	local msg = data.msg
+	if msg ~= nil then
+		if type(msg) == "string" then
+			msg = { text = msg }
+		end
+		msg = HL.wrap(msg, UI._fg.win.config.width - 2, " ")
+		table.insert(msg, {})
+	end
+
+	if #data.options == 1 and data.immediate then
 		return UI.handle_callback(data.options[1].callback(data.options[1].args))
 	end
 
-	local height = #data.options + 2
+	local height = #data.options + 2 + (msg ~= nil and #msg or 0)
 	local width = UI._fg.win.config.width or 64
 	local row = math.floor((UI._fg.win.config.height - height) / 2)
 
@@ -25,7 +43,7 @@ return function(data)
 		title = { data.title, true },
 	})
 		:to_hl({
-			border_hl = "rabbit.popup.info",
+			border_hl = data.color or "rabbit.popup.info",
 			title_hl = "rabbit.types.title",
 		}).lines
 
@@ -73,6 +91,11 @@ return function(data)
 		else
 			option.color = "rabbit.paint." .. option.color
 		end
+
+		if option.icon == nil then
+			option.icon = ""
+		end
+
 		lines[i] = {
 			{
 				text = " " .. tostring(i) .. ". ",
@@ -96,6 +119,24 @@ return function(data)
 	end
 
 	opts.lines:set(lines)
+	if msg ~= nil then
+		vim.defer_fn(function()
+			opts.extmarks:set({
+				col = 0,
+				line = 0,
+				name = "msg",
+				ns = "rabbit.prompt.msg",
+				opts = {
+					end_col = 1,
+					virt_lines_above = true,
+					strict = false,
+					virt_lines = msg,
+				},
+			})
+			-- Move current line to bottom of screen to show message
+			TERM.feed("zb<Right><Left>")
+		end, 0)
+	end
 
 	opts.keys:add({
 		label = "select",

@@ -155,17 +155,17 @@ C.colors = {
 		-- Shown when there is an error or conflict
 		-- Highlight group: `rabbit.popup.error`
 		---@type Rabbit.Color
-		error = { fg = ":ErrorMsg", bg = ":FloatBorder", bold = true },
+		error = { fg = ":ErrorMsg", bg = ":FloatBorder" },
 
 		-- Shown when there is a warning
 		-- Highlight group: `rabbit.popup.warning`
 		---@type Rabbit.Color
-		warning = { fg = ":Question", bg = ":FloatBorder", bold = true },
+		warning = { fg = ":Question", bg = ":FloatBorder" },
 
 		-- Any other message box or menu
 		-- Highlight group: `rabbit.popup.info`
 		---@type Rabbit.Color
-		info = { fg = ":MoreMsg", bg = ":FloatBorder", bold = true },
+		info = { fg = ":MoreMsg", bg = ":FloatBorder" },
 	},
 
 	-- For each part of the legend

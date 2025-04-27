@@ -301,7 +301,9 @@ function HL.wrap(lines, width, indent, indent_override)
 			end
 			table.insert(syllables, { " ", v.hl })
 		end
-		table.remove(syllables, #syllables)
+		if not v.space then
+			table.remove(syllables, #syllables)
+		end
 
 		::continue::
 	end
@@ -368,6 +370,7 @@ end
 
 ---@class (exact) Rabbit.Term.HlLine: table<Rabbit.Term.HlLine>
 ---@field text? string The text to display.
+---@field space? boolean Whether to add a space after the text. Only processed in HL.wrap
 ---@field hl? : The highlight group to apply to text.
 ---| string # Single highlight group.
 ---| string[] # Multiple highlight groups.
@@ -378,6 +381,7 @@ end
 
 ---@class (exact) Rabbit.Term.HlLine.NoAlign: table<Rabbit.Term.HlLine.NoAlign>
 ---@field text? string The text to display
+---@field space? boolean Whether to add a space after the text. Only processed in HL.wrap
 ---@field hl? : The highlight group to apply to text.
 ---| string # Single highlight group.
 ---| string[] # Multiple highlight groups.

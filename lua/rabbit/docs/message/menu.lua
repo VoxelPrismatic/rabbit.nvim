@@ -1,6 +1,8 @@
 ---@class Rabbit.Message.Menu: Rabbit.Message
 ---@field type "menu"
 ---@field title string Menu title
+---@field color? string Border color highlight group
+---@field msg? string | Rabbit.Term.HlLine Message
 ---@field options Rabbit.Message.Menu.Option[]
 
 ---@class (exact) Rabbit.Message.Menu.Option

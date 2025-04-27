@@ -356,6 +356,38 @@ RG.search = {
 	},
 }
 
+---@param entry Rabbit.Entry.Search
+function RG.select(entry)
+	if vim.fn.executable("rg") == 1 then
+		return entry
+	end
+
+	return {
+		class = "message",
+		type = "menu",
+		color = "rabbit.popup.error",
+		title = "Ripgrep not found",
+		msg = {
+			{
+				text = "Ripgrep is not installed. Please ensure the",
+				space = true,
+			},
+			{
+				text = "rg",
+				hl = {
+					"rabbit.types.collection",
+					"rabbit.paint.love",
+				},
+				space = true,
+			},
+			{
+				text = "command is available.",
+			},
+		},
+		options = {},
+	}
+end
+
 ---@type Rabbit.Entry.Collection
 RG.root = {
 	class = "entry",
@@ -365,7 +397,7 @@ RG.root = {
 		hl = { "rabbit.types.collection", "rabbit.paint.tree" },
 	},
 	actions = {
-		select = true,
+		select = RG.select,
 		children = RG.children,
 	},
 }
