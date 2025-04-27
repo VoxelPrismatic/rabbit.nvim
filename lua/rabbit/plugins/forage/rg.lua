@@ -1,3 +1,9 @@
+local UI = require("rabbit.term.listing")
+local TS = require("rabbit.util.treesitter")
+local LIST = require("rabbit.plugins.forage.list")
+local MEM = require("rabbit.util.mem")
+local GLOBAL_CONFIG = require("rabbit.config")
+local HL = require("rabbit.term.highlight")
 local RG = {}
 
 ---@class Rabbit*Forage.Kwargs.Ripgrep
@@ -18,13 +24,21 @@ local RG = {}
 ---@field follow_symlinks? boolean Follow symlinks when searching
 ---@field search_hidden? boolean Search hidden files
 
----@param command string[] Command
-local function run_rg(command)
-	local proc = vim.system(command, { text = true }):wait()
+-- Processes proc output
+---@param proc vim.SystemCompleted
+---@return table<string, Rabbit*Forage.Match.Ripgrep[]>
+function RG.process_rg(proc)
 	local ret = {}
 
-	for line in proc.stdout:gmatch("[^\r?\n]+") do
-		local data = vim.json.decode(line)
+	local last_line = ""
+	for line in proc.stdout:gmatch("[^\r\n]+") do
+		local ok, data = pcall(vim.json.decode, last_line .. line)
+		if not ok then
+			last_line = last_line .. line
+			goto continue
+		end
+
+		last_line = ""
 
 		if data.type ~= "match" then
 			goto continue
@@ -64,55 +78,6 @@ local function run_rg(command)
 		::continue::
 	end
 	return ret
-end
-
----@param text string Text to search
----@param kwargs? Rabbit*Forage.Kwargs.Ripgrep
----@param ... string Extra flags to pass to rg
-function RG.find(text, kwargs, ...)
-	local command = { "rg", text, "--json", ... }
-
-	kwargs = kwargs or {}
-
-	if kwargs.search_zip then
-		table.insert(command, "-z")
-	end
-
-	if kwargs.encoding then
-		table.insert(command, "--encoding=" .. kwargs.encoding)
-	end
-
-	if kwargs.engine then
-		table.insert(command, "--engine=" .. kwargs.engine)
-	end
-
-	if kwargs.fixed_strings then
-		table.insert(command, "-F")
-	end
-
-	if kwargs.invert_match then
-		table.insert(command, "-v")
-	end
-
-	if kwargs.regexp == "line" then
-		table.insert(command, "-x")
-	elseif kwargs.regexp == "word" then
-		table.insert(command, "-w")
-	end
-
-	if kwargs.multiline == true then
-		table.insert(command, "--multiline")
-	elseif kwargs.multiline == false then
-		table.insert(command, "--no-multiline")
-	end
-
-	if kwargs.multiline_dotall == true then
-		table.insert(command, "--multiline-dotall")
-	elseif kwargs.multiline_dotall == false then
-		table.insert(command, "--no-multiline-dotall")
-	end
-
-	return run_rg(command)
 end
 
 ---@class Ripgrep.Match
@@ -265,6 +230,129 @@ function RG.children()
 	return { RG.search }
 end
 
+-- Runs rg asynchronously
+---@param entry Rabbit.Entry.Search
+local function async_rg(entry)
+	if entry.fields[1].content == "" then
+		return
+	end
+	vim.system(
+		{ "rg", "--json", entry.fields[1].content, "./", "-m", "50" },
+		{ text = true },
+		vim.schedule_wrap(function(proc)
+			UI._fg.buf.o.modifiable = true
+			UI._fg.lines:set({}, {
+				end_ = -1,
+				start = 2,
+				many = true,
+			})
+			UI._fg.buf.o.modifiable = false
+			local i = 1
+			local rg = RG.process_rg(proc)
+			for file, matches in pairs(rg) do
+				i = i + 1
+				local parser = TS.parser_from_filename[file]
+				local e = LIST.files[file]
+				local relpath = MEM.rel_path(e.path)
+				e.synopsis = {
+					{ text = relpath.dir, hl = { "rabbit.files.path" } },
+					{ text = relpath.name, hl = { "rabbit.files.file" } },
+				}
+				for _, match in ipairs(matches) do
+					for _, m in ipairs(match.parts) do
+						if e.jump then
+							table.insert(e.jump.others, {
+								line = match.line,
+								col = m.rel.start,
+								end_ = m.rel.end_,
+							})
+						else
+							e.jump = {
+								line = match.line,
+								col = m.rel.start,
+								end_ = m.rel.end_,
+								others = {},
+							}
+						end
+					end
+					if match.text:gsub("%s+$", "") == "" then
+						i = i - 1
+					elseif parser ~= nil then
+						parser:parse(match.text:gsub("%s+$", ""), function(lines)
+							local ee = vim.tbl_extend("force", {}, e) -- shallow copy
+							lines = HL.split(lines)
+							for _, m in ipairs(match.parts) do
+								for c = m.rel.start + 1, m.rel.end_ do
+									if lines[c] ~= nil then
+										local tbl = lines[c].hl
+										if type(tbl) ~= "table" then
+											tbl = { tbl }
+											lines[c].hl = tbl
+										end
+										table.insert(tbl, "CurSearch")
+									end
+								end
+							end
+
+							for _ = 1, match.parts[1].rel.start - UI._fg.win.config.width / 4 do
+								table.remove(lines, 1)
+							end
+
+							while #lines > 0 and lines[1].text:match("^%s+") do
+								table.remove(lines, 1)
+							end
+
+							if #lines == 0 then
+								i = i - 1
+							else
+								ee.label = lines
+
+								UI.place_entry({
+									entry = ee,
+									idx = i - 2,
+									line = i,
+									pad = 0,
+								})
+							end
+						end)
+					end
+				end
+			end
+		end)
+	)
+end
+
+RG.timer = vim.uv.new_timer()
+
+---@param entry Rabbit.Entry.Search
+---@param new_name string
+---@return string
+local function process_rename(entry, new_name)
+	entry.fields[entry.open].content = new_name
+	if RG.timer == nil then
+		local err
+		RG.timer, _, err = vim.uv.new_timer()
+		assert(RG.timer ~= nil, "failed to create timer: " .. err)
+	end
+
+	RG.timer:start(0, 0, function()
+		async_rg(entry)
+	end)
+	return new_name
+end
+
+---@param entry Rabbit.Entry.Search
+local function rename(entry)
+	return {
+		class = "message",
+		type = "rename",
+		apply = process_rename,
+		check = process_rename,
+		color = false,
+		name = entry.fields[entry.open].content,
+	}
+end
+
 ---@type Rabbit.Entry.Search
 RG.search = {
 	class = "entry",
@@ -293,7 +381,7 @@ RG.search = {
 	open = 1,
 	actions = {
 		select = true,
-		rename = true,
+		rename = rename,
 	},
 	action_label = {
 		rename = "edit",
