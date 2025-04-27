@@ -40,7 +40,7 @@ local function produce_lines(source, query, err, tree, chunks)
 		else
 			local diff = col - #line
 			last_token = {
-				text = (" "):rep(diff) .. source:sub(byte + 1, ebyte),
+				text = source:sub(byte - diff + 1, byte) .. source:sub(byte + 1, ebyte),
 				hl = { hl },
 			}
 			table.insert(last_chunk, last_token)

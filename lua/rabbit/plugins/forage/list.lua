@@ -63,10 +63,9 @@ function LIST.quickscore(cwd)
 	end
 	assert(type(listing) == "table", "Expected table, got " .. type(listing))
 	local children_only = PLUGIN_CONFIG.oxide.children_only and MEM.is_type(cwd, "directory")
-	local do_delete = math.random() < 0.05
 	for i = #listing, 1, -1 do
 		local obj = listing[i]
-		if children_only and not obj.path:find(cwd, 1, true) or (do_delete and not MEM.is_type(obj.path, "file")) then
+		if children_only and not obj.path:find(cwd, 1, true) or not MEM.is_type(obj.path, "file") then
 			table.remove(listing, i)
 			goto continue
 		end

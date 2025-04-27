@@ -83,6 +83,7 @@ function ACTIONS.hover(entry)
 		file = entry.path,
 		bufid = entry.bufid,
 		winid = entry.target_winid,
+		jump = entry.jump,
 	}
 end
 

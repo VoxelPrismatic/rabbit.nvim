@@ -65,6 +65,17 @@ local PLUGIN_CONFIG = {
 ```
 
 ## Change log
+- `r0.0a2`: Apr 27, 2025
+    - Fixed Bugs
+        - Oxide move to top upon delete
+        - Oxide not saving
+        - Oxide erroneous sort
+        - Oxide crashing if deleted file during session
+    - Known Issues
+        - Filtering does nothing
+    - New Features
+        - Ripgrep search!
+        - Ripgrep warns if `rg` is not available
 - `r0.0a1`: Apr 15, 2025
     - Fixed Bugs
         - *none*

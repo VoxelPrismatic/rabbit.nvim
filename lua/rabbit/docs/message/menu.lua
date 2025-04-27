@@ -4,6 +4,7 @@
 ---@field color? string Border color highlight group
 ---@field msg? string | Rabbit.Term.HlLine Message
 ---@field options Rabbit.Message.Menu.Option[]
+---@field immediate? boolean If only one option, process immediately. Default: false
 
 ---@class (exact) Rabbit.Message.Menu.Option
 ---@field label string Label

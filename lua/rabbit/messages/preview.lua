@@ -249,11 +249,26 @@ local function possibly_closed(data)
 
 		local ns = NVIM.ns["rabbit.preview.search"]
 		vim.api.nvim_buf_clear_namespace(data.bufid, ns, 0, -1)
-		vim.api.nvim_win_set_cursor(data.winid, { data.jump.line, data.jump.col })
+		pcall(vim.api.nvim_win_set_cursor, data.winid, { data.jump.line, data.jump.col })
 		vim.api.nvim_buf_set_extmark(data.bufid, ns, data.jump.line - 1, data.jump.col, {
 			end_col = data.jump.end_,
-			hl_group = "Search",
+			hl_group = "CurSearch",
+			priority = 110,
 		})
+		local others = vim.deepcopy(data.jump.others or {})
+		while #others > 0 do
+			local jump = table.remove(others, 1)
+			for _, j in ipairs(jump.others or {}) do
+				table.insert(others, j)
+			end
+
+			vim.api.nvim_buf_set_extmark(data.bufid, ns, jump.line - 1, jump.col, {
+				end_col = jump.end_,
+				hl_group = "Search",
+				priority = 105,
+			})
+		end
+
 		vim.api.nvim_buf_call(data.bufid, function()
 			vim.cmd("normal! zz")
 		end)

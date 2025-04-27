@@ -206,7 +206,7 @@ function RG.ripgrep(proc)
 				line = match.line_number,
 				col = match.submatches[1].start,
 				end_ = match.submatches[1]["end"],
-				others = jumps,
+				others = jump_list[match.path.text],
 			}
 
 			---@param lines Rabbit.Term.HlLine[]
@@ -287,7 +287,20 @@ local function async_rg(entry)
 	if entry.fields[1].content == "" then
 		return
 	end
-	vim.system({ "rg", "--json", entry.fields[1].content, "./", "-m", "50" }, { text = true }, RG.ripgrep)
+	local command = { "rg", "--json", entry.fields[1].content, "./" }
+	local in_str = false
+	for flag in entry.fields[3].content:gmatch("%S+") do
+		if in_str then
+			command[#command] = command[#command] .. " " .. flag
+		else
+			command[#command + 1] = flag
+		end
+
+		for _ in flag:gmatch("[\"']") do
+			in_str = not in_str
+		end
+	end
+	vim.system(command, { text = true }, RG.ripgrep)
 end
 
 RG.timer = vim.uv.new_timer()
@@ -331,7 +344,7 @@ RG.search = {
 	},
 	fields = {
 		{
-			content = "type shit here",
+			content = "",
 			icon = "",
 			name = "query",
 		},
@@ -341,7 +354,7 @@ RG.search = {
 			name = "filter",
 		},
 		{
-			content = "",
+			content = "-m 50",
 			icon = "",
 			name = "flags",
 		},

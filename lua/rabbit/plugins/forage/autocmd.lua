@@ -18,7 +18,6 @@ function EVT.BufAdd(evt, ctx)
 
 	evt.file = vim.api.nvim_buf_get_name(evt.buf)
 	if MEM.is_type(evt.file, "file") then
-		vim.print("touching " .. evt.file)
 		LIST.touch(evt.file)
 	end
 end

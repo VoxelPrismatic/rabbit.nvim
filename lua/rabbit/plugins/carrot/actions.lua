@@ -41,8 +41,7 @@ local function deep_copy_collection(id)
 				id_map[entry] = new_id
 				collection.list[i] = new_id
 			else
-				vim.print(entry)
-				error("Unreachable")
+				error("Unreachable; " .. vim.inspect(entry))
 			end
 		end
 	end
