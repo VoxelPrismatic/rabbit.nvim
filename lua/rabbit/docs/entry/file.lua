@@ -12,6 +12,7 @@
 ---@field line integer Highlight line number
 ---@field col integer Highlight column start (if nil, entire line is highlighted)
 ---@field end_ integer Highlight column end (if nil, entire line is highlighted)
+---@field others? Rabbit.Entry.File.Jump[] Other jumps
 
 ---@class Rabbit.Entry.File.Actions
 ---@field select? Rabbit.Action.Callback<Rabbit.Action.Select>

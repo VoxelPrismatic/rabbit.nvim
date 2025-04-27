@@ -4,6 +4,7 @@ local MEM = require("rabbit.util.mem")
 local CONFIG = require("rabbit.config")
 local TERM = require("rabbit.util.term")
 local STACK = require("rabbit.term.stack")
+local NVIM = require("rabbit.util.nvim")
 
 local preview_ws ---@type Rabbit.Stack.Workspace | nil
 
@@ -246,7 +247,7 @@ local function possibly_closed(data)
 		data.jump.col = math.max(data.jump.col or 0, 0)
 		data.jump.end_ = math.min(data.jump.end_ or 10000, #lines[data.jump.line])
 
-		local ns = vim.api.nvim_create_namespace("rabbit.preview.search")
+		local ns = NVIM.ns["rabbit.preview.search"]
 		vim.api.nvim_buf_clear_namespace(data.bufid, ns, 0, -1)
 		vim.api.nvim_win_set_cursor(data.winid, { data.jump.line, data.jump.col })
 		vim.api.nvim_buf_set_extmark(data.bufid, ns, data.jump.line - 1, data.jump.col, {
@@ -281,7 +282,7 @@ local function possibly_closed(data)
 				is_err = true
 			end
 			vim.api.nvim_buf_set_lines(data.bufid, 0, -1, false, lines)
-			vim.bo[data.bufid].filetype = vim.filetype.match({ filename = data.file }) or "text"
+			vim.bo[data.bufid].filetype = NVIM.ft[data.file] or "text"
 			vim.bo[data.bufid].readonly = true
 
 			if not is_err then

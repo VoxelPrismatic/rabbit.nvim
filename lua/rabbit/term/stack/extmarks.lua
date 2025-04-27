@@ -1,3 +1,5 @@
+local NVIM = require("rabbit.util.nvim")
+
 ---@class Rabbit.Stack.Extmarks
 local EXTMARKS = setmetatable({
 	-- Target workspace
@@ -31,10 +33,7 @@ end
 ---@return integer
 function EXTMARKS:set(kwargs)
 	kwargs = vim.deepcopy(kwargs)
-	local ns = kwargs.ns or self.target.ns
-	if type(ns) == "string" then
-		ns = vim.api.nvim_create_namespace(ns)
-	end
+	local ns = NVIM.ns[kwargs.ns or self.target.ns]
 
 	if kwargs.name and self.marks[kwargs.name] and kwargs.opts.id == nil then
 		kwargs.opts.id = self.marks[kwargs.name].id
@@ -53,10 +52,7 @@ end
 -- Clears all the extmarks of a namespace
 ---@param ns? integer | string Highlight namespace. Leave nil to clear all
 function EXTMARKS:clear(ns)
-	ns = ns or -1
-	if type(ns) == "string" then
-		ns = vim.api.nvim_create_namespace(ns)
-	end
+	ns = NVIM.ns[ns]
 	vim.api.nvim_buf_clear_namespace(self.target.buf.id, ns, 0, -1)
 end
 

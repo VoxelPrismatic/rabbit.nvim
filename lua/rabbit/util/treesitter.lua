@@ -54,12 +54,16 @@ end
 
 -- Generates highlight groups for the given language. This can be passed to HL.set_lines(...)
 -- **WARNING**: Only the first tree parsed will be used. Any additional trees will be ignored.
----@param lang string Language
+---@param lang string | Rabbit.Treesitter Language
 ---@param source string Source (stuff to highlight)
 ---@param callback fun(lines: Rabbit.Term.HlLine[])
 ---@return Rabbit.Term.HlLine[] lines
----@overload fun(lang: string, source: string, callback: false): Rabbit.Term.HlLine[] "Run synchronously"
+---@overload fun(lang: string | Rabbit.Treesitter, source: string, callback: false): Rabbit.Term.HlLine[] "Run synchronously"
 function TS.parse(lang, source, callback)
+	if type(lang) ~= "string" then
+		lang = lang.lang
+	end
+
 	local parser = vim.treesitter.get_string_parser(source, lang)
 	local query = vim.treesitter.query.get(lang, "highlights")
 	assert(query ~= nil, "No highlighting available for " .. lang)
@@ -81,6 +85,39 @@ function TS.parse(lang, source, callback)
 
 	return chunks
 end
+
+---@class Rabbit.Treesitter
+---@field lang string Language
+---@field parse fun(self: Rabbit.Treesitter, source: string, callback: false | fun(lines: Rabbit.Term.HlLine[]))
+
+-- If nil, there is no parser for lang
+---@type table<string, Rabbit.Treesitter?>
+TS.parsers_by_filetype = setmetatable({}, {
+	__index = function(self, lang)
+		if lang == nil then
+			return nil
+		end
+		local ok, _ = pcall(vim.treesitter.get_string_parser, "", lang)
+		if not ok then
+			-- No parser for lang
+			return nil
+		end
+		rawset(self, lang, {
+			lang = lang,
+			parse = TS.parse,
+		})
+		return rawget(self, lang)
+	end,
+})
+
+---@type table<string, Rabbit.Treesitter?>
+TS.parser_from_filename = setmetatable({}, {
+	__index = function(self, filename)
+		local lang = vim.filetype.match({ filename = filename })
+		rawset(self, filename, TS.parsers_by_filetype[lang])
+		return TS.parsers_by_filetype[lang]
+	end,
+})
 
 -- Uses nvim_echo so you can see for yourself what's going on
 -- **WARNING**: This function does not support layered highlight groups.

@@ -1,3 +1,4 @@
+local NVIM = require("rabbit.util.nvim")
 local HL = require("rabbit.term.highlight")
 
 ---@class Rabbit.Stack.Lines
@@ -46,10 +47,7 @@ function LINES:set(lines, opts)
 		opts = { strict = false, start = 0, many = true }
 	end
 
-	local ns = opts.ns or self.target.ns
-	if type(ns) == "string" then
-		ns = vim.api.nvim_create_namespace(ns)
-	end
+	local ns = NVIM.ns[opts.ns or self.target.ns]
 
 	local new_end = HL.set_lines({
 		bufnr = self.target.buf.id,

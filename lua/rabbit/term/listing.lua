@@ -7,6 +7,7 @@ local SET = require("rabbit.util.set")
 local LSP = require("rabbit.util.lsp")
 local TERM = require("rabbit.util.term")
 local STACK = require("rabbit.term.stack")
+local NVIM = require("rabbit.util.nvim")
 local ACTIONS
 
 ---@class Rabbit.UI.Listing
@@ -1062,7 +1063,7 @@ end
 
 -- Deletes the hover windows
 function UI.cancel_hover()
-	local ns = vim.api.nvim_create_namespace("rabbit.preview.search")
+	local ns = NVIM.ns["rabbit.preview.search"]
 
 	for winid, view in pairs(UI._views) do
 		if not vim.api.nvim_win_is_valid(winid) then

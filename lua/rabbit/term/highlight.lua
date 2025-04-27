@@ -1,6 +1,7 @@
 local CONFIG = require("rabbit.config")
 local SET = require("rabbit.util.set")
 local TERM = require("rabbit.util.term")
+local NVIM = require("rabbit.util.nvim")
 local HL = {}
 
 -- Will create a new highlight group
@@ -131,10 +132,7 @@ function HL.set_lines(kwargs)
 	local strict = kwargs.strict
 	local lineno = kwargs.lineno
 	local buf = kwargs.bufnr
-	local ns = kwargs.ns or -1
-	if type(ns) == "string" then
-		ns = vim.api.nvim_create_namespace(ns)
-	end
+	local ns = NVIM.ns[kwargs.ns]
 
 	while #lines > 0 do
 		local v = table.remove(lines, 1)
@@ -225,6 +223,7 @@ function HL.set_lines(kwargs)
 				hl_group = v.name,
 				end_line = lineno,
 				end_col = v.end_ + part.offset,
+				strict = false,
 			})
 		end
 	end
@@ -247,10 +246,10 @@ function HL.split(lines)
 		end
 
 		if line.text ~= nil then
-			for _, char in ipairs(vim.split(line.text, "")) do
+			for _, char in ipairs(vim.fn.str2list(line.text)) do
 				table.insert(result, {
-					text = char,
-					hl = line.hl,
+					text = vim.fn.nr2char(char),
+					hl = vim.deepcopy(line.hl),
 					align = line.align,
 				})
 			end

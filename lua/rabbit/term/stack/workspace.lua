@@ -5,6 +5,7 @@ local LINES = require("rabbit.term.stack.lines")
 local AUTOCMD = require("rabbit.term.stack.autocmd")
 local CURSOR = require("rabbit.term.stack.cursor")
 local EXTMARKS = require("rabbit.term.stack.extmarks")
+local NVIM = require("rabbit.util.nvim")
 local TERM = require("rabbit.util.term")
 
 ---@alias Rabbit.AutoArray<T> T | T[]
@@ -186,12 +187,11 @@ function WS.scratch(opts)
 
 	local ns = opts.ns or 0
 	if ns == 0 then
-		ns = tostring(winid .. ":" .. bufid)
+		ns = NVIM.ns[winid .. ":" .. bufid]
+	else
+		ns = NVIM.ns[ns]
 	end
 
-	if type(ns) == "string" then
-		ns = vim.api.nvim_create_namespace(ns)
-	end
 	ws.ns = ns
 
 	if opts.lines then
