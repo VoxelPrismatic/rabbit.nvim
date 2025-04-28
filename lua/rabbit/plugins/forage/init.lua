@@ -8,7 +8,7 @@ local GLOBAL_CONFIG = require("rabbit.config")
 ---@type Rabbit*Forage
 local PLUG = {
 	synopsis = "Forage through the filesystem until you find what you're looking for",
-	version = "r0.0a1",
+	version = "r0.0a2",
 	empty = {
 		msg = "Whoops! Something went disasterously wrong, this message should never appear!",
 		actions = {},
