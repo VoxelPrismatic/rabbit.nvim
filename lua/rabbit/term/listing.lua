@@ -1041,7 +1041,6 @@ function UI.close(dbg)
 	if not dbg and UI._dbg then
 		error("Debugging")
 	end
-
 	_ = STACK._.user:focus(true)
 
 	if UI._bg ~= nil then
@@ -1067,6 +1066,7 @@ end
 -- Deletes the hover windows
 function UI.cancel_hover()
 	local ns = NVIM.ns["rabbit.preview.search"]
+	vim.api.nvim_buf_clear_namespace(STACK._.user.buf.id, ns, 0, -1)
 
 	for winid, view in pairs(UI._views) do
 		if not vim.api.nvim_win_is_valid(winid) then
