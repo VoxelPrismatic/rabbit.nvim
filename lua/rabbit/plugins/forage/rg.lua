@@ -289,7 +289,7 @@ local function async_rg(entry)
 	end
 	local command = { "rg", "--json", entry.fields[1].content, "./" }
 	local in_str = false
-	for flag in entry.fields[3].content:gmatch("%S+") do
+	for flag in entry.fields[2].content:gmatch("%S+") do
 		if in_str then
 			command[#command] = command[#command] .. " " .. flag
 		else

@@ -1034,6 +1034,7 @@ end
 ---@param dbg? boolean Crashes when
 function UI.close(dbg)
 	if #STACK._.open == 0 then
+		STACK._.clear()
 		return
 	end
 
