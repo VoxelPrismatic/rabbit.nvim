@@ -327,8 +327,11 @@ local function rename(entry)
 	return {
 		class = "message",
 		type = "rename",
-		apply = RG.process_rename,
 		check = RG.process_rename,
+		apply = function(e, new_name)
+			vim.fn.setreg("/", new_name)
+			return RG.process_rename(e, new_name)
+		end,
 		color = false,
 		name = entry.fields[entry.open].content,
 	}
