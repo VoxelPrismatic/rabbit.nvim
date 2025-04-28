@@ -18,6 +18,10 @@ type Color struct {
 	B int
 }
 
+func (c Color) wrap(char rune) string {
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm%s\x1b[0m", c.R, c.G, c.B, string(char))
+}
+
 type Query struct {
 	Content string
 	Exact   bool
@@ -61,7 +65,7 @@ func main() {
 			for i, char := range haystack.Content {
 				q, ok := haystack.Matches[i]
 				if ok {
-					fmt.Printf("\x1b[38;2;%d;%d;%dm%s\x1b[0m", q.Color.R, q.Color.G, q.Color.B, string(char))
+					fmt.Printf(q.Color.wrap(char))
 				} else {
 					fmt.Printf("%s", string(char))
 				}
@@ -69,10 +73,10 @@ func main() {
 			fmt.Println()
 		}
 	}
-
 }
 
 func getHaystack(query Query, line string) []int {
+	l := len(query.Content)
 	if query.Prefix {
 		if strings.HasPrefix(line, query.Content) {
 			if query.Inverse {
@@ -86,8 +90,8 @@ func getHaystack(query Query, line string) []int {
 				}
 			}
 
-			ret := make([]int, len(query.Content))
-			for i := 0; i < len(query.Content); i++ {
+			ret := make([]int, l)
+			for i := range l {
 				ret[i] = i
 			}
 			return ret
@@ -111,9 +115,9 @@ func getHaystack(query Query, line string) []int {
 				}
 			}
 
-			ret := make([]int, len(query.Content))
-			for i := range len(query.Content) {
-				ret[i] = len(line) - len(query.Content) + i
+			ret := make([]int, l)
+			for i := range l {
+				ret[i] = len(line) - l + i
 			}
 			return ret
 		} else if !query.Inverse {
@@ -130,7 +134,10 @@ func getHaystack(query Query, line string) []int {
 			ret := []int{}
 			for _, group := range matches {
 				for _, idx := range group {
-					for q := idx; q < idx+len(query.Content); q++ {
+					if line[idx:min(idx+l, len(line))] != query.Content {
+						continue
+					}
+					for q := idx; q < idx+l; q++ {
 						ret = append(ret, q)
 					}
 				}
@@ -146,12 +153,16 @@ func getHaystack(query Query, line string) []int {
 		}
 
 		ret := []int{}
-		for i := range len(line) - len(query.Content) + 1 {
-			if strings.HasPrefix(line[i:], query.Content) {
-				for j := range len(query.Content) {
-					ret = append(ret, i+j)
-				}
+
+		sum := 0
+		next := strings.Index(line[sum:], query.Content)
+		for next != -1 {
+			sum = sum + next
+			for i := sum; i < sum+l; i++ {
+				ret = append(ret, i)
 			}
+			sum = sum + l
+			next = strings.Index(line[sum:], query.Content)
 		}
 
 		if query.Inverse && len(ret) > 0 {
