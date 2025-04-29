@@ -296,7 +296,7 @@ local function async_rg(entry)
 		"./",
 		unpack(TERM.quote_split(entry.fields["flags"].content)),
 	}
-	vim.system(command, { text = true, timeout = 100 }, RG.ripgrep)
+	vim.system(command, { text = true, timeout = 250 }, RG.ripgrep)
 end
 
 RG.timer = vim.uv.new_timer()
