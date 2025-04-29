@@ -3,16 +3,9 @@ local LIST = require("rabbit.plugins.forage.list")
 local SET = require("rabbit.util.set")
 local GLOBAL_CONFIG = require("rabbit.config")
 local HL = require("rabbit.term.highlight")
-local SET = require("rabbit.util.set")
 local FZR = {}
 
-local paths = package.path
-for _, path in ipairs(vim.api.nvim_list_runtime_paths()) do
-	paths = paths .. ";" .. path .. "/lua/?.lua" .. ";" .. path .. "/lua/?/init.lua"
-end
-
-local module_path = package.searchpath("rabbit.plugins.forage", paths)
-local fzr_path = vim.fs.dirname(module_path) .. "/fzr"
+local fzr_path = ""
 
 ---@type Rabbit.Message.Options
 FZR.options = {
@@ -57,7 +50,11 @@ function FZR.fuzzer(proc)
 			return
 		end
 
-		local data = vim.json.decode(line) --[[@as FuzzerOutput[]=]]
+		local ok, data = pcall(vim.json.decode, line) --[[@as FuzzerOutput[]=]]
+		if not ok then
+			error(data)
+		end
+
 		for _, result in ipairs(data) do
 			line_no = line_no + 1
 
@@ -106,7 +103,10 @@ local function async_fzr(entry)
 	for token in entry.fields["query"].content:gmatch("%S+") do
 		table.insert(command, token)
 	end
-	vim.system(command, { text = true }, FZR.fuzzer)
+	vim.system(command, {
+		text = true,
+		timeout = 2000,
+	}, FZR.fuzzer)
 end
 
 FZR.timer = vim.uv.new_timer()
@@ -176,6 +176,16 @@ FZR.search = {
 
 ---@param entry Rabbit.Entry.Search
 function FZR.select(entry)
+	if fzr_path == "" then
+		local paths = package.path
+		for _, path in ipairs(vim.api.nvim_list_runtime_paths()) do
+			paths = paths .. ";" .. path .. "/lua/?.lua" .. ";" .. path .. "/lua/?/init.lua"
+		end
+
+		local module_path = package.searchpath("rabbit.plugins.forage", paths)
+		fzr_path = vim.fs.dirname(module_path) .. "/fzr"
+	end
+
 	if vim.fn.executable(fzr_path) == 1 then
 		return entry
 	end
