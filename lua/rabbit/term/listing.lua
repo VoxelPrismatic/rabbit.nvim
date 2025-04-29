@@ -322,7 +322,7 @@ function UI.place_entry(kwargs)
 
 	entry._env = {
 		idx = kwargs.line,
-		real = entry.idx and kwargs.idx or nil,
+		real = (entry.idx ~= false) and kwargs.idx or nil,
 		entry = entry,
 		siblings = UI._entries,
 		parent = UI._display,

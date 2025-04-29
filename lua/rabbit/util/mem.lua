@@ -251,7 +251,7 @@ local path_cache = setmetatable({}, {
 function MEM.rel_path(target)
 	local UI = require("rabbit.term.listing")
 	local ok, source = pcall(vim.api.nvim_buf_get_name, STACK._.user.buf.id)
-	if not (ok and MEM.exists(source)) then
+	if not CONFIG.system.relative_to_buffer or not (ok and MEM.exists(source)) then
 		source = vim.fn.getcwd()
 	end
 
