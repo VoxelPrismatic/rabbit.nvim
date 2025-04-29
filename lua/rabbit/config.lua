@@ -854,6 +854,10 @@ C.system = {
 	-- however, only the first `max_results` will be processed.
 	---@type number
 	max_results = 150,
+
+	-- Display relpaths relative to the current buffer
+	---@type boolean
+	relative_to_buffer = false,
 }
 
 -- Default scoping function
