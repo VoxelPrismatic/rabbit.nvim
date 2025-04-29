@@ -3,6 +3,8 @@ local TS = require("rabbit.util.treesitter")
 local LIST = require("rabbit.plugins.forage.list")
 local MEM = require("rabbit.util.mem")
 local HL = require("rabbit.term.highlight")
+local SET = require("rabbit.util.set")
+local TERM = require("rabbit.util.term")
 local GLOBAL_CONFIG = require("rabbit.config")
 local RG = {}
 
@@ -284,22 +286,16 @@ end
 -- Runs rg asynchronously
 ---@param entry Rabbit.Entry.Search
 local function async_rg(entry)
-	if entry.fields[1].content == "" then
+	if entry.fields["query"].content == "" then
 		return
 	end
-	local command = { "rg", "--json", entry.fields[1].content, "./" }
-	local in_str = false
-	for flag in entry.fields[2].content:gmatch("%S+") do
-		if in_str then
-			command[#command] = command[#command] .. " " .. flag
-		else
-			command[#command + 1] = flag
-		end
-
-		for _ in flag:gmatch("[\"']") do
-			in_str = not in_str
-		end
-	end
+	local command = {
+		"rg",
+		"--json",
+		entry.fields["query"].content,
+		"./",
+		unpack(TERM.quote_split(entry.fields["flags"].content)),
+	}
 	vim.system(command, { text = true }, RG.ripgrep)
 end
 
@@ -345,7 +341,8 @@ RG.search = {
 		text = "Grep",
 		hl = { "rabbit.types.collection", "rabbit.paint.rose" },
 	},
-	fields = {
+	---@type { [integer | string]: Rabbit.Entry.Search.Fields }
+	fields = SET.lookup("name", {
 		{
 			content = "",
 			icon = "",
@@ -361,11 +358,12 @@ RG.search = {
 			icon = "",
 			name = "flags",
 		},
-	},
+	}),
 	open = 1,
 	actions = {
 		select = true,
 		rename = rename,
+		parent = true,
 	},
 	action_label = {
 		rename = "edit",

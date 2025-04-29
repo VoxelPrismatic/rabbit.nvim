@@ -8,7 +8,7 @@ function TERM.feed(keys)
 end
 
 -- Returns the current window configuration
----@return Rabbit.Stack.WinConfig | nil "Nil if window doesn't exist"
+---@return Rabbit.Stack.WinConfig? config "Nil if window doesn't exist"
 function TERM.win_config(winid)
 	if not vim.api.nvim_win_is_valid(winid) then
 		return nil
@@ -18,6 +18,7 @@ function TERM.win_config(winid)
 end
 
 -- Returns the real column number, taking into account UTF-8 characters
+---@return integer column
 function TERM.realcol()
 	local line = vim.fn.line(".")
 	local col = vim.fn.col(".")
@@ -139,5 +140,25 @@ TERM.syllables = setmetatable({}, {
 		return syllables
 	end,
 })
+
+-- Splits a string on quoted strings
+---@param str string
+---@return string[]
+function TERM.quote_split(str)
+	local in_str = false
+	local ret = {}
+	for flag in str:gmatch("%S+") do
+		if in_str then
+			ret[#ret] = ret[#ret] .. " " .. flag
+		else
+			ret[#ret + 1] = flag
+		end
+
+		for _ in flag:gmatch("[\"']") do
+			in_str = not in_str
+		end
+	end
+	return ret
+end
 
 return TERM

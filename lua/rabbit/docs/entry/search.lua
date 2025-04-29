@@ -1,7 +1,7 @@
 ---@class (exact) Rabbit.Entry.Search: Rabbit.Entry
 ---@field type "search"
 ---@field label Rabbit.Entry._.Label The entry label.
----@field fields Rabbit.Entry.Search.Fields[]
+---@field fields { [string | integer]: Rabbit.Entry.Search.Fields }
 ---@field actions Rabbit.Entry.File.Actions
 ---@field open integer Which field is currently open
 

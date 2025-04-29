@@ -310,4 +310,21 @@ function SET:put(idx, elem)
 	return self
 end
 
+-- Allows you to look for an element with a key set to a specific value
+---@generic I, K, V
+---@param key K
+---@param tbl { [I]: { [K]: V } }
+---@return { [I]: { [K]: V }, [V]: { [K]: V } }
+function SET.lookup(key, tbl)
+	return setmetatable(tbl, {
+		__index = function(self, k)
+			for _, v in pairs(self) do
+				if v[key] == k then
+					return v
+				end
+			end
+		end,
+	})
+end
+
 return SET
