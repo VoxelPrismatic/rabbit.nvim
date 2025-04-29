@@ -79,6 +79,9 @@ C.colors = {
 		-- Highlight group: `rabbit.types.reverse`
 		---@type Rabbit.Color
 		reverse = { fg = ":NormalFloat#bg", bg = ":rabbit.types.plugin#fg" },
+
+		-- This is just here for transparency. I do not recommend you change it.
+		inverse = { reverse = true },
 	},
 
 	-- How file entries are highlighted

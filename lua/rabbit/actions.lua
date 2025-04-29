@@ -23,7 +23,9 @@ function ACTIONS.select(entry)
 		return entry --[[@as Rabbit.Entry.Collection]]
 	elseif entry.type == "search" then
 		entry = entry --[[@as Rabbit.Entry.Search]]
-		local selected = (TERM.realcol() - UI._fg.win.config.width) / 2 + #entry.fields + 1
+		local max_w = vim.fn.strdisplaywidth(UI._fg.lines:get(0, 1)[1])
+		local cur = max_w - TERM.realcol()
+		local selected = #entry.fields - cur / 3 + 1
 		if entry.fields[selected] then
 			entry.open = selected
 		end

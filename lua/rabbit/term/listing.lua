@@ -305,13 +305,12 @@ function UI.place_entry(kwargs)
 		kwargs.auto_default = kwargs.auto_default or kwargs.line
 		idx = (" "):rep(kwargs.pad - #tostring(kwargs.idx)) .. kwargs.idx .. "."
 		if kwargs.idx < 10 and entry.actions.select then
-			UI._fg.keys:add({
-				label = "Select entry " .. kwargs.idx,
-				shown = false,
-				keys = { tostring(kwargs.idx) },
-				callback = UI.bind_callback("select", entry, true),
-				mode = "n",
-			})
+			vim.keymap.set(
+				"n",
+				tostring(kwargs.idx),
+				UI.bind_callback("select", entry, true),
+				{ buffer = UI._fg.buf.id, desc = "Select entry " .. kwargs.idx }
+			)
 		end
 	else
 		idx = ("—"):rep(kwargs.pad + 1)
@@ -435,35 +434,46 @@ end
 function UI.highlight(entry)
 	if entry.type == "search" then
 		entry = entry --[[@as Rabbit.Entry.Search]]
+		local max_len = UI._fg.win.config.width - vim.fn.strdisplaywidth(entry._env.ident) - 3 * #entry.fields
+		local text = entry.fields[entry.open].content
+		if #text > max_len then
+			local ellipsis = CONFIG.window.overflow.dirname_char
+			text = text:sub(1, max_len - 1 - vim.fn.strdisplaywidth(ellipsis)) .. ellipsis
+		end
 		local ret = {
-			{ text = entry.fields[entry.open].content, align = "left" },
-			{ text = " ", align = "right" },
+			{ text = text, align = "left" },
 		}
 		for idx, field in ipairs(entry.fields) do
-			local hl = idx == entry.open and "rabbit.types.reverse" or "rabbit.types.index"
-			if idx == entry.open then
-				ret[#ret].text = ""
-				ret[#ret].hl = "rabbit.types.plugin"
-			end
-			table.insert(ret, {
-				text = field.icon,
-				hl = idx == entry.open and "rabbit.types.reverse" or "rabbit.types.index",
-				align = "right",
-			})
 			if idx == entry.open then
 				table.insert(ret, {
-					text = "",
-					hl = "rabbit.types.plugin",
-					align = "right",
+					{
+						text = "",
+						hl = "rabbit.types.plugin",
+						align = "right",
+					},
+					{
+						text = field.icon,
+						hl = "rabbit.types.reverse",
+						align = "right",
+					},
+					{
+						text = "",
+						hl = "rabbit.types.plugin",
+						align = "right",
+					},
 				})
 			else
 				table.insert(ret, {
-					text = " ",
+					text = " " .. field.icon .. " ",
 					hl = "rabbit.types.index",
 					align = "right",
 				})
 			end
 		end
+		table.insert(ret, {
+			text = " ",
+			align = "right",
+		})
 		return ret
 	elseif entry.type ~= "file" or entry.label ~= nil then
 		entry = entry --[[@as Rabbit.Entry.Collection]]
