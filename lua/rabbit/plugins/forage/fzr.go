@@ -61,6 +61,9 @@ type RabbitOutput struct {
 
 func main() {
 	lines := getLines()
+	if len(lines) > 500 {
+		lines = lines[:500]
+	}
 	stacks := Compute(os.Args, lines)
 	joy := []RabbitOutput{}
 	for _, stack := range stacks {
@@ -167,7 +170,7 @@ func (query Query) Haystack(line string) []int {
 				ret[i] = len(line) - l + i
 			}
 			return ret
-		} else if !query.Inverse {
+		} else if query.Inverse {
 			return []int{-1}
 		}
 
@@ -345,6 +348,7 @@ func (hay Haystack) Rabbit() RabbitOutput {
 			for _, query := range q {
 				hl = append(hl, query.Color.Rabbit)
 			}
+			hl = append(hl, "rabbit.types.inverse")
 		} else {
 			hl = append(hl, "rabbit.files.file")
 		}
@@ -428,8 +432,8 @@ SuffixToken:
 }
 
 func getLines() []string {
-	_, err := os.Stdin.Stat()
-	if err != nil {
+	stat, err := os.Stdin.Stat()
+	if err == nil && (stat.Mode()&os.ModeNamedPipe) != 0 {
 		lines := []string{}
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
@@ -442,10 +446,19 @@ func getLines() []string {
 
 	if len(os.Args) < 2 {
 		fmt.Println("No directory to scan. Either provide a directory or pipe output into this program.")
+		fmt.Println("Also: `./fzr @ 'some command here'` will run the command and pipe the output into this program.")
 		os.Exit(1)
 	}
 
-	cmd := exec.Command("find", os.Args[1], "-type", "f", "-print0")
+	var cmd *exec.Cmd
+	if os.Args[1] == "@" {
+		cmd = exec.Command("sh", "-c", os.Args[2])
+		os.Args = os.Args[3:]
+	} else {
+		cmd = exec.Command("find", os.Args[1], "-type", "f")
+		os.Args = os.Args[2:]
+	}
+
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		panic(err)
@@ -463,6 +476,5 @@ func getLines() []string {
 		panic(err)
 	}
 
-	os.Args = os.Args[2:]
-	return strings.Split(string(stdout), "\x00")
+	return strings.Split(string(stdout), "\n")
 }
