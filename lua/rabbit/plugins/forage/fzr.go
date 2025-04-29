@@ -4,14 +4,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
+	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"regexp"
 	"slices"
 	"sort"
+	"time"
+	"unicode"
 
+	"context"
 	"strings"
 )
 
@@ -61,8 +64,8 @@ type RabbitOutput struct {
 
 func main() {
 	lines := getLines()
-	if len(lines) > 500 {
-		lines = lines[:500]
+	if len(lines) > 250 {
+		lines = lines[:250]
 	}
 	stacks := Compute(os.Args, lines)
 	joy := []RabbitOutput{}
@@ -226,21 +229,44 @@ func (query Query) Haystack(line string) []int {
 
 	ret := []int{}
 	token := query.Content
-	for i := len(line) - 1; i >= 0; i-- {
-		if line[i] == token[len(token)-1] {
-			token = token[:len(token)-1]
-			ret = append(ret, i)
-			if len(token) == 0 {
-				break
+	regex := "^.*("
+	for _, char := range token {
+		if unicode.IsDigit(char) || unicode.IsLetter(char) {
+			regex += fmt.Sprintf(`%s.*?`, string(char))
+		} else {
+			regex += string(char)
+		}
+	}
+	regex += ").*$"
+
+	fuzzy := regexp.MustCompile(regex)
+	for _, fzr := range fuzzy.FindAllStringSubmatchIndex(line, -1) {
+		for _, start := range fzr[1:] {
+			tok := token
+			attempt := []int{}
+			for i := start; i < len(line) && len(tok) > 0; i++ {
+				if line[i] == tok[0] {
+					tok = tok[1:]
+					attempt = append(attempt, i)
+				}
+			}
+
+			if len(attempt) != len(token) {
+				continue
+			}
+
+			if len(ret) == 0 || (ret[len(ret)-1]-ret[0]) > (attempt[len(attempt)-1]-attempt[0]) {
+				// Shortest match
+				ret = attempt
 			}
 		}
 	}
 
-	if query.Inverse && len(token) != 0 {
+	if query.Inverse && len(ret) == 0 {
 		return []int{-1}
-	} else if query.Inverse && len(token) == 0 {
+	} else if query.Inverse && len(ret) > 0 {
 		return []int{}
-	} else if len(token) == 0 {
+	} else if len(ret) > 0 {
 		return ret
 	} else {
 		return []int{}
@@ -450,31 +476,42 @@ func getLines() []string {
 		os.Exit(1)
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
+	defer cancel()
+
 	var cmd *exec.Cmd
 	if os.Args[1] == "@" {
-		cmd = exec.Command("sh", "-c", os.Args[2])
+		cmd = exec.CommandContext(ctx, "sh", "-c", os.Args[2])
 		os.Args = os.Args[3:]
 	} else {
-		cmd = exec.Command("find", os.Args[1], "-type", "f")
+		cmd = exec.CommandContext(ctx, "find", os.Args[1], "-type", "f")
 		os.Args = os.Args[2:]
 	}
 
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		panic(err)
-	}
-	if err = cmd.Start(); err != nil {
-		panic(err)
+	stdoutPipe, _ := cmd.StdoutPipe()
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("cmd.Start() failed with %s\n", err)
 	}
 
-	stdout, err := io.ReadAll(stdoutPipe)
-	if err != nil {
-		panic(err)
+	stdoutChan := make(chan []byte)
+
+	go func() {
+		stdout := []byte{}
+		buf := make([]byte, 1024)
+		for {
+			n, err := stdoutPipe.Read(buf)
+			if err != nil {
+				break
+			}
+			stdout = append(stdout, buf[:n]...)
+		}
+		stdoutChan <- stdout
+	}()
+
+	err = cmd.Wait()
+	if err != nil && err.Error() != "signal: killed" {
+		log.Fatalf("cmd.Run() failed with %s\n", err)
 	}
 
-	if err = cmd.Wait(); err != nil {
-		panic(err)
-	}
-
-	return strings.Split(string(stdout), "\n")
+	return strings.Split(string(<-stdoutChan), "\n")
 }
