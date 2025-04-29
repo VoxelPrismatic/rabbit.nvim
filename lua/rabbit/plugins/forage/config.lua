@@ -1,5 +1,5 @@
 ---@class (exact) Rabbit*Forage.Options: Rabbit.Plugin.Options
----@field fuzzy boolean Enable fuzzy find with `fzf`.
+---@field fuzzy boolean Enable fuzzy find with `fzr`.
 ---@field grep boolean Enable grep-based search with `rg`.
 ---@field find boolean Enable classic-find with `find`.
 ---@field history_length integer Length of the history. Set to 0 to disable history.
@@ -11,6 +11,7 @@
 ---Note: This only works if the `cwd` function returns a directory
 
 ---@type Rabbit*Forage.Options
+
 local PLUGIN_CONFIG = {
 	color = "#33b473",
 	---@diagnostic disable-next-line: missing-fields

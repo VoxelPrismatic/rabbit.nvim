@@ -10,6 +10,7 @@ local LIST = {
 	forage = {},
 
 	files = TRAIL.copy_bufs(function(c)
+		c.idx = true
 		return c:as(ENV.winid)
 	end),
 }

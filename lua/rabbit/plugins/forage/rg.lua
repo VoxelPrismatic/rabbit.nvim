@@ -223,7 +223,7 @@ function RG.ripgrep(proc)
 						},
 						{
 							text = relpath.name,
-							hl = { "rabbit.files.file" },
+							hl = { file.closed and "rabbit.files.closed" or "rabbit.files.file" },
 						},
 					}
 					rel_paths[match.path.text] = file.synopsis
@@ -235,7 +235,7 @@ function RG.ripgrep(proc)
 							entry = file,
 							idx = entry_no - 1,
 							line = entry_no + 1,
-							pad = 0,
+							pad = #tostring(line_no),
 						})
 						entry_no = entry_no + 1
 					end)

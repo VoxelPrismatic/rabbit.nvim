@@ -2,6 +2,8 @@ local TRAIL = require("rabbit.plugins.trail.list")
 local LIST = require("rabbit.plugins.forage.list")
 local ENV = require("rabbit.plugins.forage.env")
 local RIPGREP = require("rabbit.plugins.forage.rg")
+local FUZZER = require("rabbit.plugins.forage.fzr")
+local CONFIG = require("rabbit.plugins.forage.config")
 
 ---@type Rabbit.Plugin.Actions
 ---@diagnostic disable-next-line: missing-fields
@@ -17,7 +19,8 @@ local ACTIONS = {}
 ---@field idx integer
 
 local search_tools = {
-	RIPGREP.root,
+	CONFIG.grep and RIPGREP.root or nil,
+	CONFIG.fuzzy and FUZZER.root or nil,
 }
 
 function ACTIONS.children(entry)
@@ -41,11 +44,7 @@ function ACTIONS.children(entry)
 	return entries
 end
 
-function ACTIONS.parent(entry)
-	local via = entry.ctx.via
-	if via == "forage" then
-		return LIST.default
-	end
+function ACTIONS.parent(_)
 	return LIST.default
 end
 
