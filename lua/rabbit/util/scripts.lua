@@ -7,7 +7,7 @@ local SCRIPTS = {}
 ---| { idx: integer, action: string } Entry index and action to perform
 function SCRIPTS.select(plugin, ...)
 	UI.spawn(plugin)
-	for idx in pairs({ ... }) do
+	for _, idx in ipairs({ ... }) do
 		if type(idx) == "table" then
 			UI.bind_callback(idx.action, UI._entries[idx.idx], true)()
 		else
