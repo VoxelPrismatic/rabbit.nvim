@@ -38,6 +38,15 @@ function RABBIT.setup(opts)
 	if not ok and errno ~= "EEXIST" then
 		error(msg)
 	end
+
+	vim.api.nvim_create_user_command("Rabbit", function(plug)
+		RABBIT.spawn(plug.fargs[1])
+	end, {
+		nargs = "?",
+		complete = function()
+			return SET.new(SET.keys(RABBIT.plugins)):del("index")
+		end,
+	})
 end
 
 -- Sets up a plugin
@@ -103,7 +112,7 @@ function RABBIT.propagate(evt)
 
 	for _, p in pairs(RABBIT.plugins) do
 		ctx.plugin = p
-		ctx.dir.raw = p.opts.cwd or CONFIG.cwd
+		ctx.dir.raw = p.opts.cwd or CONFIG.system.cwd
 		ctx.dir.scope = p.opts.cwd and "plugin" or "global"
 		ctx.dir.value = type(ctx.dir.raw) == "function" and ctx.dir.raw() or ctx.dir.raw
 
