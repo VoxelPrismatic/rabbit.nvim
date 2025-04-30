@@ -36,6 +36,7 @@ end
 ---@field many boolean If true, the lines field will be treated as many lines
 ---@field strict? boolean | false Whether to use strict mode
 ---@field ns? integer | string Highlight namespace
+---@field lock? boolean Lock & unlock the buffer
 
 -- Sets the lines in the buffer
 ---@param lines (Rabbit.Term.HlLine | string)[] Lines to set
@@ -49,6 +50,10 @@ function LINES:set(lines, opts)
 
 	local ns = NVIM.ns[opts.ns or self.target.ns]
 
+	if opts.lock then
+		vim.bo[self.target.buf.id].modifiable = true
+	end
+
 	local new_end = HL.set_lines({
 		bufnr = self.target.buf.id,
 		ns = ns,
@@ -61,6 +66,10 @@ function LINES:set(lines, opts)
 
 	if opts.end_ ~= nil and (opts.end_ == -1 or opts.end_ > new_end) then
 		vim.api.nvim_buf_set_lines(self.target.buf.id, new_end, -1, opts.strict, {})
+	end
+
+	if opts.lock then
+		vim.bo[self.target.buf.id].modifiable = false
 	end
 end
 

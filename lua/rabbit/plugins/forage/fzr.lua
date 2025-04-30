@@ -30,13 +30,12 @@ end
 function FZR.fuzzer(proc)
 	UI._entries = { FZR.search }
 	vim.schedule(function()
-		UI._fg.buf.o.modifiable = true
 		UI._fg.lines:set({}, {
 			end_ = -1,
 			start = 2,
 			many = true,
+			lock = true,
 		})
-		UI._fg.buf.o.modifiable = false
 	end)
 
 	local entry_no = 1
@@ -52,7 +51,17 @@ function FZR.fuzzer(proc)
 
 		local ok, data = pcall(vim.json.decode, line) --[[@as FuzzerOutput[]=]]
 		if not ok then
-			error(data)
+			vim.schedule(function()
+				local lines = HL.wrap({ text = line }, UI._fg.win.config.width, " ")
+				table.insert(lines, "")
+				UI._fg.lines:set(lines, {
+					start = 2,
+					end_ = -1,
+					many = true,
+					lock = true,
+				})
+			end)
+			return
 		end
 
 		for _, result in ipairs(data) do
