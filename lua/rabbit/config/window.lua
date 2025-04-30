@@ -153,6 +153,12 @@ local WINDOW = {
 		-- Icon for deleting files or ignoring changes
 		---@type string
 		file_delete = "󰆴",
+
+		-- Icons for field selections, eg "◙ ○" (the former is selected)
+		---@type string
+		select_left = "",
+		---@type string
+		select_right = "",
 	},
 
 	-- Extra file info
