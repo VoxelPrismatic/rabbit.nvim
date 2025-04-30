@@ -14,7 +14,7 @@ local SYS = {
 	-- obscenely large like 10000. If <1, it is treated as a percentage
 	-- of the window width
 	---@type number
-	wrap = 0.9,
+	wrap = 0.1,
 
 	-- Default delay in ms when calling vim.defer_fn. If your system
 	-- is slow, you may want to increase this
