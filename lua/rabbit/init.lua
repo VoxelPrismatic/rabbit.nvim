@@ -43,9 +43,17 @@ function RABBIT.setup(opts)
 		RABBIT.spawn(plug.fargs[1])
 	end, {
 		nargs = "?",
-		complete = function()
-			return SET.new(SET.keys(RABBIT.plugins)):del("index")
+		complete = function(typed)
+			local ret = {}
+			local available = SET.new(SET.keys(RABBIT.plugins)):del("index")
+			for _, name in ipairs(available) do
+				if name:lower():find(typed:lower()) then
+					table.insert(ret, name)
+				end
+			end
+			return ret
 		end,
+		desc = "Spawn Rabbit",
 	})
 end
 
@@ -114,7 +122,10 @@ function RABBIT.propagate(evt)
 		ctx.plugin = p
 		ctx.dir.raw = p.opts.cwd or CONFIG.system.cwd
 		ctx.dir.scope = p.opts.cwd and "plugin" or "global"
-		ctx.dir.value = type(ctx.dir.raw) == "function" and ctx.dir.raw() or ctx.dir.raw
+		ctx.dir.value = ctx.dir.raw
+		while type(ctx.dir.value) == "function" do
+			ctx.dir.value = ctx.dir.value()
+		end
 
 		if p.events[evt.event] then
 			p.events[evt.event](evt, ctx)
