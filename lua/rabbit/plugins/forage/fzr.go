@@ -44,6 +44,7 @@ type Query struct {
 	Prefix  bool
 	Suffix  bool
 	Inverse bool
+	Fuzzy   *regexp.Regexp
 	Color
 }
 
@@ -84,6 +85,20 @@ func Compute(tokens []string, lines []string) []Haystack {
 	filters := [][]Query{}
 	doOr := false
 
+	colors := []string{
+		"rabbit.paint.love",
+		"rabbit.paint.rose",
+		"rabbit.paint.gold",
+		"rabbit.paint.iris",
+		"rabbit.paint.foam",
+		"rabbit.paint.tree",
+		"rabbit.paint.pine",
+	}
+
+	rand.Shuffle(len(colors), func(i, j int) {
+		colors[i], colors[j] = colors[j], colors[i]
+	})
+
 	for _, token := range tokens {
 		if token == "|" {
 			doOr = true
@@ -97,6 +112,7 @@ func Compute(tokens []string, lines []string) []Haystack {
 		}
 
 		query := parseToken(token)
+		query.Color.Rabbit = colors[len(filters)%7]
 
 		last := len(filters) - 1
 		filters[last] = append(filters[last], query)
@@ -229,18 +245,7 @@ func (query Query) Haystack(line string) []int {
 
 	ret := []int{}
 	token := query.Content
-	regex := "^.*("
-	for _, char := range token {
-		if unicode.IsDigit(char) || unicode.IsLetter(char) {
-			regex += fmt.Sprintf(`%s.*?`, string(char))
-		} else {
-			regex += string(char)
-		}
-	}
-	regex += ").*$"
-
-	fuzzy := regexp.MustCompile(regex)
-	for _, fzr := range fuzzy.FindAllStringSubmatchIndex(line, -1) {
+	for _, fzr := range query.Fuzzy.FindAllStringSubmatchIndex(line, -1) {
 		for _, start := range fzr[1:] {
 			tok := token
 			attempt := []int{}
@@ -404,23 +409,6 @@ func parseToken(token string) Query {
 		},
 	}
 
-	switch rand.Intn(7) {
-	case 0:
-		query.Color.Rabbit = "rabbit.paint.love"
-	case 1:
-		query.Color.Rabbit = "rabbit.paint.rose"
-	case 2:
-		query.Color.Rabbit = "rabbit.paint.gold"
-	case 3:
-		query.Color.Rabbit = "rabbit.paint.iris"
-	case 4:
-		query.Color.Rabbit = "rabbit.paint.foam"
-	case 5:
-		query.Color.Rabbit = "rabbit.paint.tree"
-	case 6:
-		query.Color.Rabbit = "rabbit.paint.pine"
-	}
-
 PrefixToken:
 	for len(token) > 0 {
 		switch token[0] {
@@ -454,6 +442,20 @@ SuffixToken:
 	}
 
 	query.Content = strings.ToLower(token)
+
+	if !query.Exact {
+		regex := "^.*("
+		for _, char := range token {
+			if unicode.IsDigit(char) || unicode.IsLetter(char) {
+				regex += fmt.Sprintf(`%s.*?`, string(char))
+			} else {
+				regex += "\\" + string(char)
+			}
+		}
+		regex += ").*$"
+
+		query.Fuzzy = regexp.MustCompile(regex)
+	}
 	return query
 }
 
