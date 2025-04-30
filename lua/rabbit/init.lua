@@ -86,6 +86,7 @@ function RABBIT.register(plugin, opts)
 	RABBIT.order:add(p.name, opts.default and 1 or -1)
 	p.setup(opts)
 
+	assert(type(p.events) == "table", "Malformed plugin: missing events")
 	for evt, _ in pairs(p.events) do
 		if not RABBIT.autocmds[evt] then
 			RABBIT.autocmds[evt] = vim.api.nvim_create_autocmd(evt, {
