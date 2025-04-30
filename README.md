@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="/rabbit.png" width="368" alt="logo"/>
+	<img src="./media/rabbit.png" width="368" alt="logo"/>
 	<h2 id="rabbitnvim">Jump between buffers faster than ever before</h2>
 	<a href="https://github.com/VoxelPrismatic/rabbit.nvim/releases/latest"><img
 		src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2FVoxelPrismatic%2Frabbit.nvim%2Freleases%2Flatest&query=%24.tag_name&style=flat&label=Rabbit&labelColor=white&logo=vowpalwabbit&logoColor=black"
@@ -96,12 +96,16 @@ intuitive experience. You can customize almost every part of it, so it fits righ
 
 ## Preview
 
-
-
 https://github.com/user-attachments/assets/95d26ac7-b58e-42c5-915d-766c9172ed06
 
 *apologies for the crappy quality, wayland is sucky
 
+## Additional Features
+- Per-token highlighting in fuzzy find
+  ![preview](./media/fzr.png)
+- Ripgrep auto-runs `/query` for you
+- LSP diagnostics
+  ![preview](./media/lsp.png)
 
 
 ## Install
@@ -137,26 +141,15 @@ return {
 	- Windows is not supported. Any unreproduceable bugs on Windows will not be resolved
 - Rabbit will warn you dynamically if any other dependencies are not installed
 
-## Configuration
-Because Rabbit is expansive & modular, the config may look jarring and complex, but is fully documented
-in [config.lua](./lua/rabbit/config.lua). Feel free to simply use the `---@type Rabbit.Config` directive
-or use the extremely sane defaults.
 
-tl;dr:
-```lua
----@type Rabbit.Config
-{
-	-- other rabbit options
+## Quick Start
 
-	-- plugin specific options
-	plugins = {
-		[plugin_name] = {
-			-- Open this plugin by default. If there are no default plugins, the generic selector is shown
-			default = false,
+To launch Rabbit, simply run `<leader>r`, or use the `:Rabbit [plugin name]` command.
 
+> [!NOTE]
+> When you launch Rabbit with a specific plugin, the plugin will be loaded live if possible.
 
-			-- plugin options,
-		},
-	},
-}
-```
+Rabbit is expansive & modular; almost nothing is hard-coded. Feel free to look at the
+[config](./lua/rabbit/config/), everything is fully documented. You may also use the
+`---@type Rabbit.Config` directive in your plugin manager's config.
+
