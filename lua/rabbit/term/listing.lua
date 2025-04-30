@@ -168,8 +168,8 @@ function UI.update_env(plugin)
 	if UI._plugin.opts.cwd then
 		cwd.raw = UI._plugin.opts.cwd
 		cwd.scope = "plugin"
-	elseif CONFIG.cwd then
-		cwd.raw = CONFIG.cwd
+	elseif CONFIG.system.cwd then
+		cwd.raw = CONFIG.system.cwd
 		cwd.scope = "global"
 	end
 
@@ -1043,6 +1043,13 @@ end
 -- Closes the window
 ---@param dbg? boolean Crashes when
 function UI.close(dbg)
+	local ns = NVIM.ns["rabbit.preview.search"]
+	for bufid in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_valid(bufid) and vim.api.nvim_buf_is_loaded(bufid) then
+			vim.api.nvim_buf_clear_namespace(bufid, ns, 0, -1)
+		end
+	end
+
 	if #STACK._.open == 0 then
 		STACK._.clear()
 		return
