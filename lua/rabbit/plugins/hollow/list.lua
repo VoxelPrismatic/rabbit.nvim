@@ -7,17 +7,27 @@ local TRAIL = require("rabbit.plugins.trail.list")
 local LIST = {}
 
 ---@type { [string]: Rabbit*Hollow.SaveFile[] }
-LIST.major = {}
+LIST.hollow = {}
 
 ---@param path string
 function LIST.load(path)
-	LIST.major = setmetatable(MEM.Read(path), {
-		---@param self Rabbit.Writeable<string, Rabbit*Hollow.SaveFile[]>
+	LIST.hollow = setmetatable(MEM.Read(path), {
+		---@param self Rabbit.Writeable<integer, Rabbit*Hollow.SaveFile[]>
 		__index = function(self, key)
 			local ret = setmetatable({}, {
 				__index = function(_, s_key)
-					local s_ret = LIST.save("rabbit.paint.iris")
-					self[key][s_key] = s_ret
+					if type(s_key) == "number" then
+						return nil
+					end
+
+					for _, sv in ipairs(self[key]) do
+						if sv.name == s_key then
+							return sv
+						end
+					end
+
+					local s_ret = LIST.save(s_key, "iris")
+					table.insert(self[key], s_ret)
 					self:__Save()
 					return s_ret
 				end,
@@ -28,7 +38,64 @@ function LIST.load(path)
 	})
 end
 
+LIST.major = setmetatable({}, {
+	__index = function(self, key)
+		---@class Rabbit*Hollow.Major: Rabbit.Entry.Collection
+		local ret = {
+			class = "entry",
+			type = "collection",
+			idx = true,
+			label = {
+				text = key,
+				hl = {
+					"rabbit.types.collection",
+					"rabbit.paint.iris",
+				},
+			},
+			actions = {
+				children = true,
+				select = true,
+				parent = true,
+			},
+			ctx = {
+				type = "major",
+				real = key,
+			},
+		}
+		self[key] = ret
+		return ret
+	end,
+})
+
+---@param savefile Rabbit*Hollow.SaveFile
+---@return Rabbit*Hollow.Collection
+function LIST.make_collection(savefile)
+	---@class Rabbit*Hollow.Collection: Rabbit.Entry.Collection
+	return {
+		class = "entry",
+		type = "collection",
+		idx = true,
+		label = {
+			text = savefile.name,
+			hl = {
+				"rabbit.types.collection",
+				"rabbit.paint." .. savefile.color,
+			},
+		},
+		actions = {
+			children = true,
+			select = true,
+			parent = true,
+		},
+		ctx = {
+			type = "leaf",
+			real = savefile,
+		},
+	}
+end
+
 ---@class Rabbit*Hollow.SaveFile
+---@field name string
 ---@field color string
 ---@field time integer
 ---@field layout Rabbit*Hollow.SaveFile.Layout
@@ -56,9 +123,10 @@ end
 ---@alias Rabbit*Hollow.SaveFile.Layout.Branch [ "row" | "col", Rabbit*Hollow.SaveFile.Layout[] ]
 
 -- Produces a save file for the current list
+---@field name string
 ---@param color string
 ---@return Rabbit*Hollow.SaveFile save_data
-function LIST.save(color)
+function LIST.save(name, color)
 	local global_bufs = {}
 	local buf_names = {}
 	local buf_open = {}
@@ -93,6 +161,7 @@ function LIST.save(color)
 
 	---@type Rabbit*Hollow.SaveFile
 	return {
+		name = name,
 		color = color,
 		time = os.time(),
 		layout = layout,

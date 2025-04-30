@@ -30,7 +30,7 @@ function PLUG.setup(opts)
 end
 
 function PLUG.list()
-	return LIST.major[PLUG._env.cwd.value]
+	return LIST.hollow[PLUG._env.cwd.value]
 end
 
 return PLUG
