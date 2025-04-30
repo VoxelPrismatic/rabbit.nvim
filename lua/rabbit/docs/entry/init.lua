@@ -2,7 +2,10 @@
 ---@field class "entry"
 ---@field ctx? table Any context you like. Rabbit will not touch this.
 ---@field type string
----@field idx? boolean Whether or not to show the index
+---@field idx?
+---| true # Show the index number
+---| false # Use dashes instead of the index number
+---| string # Custom icon to use
 ---@field _env? Rabbit.Entry._.Environment The environment this entry lives in
 ---@field actions table
 ---@field default? boolean Automatically hover over this entry by default

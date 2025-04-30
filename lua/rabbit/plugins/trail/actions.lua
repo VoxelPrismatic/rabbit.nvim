@@ -124,7 +124,7 @@ function ACTIONS.children(entry)
 		for i, bufid in ipairs(entry.ctx.bufs) do
 			local buf = LIST.bufs[bufid]:as(entry.ctx.winid)
 			buf.idx = i ~= 1 or ENV.from_major
-			buf.actions.visual = buf.idx
+			buf.actions.visual = buf.idx ~= false
 			buf.actions.paste = can_paste
 			if buf.ctx.listed then
 				table.insert(entries, buf)
