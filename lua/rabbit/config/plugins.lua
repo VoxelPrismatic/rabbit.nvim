@@ -21,6 +21,10 @@ local PLUGINS = {
 	---@diagnostic disable-next-line: missing-fields
 	forage = {},
 
+	---@type Rabbit*Hollow.Options | false
+	---@diagnostic disable-next-line: missing-fields
+	hollow = {},
+
 	-- To use a custom plugin, simply set the key to its Require path.
 	-- For example: ["path.to.plugin"] = { options }
 	-- Rabbit first checks if the plugin is bundled with Rabbit
