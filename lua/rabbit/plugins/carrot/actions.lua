@@ -5,6 +5,7 @@ local CONFIG = require("rabbit.config")
 local ICONS = require("rabbit.util.icons")
 local TERM = require("rabbit.util.term")
 local MEM = require("rabbit.util.mem")
+local NVIM = require("rabbit.util.nvim")
 local INIT ---@type Rabbit*Carrot
 
 -- Deep copy a collection
@@ -258,7 +259,7 @@ function ACTIONS.collect(entry)
 
 	LIST.carrot:__Save()
 
-	return parent, ACTIONS.rename(new_collection)
+	return parent, NVIM.bind(ACTIONS.rename, new_collection)
 end
 
 function ACTIONS.parent(entry)
@@ -301,7 +302,7 @@ local function check_rename(entry, new_name)
 			entry = entry --[[@as Rabbit*Trail.Buf]]
 			return "./" .. vim.fs.basename(entry.path)
 		end
-		return string.format("%04x", math.random(1, 65535))
+		new_name = string.format("%04x", math.random(1, 65535))
 	end
 
 	local names = collect_names(entry._env.parent --[[@as Rabbit*Carrot.Collection]])
@@ -373,6 +374,8 @@ function ACTIONS.rename(entry)
 			entry = entry,
 		}
 	end
+
+	entry = entry --[[@as Rabbit*Carrot.Collection]]
 
 	return { ---@type Rabbit.Message.Rename
 		class = "message",

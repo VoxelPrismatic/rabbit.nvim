@@ -753,9 +753,7 @@ function UI.apply_actions()
 		local part = UI._fg.keys:add({
 			label = name,
 			keys = switches,
-			callback = function()
-				UI.spawn(plugin)
-			end,
+			callback = NVIM.bind(UI.spawn, plugin),
 			mode = "n",
 			hl = "rabbit.plugin." .. name,
 			align = "right",
@@ -845,17 +843,30 @@ function UI.marquee_legend()
 end
 
 -- Handles callback data
----@param ... Rabbit.Response
+---@param ... Rabbit.Recursive<Rabbit.Response>
 function UI.handle_callback(...)
-	for _, data in ipairs({ ... }) do
-		if data == false then
+	local queue = { ... }
+	while #queue > 0 do
+		local data = table.remove(queue, 1)
+		while type(data) == "function" do
+			for i, d in ipairs({ data() }) do
+				table.insert(queue, i, d)
+			end
+			data = table.remove(queue, 1)
+		end
+
+		if data == false or data == nil then
 			-- pass
+		elseif type(data) ~= "table" then
+			error("Expected table, got: " .. type(data))
 		elseif data.class == "entry" then
 			data = data --[[@as Rabbit.Entry]]
 			if data.type == "collection" or data.type == "search" then
 				data = data --[[@as Rabbit.Entry.Collection]]
 				UI._parent = data
 				UI.list(UI._parent)
+			else
+				error("Cannot list a file")
 			end
 		elseif data.class == "message" then
 			require("rabbit.messages").Handle(data)
@@ -898,9 +909,6 @@ end
 ---@return fun()
 function UI.wrap_callback(data)
 	return function()
-		while type(data) == "function" do
-			data = data()
-		end
 		UI.draw_border()
 		UI.handle_callback(data)
 	end
@@ -1109,9 +1117,7 @@ function UI.cancel_hover()
 			UI._hov[winid] = nil
 		end
 
-		vim.api.nvim_win_call(winid, function()
-			vim.fn.winrestview(view)
-		end)
+		vim.api.nvim_win_call(winid, NVIM.bind(vim.fn.winrestview, view))
 
 		::continue::
 	end

@@ -26,4 +26,16 @@ NVIM.ft = setmetatable({}, {
 	end,
 })
 
+-- Shorthand for function() return <cb>(...) end
+---@generic T
+---@param cb fun(...): T Callback
+---@param ...any any Arguments to pass to the callback
+---@return fun(): T
+function NVIM.bind(cb, ...)
+	local args = { ... }
+	return function()
+		return cb(unpack(args))
+	end
+end
+
 return NVIM

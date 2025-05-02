@@ -97,11 +97,11 @@ ACTIONS.delete = not_implemented("delete")
 ---@type Rabbit.Action.Children
 ACTIONS.children = not_implemented("children")
 
----@alias Rabbit.Action.Rename fun(entry: Rabbit.Entry): Rabbit.Response
+---@alias Rabbit.Action.Rename fun(entry: Rabbit.Entry): Rabbit.Response, ...
 ---@type Rabbit.Action.Rename
 ACTIONS.rename = not_implemented("rename")
 
----@alias Rabbit.Action.Insert fun(entry: Rabbit.Entry): Rabbit.Response
+---@alias Rabbit.Action.Insert fun(entry: Rabbit.Entry): Rabbit.Response, ...
 ---@type Rabbit.Action.Insert
 ACTIONS.insert = not_implemented("insert")
 
@@ -109,11 +109,11 @@ ACTIONS.insert = not_implemented("insert")
 ---@type Rabbit.Action.Parent
 ACTIONS.parent = not_implemented("parent")
 
----@alias Rabbit.Action.Collect fun(entry: Rabbit.Entry.Collection): Rabbit.Response
+---@alias Rabbit.Action.Collect fun(entry: Rabbit.Entry.Collection): Rabbit.Response, ...
 ---@type Rabbit.Action.Collect
 ACTIONS.collect = not_implemented("collect")
 
----@alias Rabbit.Action.Visual fun(entry: Rabbit.Entry): Rabbit.Response
+---@alias Rabbit.Action.Visual fun(entry: Rabbit.Entry): Rabbit.Response, ...
 ---@type Rabbit.Action.Visual
 ACTIONS.visual = function(_)
 	UI._fg.buf.o.modifiable = true

@@ -246,6 +246,21 @@ function SET:map(fn)
 	return ret
 end
 
+-- Maps all elements in the set with a function, regardless of
+-- key value
+---@generic T
+---@generic R
+---@param self Rabbit.Table.Set<T>
+---@param fn fun(elem: T): R
+---@return Rabbit.Table.Set<R> mapped New set with mapped values
+function SET:imap(fn)
+	local ret = SET.new()
+	for _, v in ipairs(self) do
+		table.insert(ret, fn(v))
+	end
+	return ret
+end
+
 -- Sorts the set
 ---@generic T
 ---@param self Rabbit.Table.Set<T>
