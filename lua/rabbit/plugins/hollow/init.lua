@@ -8,10 +8,12 @@ local GLOBAL_CONFIG = require("rabbit.config")
 ---@type Rabbit*Hollow
 local PLUG = {
 	synopsis = "Create and restore workspaces, including window layout and buffer history",
-	version = "r1.0",
+	version = "r0.0a",
 	empty = {
 		msg = "There's no workspace to restore! Get started by creating a workspace",
-		actions = {},
+		actions = {
+			collect = true,
+		},
 	},
 	name = "hollow",
 	actions = require("rabbit.plugins.hollow.actions"),
@@ -30,7 +32,7 @@ function PLUG.setup(opts)
 end
 
 function PLUG.list()
-	return LIST.hollow[PLUG._env.cwd.value]
+	return LIST.major[PLUG._env.cwd.value]
 end
 
 return PLUG

@@ -2,6 +2,7 @@ local SET = require("rabbit.util.set")
 local MEM = require("rabbit.util.mem")
 local TERM = require("rabbit.util.term")
 local TRAIL = require("rabbit.plugins.trail.list")
+local ENV = require("rabbit.plugins.hollow.env")
 
 ---@class Rabbit*Hollow.List
 local LIST = {}
@@ -56,10 +57,19 @@ LIST.major = setmetatable({}, {
 				children = true,
 				select = true,
 				parent = true,
+				rename = true,
+				collect = true,
 			},
+			---@class Rabbit*Hollow.Major.Ctx
 			ctx = {
+				---@type string
 				type = "major",
-				real = key,
+
+				---@type string
+				key = key,
+
+				---@type Rabbit*Hollow.SaveFile[]
+				real = LIST.hollow[key],
 			},
 		}
 		self[key] = ret
@@ -67,38 +77,52 @@ LIST.major = setmetatable({}, {
 	end,
 })
 
+---@type { [string]: Rabbit*Hollow.Collection }
+LIST.collection_cache = {}
+
 ---@param savefile Rabbit*Hollow.SaveFile
 ---@return Rabbit*Hollow.Collection
 function LIST.make_collection(savefile)
-	---@class Rabbit*Hollow.Collection: Rabbit.Entry.Collection
-	return {
-		class = "entry",
-		type = "collection",
-		idx = true,
-		label = {
-			text = savefile.name,
-			hl = {
-				"rabbit.types.collection",
-				"rabbit.paint." .. savefile.color,
+	local addr = tostring(savefile)
+	if LIST.collection_cache[addr] == nil then
+		---@class Rabbit*Hollow.Collection: Rabbit.Entry.Collection
+		LIST.collection_cache[addr] = {
+			class = "entry",
+			type = "collection",
+			idx = true,
+			label = {
+				text = savefile.name,
+				hl = {
+					"rabbit.types.collection",
+					"rabbit.paint." .. savefile.color,
+				},
 			},
-		},
-		actions = {
-			children = true,
-			select = true,
-			parent = true,
-		},
-		ctx = {
-			type = "leaf",
-			real = savefile,
-		},
-	}
+			actions = {
+				children = true,
+				select = true,
+				parent = true,
+				collect = true,
+				rename = true,
+			},
+			---@class Rabbit*Hollow.Collection.Ctx
+			ctx = {
+				---@type string
+				type = "leaf",
+
+				---@type Rabbit*Hollow.SaveFile
+				real = savefile,
+			},
+		}
+	end
+
+	return LIST.collection_cache[addr]
 end
 
 ---@class Rabbit*Hollow.SaveFile
 ---@field name string
----@field color string
+---@field color Rabbit.Colors.Paint
 ---@field time integer
----@field layout Rabbit*Hollow.SaveFile.Layout
+---@field win_layout vim.api.keyset.winlayout[]
 ---@field win_order Rabbit.Table.Set<integer>
 ---@field buf_order Rabbit.Table.Set<integer>
 ---@field buf_open Rabbit.Table.Set<integer>
@@ -109,6 +133,7 @@ end
 ---@field name string Window name
 ---@field width integer Window width
 ---@field height integer Window height
+---@field cwd string
 
 ---@alias vim.api.keyset.winlayout
 ---| vim.api.keyset.winlayout.leaf
@@ -116,15 +141,9 @@ end
 ---@alias vim.api.keyset.winlayout.leaf [ "leaf", integer ]
 ---@alias vim.api.keyset.winlayout.branch [ "row" | "col", vim.api.keyset.winlayout[] ]
 
----@alias Rabbit*Hollow.SaveFile.Layout
----| Rabbit*Hollow.SaveFile.Layout.Leaf
----| Rabbit*Hollow.SaveFile.Layout.Branch
----@alias Rabbit*Hollow.SaveFile.Layout.Leaf [ "leaf", Rabbit*Hollow.SaveFile.Wins ]
----@alias Rabbit*Hollow.SaveFile.Layout.Branch [ "row" | "col", Rabbit*Hollow.SaveFile.Layout[] ]
-
 -- Produces a save file for the current list
----@field name string
----@param color string
+---@param name string
+---@param color Rabbit.Colors.Paint
 ---@return Rabbit*Hollow.SaveFile save_data
 function LIST.save(name, color)
 	local global_bufs = {}
@@ -139,32 +158,47 @@ function LIST.save(name, color)
 		end
 	end
 
-	---@param node vim.api.keyset.winlayout
-	---@return Rabbit*Hollow.SaveFile.Layout
-	local function process_node(node)
-		if node[1] == "leaf" then
-			node = node --[[@as vim.api.keyset.winlayout.leaf]]
-			return { "leaf", LIST.save_win(node[2], global_bufs) }
+	local win_specs = {}
+	local win_layout = {}
+
+	for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
+		if not vim.api.nvim_tabpage_is_valid(tabnr) then
+			goto continue
 		end
 
-		node = node --[[@as vim.api.keyset.winlayout.branch]]
-
-		local ret = { node[1] }
-		for _, child in ipairs(node[2]) do
-			table.insert(ret, process_node(child))
+		---@type vim.api.keyset.winlayout
+		local layout = vim.fn.winlayout(tabnr)
+		if layout == nil then
+			goto continue
 		end
 
-		return ret
+		table.insert(win_layout, layout)
+
+		local queue = vim.deepcopy({ layout })
+		while #queue > 0 do
+			---@type vim.api.keyset.winlayout
+			local branch = table.remove(queue, 1)
+			if branch[1] == "leaf" then
+				branch = branch --[[@as vim.api.keyset.winlayout.leaf]]
+				win_specs[tostring(branch[2])] = LIST.save_win(branch[2], global_bufs)
+			else
+				branch = branch --[[@as vim.api.keyset.winlayout.branch]]
+				for _, child in ipairs(branch[2]) do
+					table.insert(queue, child)
+				end
+			end
+		end
+
+		::continue::
 	end
-
-	local layout = process_node(vim.fn.winlayout())
 
 	---@type Rabbit*Hollow.SaveFile
 	return {
 		name = name,
 		color = color,
 		time = os.time(),
-		layout = layout,
+		win_layout = win_layout,
+		win_specs = win_specs,
 		win_order = SET.new(TRAIL.major.ctx.wins),
 		buf_order = buf_names,
 		buf_open = buf_open,
@@ -190,6 +224,7 @@ function LIST.save_win(winid, files)
 		width = win_config.width,
 		height = win_config.height,
 		bufs = bufs,
+		cwd = vim.fn.getcwd(winid),
 	}
 end
 
