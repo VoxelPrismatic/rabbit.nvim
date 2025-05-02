@@ -225,6 +225,8 @@ return function(data)
 		InsertLeave = function()
 			if rename_success then
 				data.apply(entry, new_name)
+			else
+				data.apply(entry, data.name)
 			end
 
 			if not ignore_leave then
