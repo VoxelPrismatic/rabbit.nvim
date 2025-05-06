@@ -126,13 +126,15 @@ function win_meta.__index(_, winid)
 			return nil
 		end
 
+		vim.w[winid].RabbitName = vim.w[winid].RabbitName or tostring(winid)
+
 		ret = {
 			class = "entry",
 			type = "collection",
 			idx = true,
 			label = {
 				text = tostring(winid),
-				hl = { "rabbit.paint.iris" },
+				hl = { "rabbit.types.collection", "rabbit.paint.iris" },
 			},
 			actions = {
 				children = true,
@@ -155,6 +157,7 @@ function win_meta.__index(_, winid)
 		ret.ctx.killed = false
 		ret.actions.delete = false
 		ret.actions.rename = true
+		ret.label.text = vim.w[winid].RabbitName or tostring(winid)
 	else
 		ret.label.hl = { "rabbit.types.collection", "rabbit.paint.rose" }
 		ret.ctx.killed = true

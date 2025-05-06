@@ -212,6 +212,7 @@ end
 ---@return string
 local function apply_rename(entry, new_name)
 	entry.label.text = check_rename(entry, new_name)
+	vim.w[entry.ctx.winid].RabbitName = entry.label.text
 	return entry.label.text
 end
 
