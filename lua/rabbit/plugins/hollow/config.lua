@@ -1,7 +1,8 @@
 ---@class (exact) Rabbit*Hollow.Options: Rabbit.Plugin.Options
----@field sort_by_name
----| false # Sort by most recent
----| true # Sort by workspace name
+---@field sort
+---| "time" # Most recently opened workspace
+---| "name" # Sort by workspace name
+---| "none" # Custom sorting algorithm
 
 ---@type Rabbit*Hollow.Options
 local PLUGIN_CONFIG = {
@@ -10,7 +11,7 @@ local PLUGIN_CONFIG = {
 		switch = "w",
 	},
 
-	sort_by_name = false,
+	sort = "time",
 }
 
 return PLUGIN_CONFIG
