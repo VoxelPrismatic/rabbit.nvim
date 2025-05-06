@@ -122,24 +122,26 @@ end
 ---@field name string
 ---@field color Rabbit.Colors.Paint
 ---@field time integer
----@field win_layout vim.api.keyset.winlayout[]
+---@field win_layout vim.fn.winlayout.ret[]
 ---@field win_order Rabbit.Table.Set<integer>
+---@field win_specs { [string]: Rabbit*Hollow.SaveFile.Win }
 ---@field buf_order Rabbit.Table.Set<integer>
 ---@field buf_open Rabbit.Table.Set<integer>
 
----@class Rabbit*Hollow.SaveFile.Wins
+---@class Rabbit*Hollow.SaveFile.Win
 ---@field id integer
 ---@field bufs integer[] Buffer IDs
 ---@field name string Window name
 ---@field width integer Window width
 ---@field height integer Window height
+---@field view vim.fn.winsaveview.ret
 ---@field cwd string
 
----@alias vim.api.keyset.winlayout
----| vim.api.keyset.winlayout.leaf
----| vim.api.keyset.winlayout.branch
----@alias vim.api.keyset.winlayout.leaf [ "leaf", integer ]
----@alias vim.api.keyset.winlayout.branch [ "row" | "col", vim.api.keyset.winlayout[] ]
+---@alias vim.fn.winlayout.ret
+---| vim.fn.winlayout.leaf
+---| vim.fn.winlayout.branch
+---@alias vim.fn.winlayout.leaf [ "leaf", integer ]
+---@alias vim.fn.winlayout.branch [ "row" | "col", vim.fn.winlayout.ret[] ]
 
 -- Produces a save file for the current list
 ---@param name string
@@ -166,7 +168,7 @@ function LIST.save(name, color)
 			goto continue
 		end
 
-		---@type vim.api.keyset.winlayout
+		---@type vim.fn.winlayout.ret
 		local layout = vim.fn.winlayout(tabnr)
 		if layout == nil then
 			goto continue
@@ -176,13 +178,13 @@ function LIST.save(name, color)
 
 		local queue = vim.deepcopy({ layout })
 		while #queue > 0 do
-			---@type vim.api.keyset.winlayout
+			---@type vim.fn.winlayout.ret
 			local branch = table.remove(queue, 1)
 			if branch[1] == "leaf" then
-				branch = branch --[[@as vim.api.keyset.winlayout.leaf]]
+				branch = branch --[[@as vim.fn.winlayout.leaf]]
 				win_specs[tostring(branch[2])] = LIST.save_win(branch[2], global_bufs)
 			else
-				branch = branch --[[@as vim.api.keyset.winlayout.branch]]
+				branch = branch --[[@as vim.fn.winlayout.branch]]
 				for _, child in ipairs(branch[2]) do
 					table.insert(queue, child)
 				end
@@ -207,7 +209,7 @@ end
 
 ---@param winid integer
 ---@param files integer[]
----@return Rabbit*Hollow.SaveFile.Wins
+---@return Rabbit*Hollow.SaveFile.Win
 function LIST.save_win(winid, files)
 	local win = TRAIL.wins[winid]
 	local win_config = TERM.win_config(winid)
@@ -217,7 +219,7 @@ function LIST.save_win(winid, files)
 		table.insert(bufs, files[bufid])
 	end
 
-	---@type Rabbit*Hollow.SaveFile.Wins
+	---@type Rabbit*Hollow.SaveFile.Win
 	return {
 		id = winid,
 		name = win.label.text,
@@ -225,6 +227,7 @@ function LIST.save_win(winid, files)
 		height = win_config.height,
 		bufs = bufs,
 		cwd = vim.fn.getcwd(winid),
+		view = vim.api.nvim_win_call(winid, vim.fn.winsaveview),
 	}
 end
 
