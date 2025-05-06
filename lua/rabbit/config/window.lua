@@ -102,21 +102,33 @@ local WINDOW = {
 		-- Ex. "/home/priz/Desktop/git/rabbit.nvim/lua/rabbit/config.lua"
 		-- becomes ":::/lua/rabbit/config.lua"
 		---@type string
-		distance_char = ":::",
+		travel_trunc = ":::",
 
 		-- Maximum distance before trimming
 		---@type integer
-		distance_trim = 3,
+		travel_max_dist = 5,
 
 		-- String to use when a folder name is too long
-		-- Ex. "someobsurdlylongfoldername"
-		-- becomes "someobsurdly…"
+		-- Ex. "some-absurdly-long-folder-name"
+		-- becomes "some-absurdly…"
 		---@type string
-		dirname_char = "…",
+		folder_trunc = "…",
 
-		-- Maximum folder name length before trimming
+		-- What to start truncating when a folder path is too long
+		-- Eg "../../some-absurdly/long-folder-name/dest.lua"
+		-- --> ".../some…/long…/dest.lua"
+		---@type boolean
+		folder_fit = true,
+
+		-- Only used when folder_fit=true
+		-- When folder names get too short, start truncating the travel path
 		---@type integer
-		dirname_trim = 12,
+		folder_min_len = 4,
+
+		-- Only used when folder_fit=false
+		-- Truncate the folder name before checking if the path string is too long
+		---@type integer
+		folder_max_len = 12,
 	},
 
 	-- Extra file info

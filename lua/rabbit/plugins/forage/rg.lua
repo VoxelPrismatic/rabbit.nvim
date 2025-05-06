@@ -213,11 +213,13 @@ function RG.ripgrep(proc)
 				hl = false,
 			}
 
+			local width = UI._fg.win.config.width - 3 - #tostring(line_no)
+
 			---@param lines Rabbit.Term.HlLine[]
 			local function write_entry(lines)
 				file.synopsis = rel_paths[match.path.text]
 				if file.synopsis == nil then
-					local relpath = MEM.rel_path(match.path.text)
+					local relpath = MEM.rel_path(match.path.text, width)
 					file.synopsis = {
 						{
 							text = relpath.dir,

@@ -1,5 +1,6 @@
 local STACK = require("rabbit.term.stack")
 local CONFIG = require("rabbit.config")
+local SET = require("rabbit.util.set")
 local MEM = {}
 
 -- Split the paths into components
@@ -118,6 +119,18 @@ end
 ---@type Rabbit.Caching.Mem.RelPath
 local real_cache = {}
 
+-- Return the length of the string
+---@param str string
+---@return integer
+---@overload fun(tbl: string[], concat: string): integer
+local function strlen(str, concat)
+	if type(str) == "table" then
+		str = table.concat(str, concat or "")
+	end
+
+	return vim.fn.strdisplaywidth(str)
+end
+
 ---@param self Rabbit.Mem.RelPath
 ---@param new_width integer
 local function dynamic_rel_path(self, new_width)
@@ -134,36 +147,67 @@ local function dynamic_rel_path(self, new_width)
 
 	local relative = vim.deepcopy(self.parts)
 	local flow = CONFIG.window.overflow
-	if #relative > flow.distance_trim + 2 or #table.concat(relative) > new_width then
+	flow.travel_trunc = flow.travel_trunc or ":::"
+
+	if #relative > flow.travel_max_dist + 2 then
 		while
-			#relative > flow.distance_trim + 1
+			#relative > flow.travel_max_dist + 1
 			or relative[1] == ".."
-			or (#table.concat(relative) > new_width and #relative > 1)
+			or (#relative > 1 and strlen(relative, "/") > new_width)
 		do
 			table.remove(relative, 1)
 		end
-		table.insert(relative, 1, flow.distance_char or ":::")
+		table.insert(relative, 1, flow.travel_trunc)
 	elseif relative[1] == ".." then
-		while #relative >= 2 and relative[2] == ".." do
+		local count = 2
+		while relative[2] == ".." do
 			table.remove(relative, 2)
-			relative[1] = relative[1] .. "."
+			count = count + 1
 		end
+		relative[1] = ("."):rep(count)
 	else
 		table.insert(relative, 1, ".")
 	end
-	local name = ""
-	local dir = ""
 
-	for i, v in ipairs(relative) do
-		if i == #relative then
-			name = v
-		else
-			if #v > flow.dirname_trim then
-				v = v:sub(1, flow.dirname_trim - 1) .. flow.dirname_char
+	if flow.folder_fit then
+		local lens = SET.imap(relative, strlen) ---@type integer[]
+		local cur = math.max(unpack(lens))
+		local min = flow.folder_min_len
+		local max = #relative
+		local len = strlen(relative, "/")
+		local i = 0
+		while len > new_width and cur > min do
+			i = i + 1
+			if i >= max then
+				i = 1
+				cur = cur - 1
 			end
-			dir = dir .. v .. "/"
+			if lens[i] > cur then
+				relative[i] = relative[i]:sub(1, cur - 1) .. flow.folder_trunc
+				len = len - lens[i] + cur
+				lens[i] = cur
+			end
+		end
+	else
+		for i = 1, #relative - 1 do
+			if strlen(relative[i]) > flow.folder_max_len then
+				relative[i] = relative[i]:sub(1, flow.folder_max_len - 1) .. flow.folder_trunc
+			end
 		end
 	end
+
+	if strlen(relative, "/") > new_width then
+		table.remove(relative, 1)
+		new_width = new_width - strlen(flow.travel_trunc)
+		while #relative > 1 and strlen(relative, "/") > new_width do
+			table.remove(relative, 1)
+		end
+		table.insert(relative, 1, flow.travel_trunc)
+	end
+
+	local name = table.remove(relative, #relative)
+	local dir = table.concat(relative, "/") .. "/"
+
 	ret = {
 		source = self.source,
 		target = self.target,
@@ -247,15 +291,16 @@ local path_cache = setmetatable({}, {
 
 -- Like rel_path, but fills in all the defaults. (rel_path is separate for easy copy/paste)
 ---@param target string
+---@param width? integer
 ---@return Rabbit.Mem.RelPath
-function MEM.rel_path(target)
+function MEM.rel_path(target, width)
 	local UI = require("rabbit.term.listing")
 	local ok, source = pcall(vim.api.nvim_buf_get_name, STACK._.user.buf.id)
 	if not CONFIG.system.relative_to_buffer or not (ok and MEM.exists(source)) then
 		source = vim.fn.getcwd()
 	end
 
-	return path_cache[source][target][UI._fg.win.config.width]
+	return path_cache[source][target][width or UI._fg.win.config.width]
 end
 
 ---@param self Rabbit.Writeable<`K`, `V`>

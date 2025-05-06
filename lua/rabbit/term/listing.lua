@@ -443,7 +443,7 @@ function UI.highlight(entry)
 		local max_len = UI._fg.win.config.width - vim.fn.strdisplaywidth(entry._env.ident) - 3 * #entry.fields
 		local text = entry.fields[entry.open].content
 		if #text > max_len then
-			local ellipsis = CONFIG.window.overflow.dirname_char
+			local ellipsis = CONFIG.window.overflow.folder_trunc
 			text = text:sub(1, max_len - 1 - vim.fn.strdisplaywidth(ellipsis)) .. ellipsis
 		end
 		local ret = {
@@ -600,7 +600,8 @@ function UI.highlight(entry)
 		}
 	end
 
-	local rel_path = MEM.rel_path(tostring(entry.path))
+	local width = UI._fg.win.config.width - 3 - #entry._env.ident
+	local rel_path = MEM.rel_path(tostring(entry.path), width)
 	return {
 		{ text = rel_path.dir, hl = { "rabbit.files.path" }, align = "left" },
 		{

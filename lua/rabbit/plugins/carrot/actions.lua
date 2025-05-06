@@ -109,7 +109,7 @@ function ACTIONS.children(entry)
 				local p = LIST.collections[parent]
 				if #c.label >= 4 then
 					table.insert(c.label, 1, {
-						text = CONFIG.window.overflow.distance_char,
+						text = CONFIG.window.overflow.travel_trunc,
 						hl = "rabbit.files.path",
 					})
 					break

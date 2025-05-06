@@ -248,8 +248,7 @@ end
 
 -- Maps all elements in the set with a function, regardless of
 -- key value
----@generic T
----@generic R
+---@generic T, R
 ---@param self Rabbit.Table.Set<T>
 ---@param fn fun(elem: T): R
 ---@return Rabbit.Table.Set<R> mapped New set with mapped values
