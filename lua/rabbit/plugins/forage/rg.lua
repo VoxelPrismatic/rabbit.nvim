@@ -199,6 +199,7 @@ function RG.ripgrep(proc)
 				line = match.line_number,
 				col = submatch.start,
 				end_ = submatch["end"],
+				hl = false,
 			})
 		end
 
@@ -209,6 +210,7 @@ function RG.ripgrep(proc)
 				col = match.submatches[1].start,
 				end_ = match.submatches[1]["end"],
 				others = jump_list[match.path.text],
+				hl = false,
 			}
 
 			---@param lines Rabbit.Term.HlLine[]
@@ -373,6 +375,8 @@ RG.search = {
 ---@param entry Rabbit.Entry.Search
 function RG.select(entry)
 	if vim.fn.executable("rg") == 1 then
+		vim.o.hlsearch = true
+		RG.search.fields["query"].content = vim.fn.getreg("/")
 		return entry
 	end
 

@@ -234,49 +234,56 @@ local function preview_test(data)
 end
 
 ---@param data Rabbit.Message.Preview
----@return boolean true if closed
-local function possibly_closed(data)
-	---@type string[] | string
-	local lines = {}
+---@param lines string | string[]
+local function highlight_search(data, lines)
+	if data.jump == nil or data.jump.line == nil or data.jump.line < 1 or data.jump.line > #lines then
+		return
+	end
 
-	local function highlight_search()
-		if data.jump == nil or data.jump.line == nil or data.jump.line < 1 or data.jump.line > #lines then
-			return
-		end
+	data.jump.col = math.max(data.jump.col or 0, 0)
+	data.jump.end_ = math.min(data.jump.end_ or 10000, #lines[data.jump.line])
 
-		data.jump.col = math.max(data.jump.col or 0, 0)
-		data.jump.end_ = math.min(data.jump.end_ or 10000, #lines[data.jump.line])
-
-		local ns = NVIM.ns["rabbit.preview.search"]
-		vim.api.nvim_buf_clear_namespace(data.bufid, ns, 0, -1)
-		pcall(vim.api.nvim_win_set_cursor, data.winid, { data.jump.line, data.jump.col })
+	local ns = NVIM.ns["rabbit.preview.search"]
+	vim.api.nvim_buf_clear_namespace(data.bufid, ns, 0, -1)
+	pcall(vim.api.nvim_win_set_cursor, data.winid, { data.jump.line, data.jump.col })
+	if data.jump.hl ~= false then
 		vim.api.nvim_buf_set_extmark(data.bufid, ns, data.jump.line - 1, data.jump.col, {
 			end_col = data.jump.end_,
 			hl_group = "CurSearch",
 			priority = 110,
 		})
-		local others = vim.deepcopy(data.jump.others or {})
-		while #others > 0 do
-			local jump = table.remove(others, 1)
-			for _, j in ipairs(jump.others or {}) do
-				table.insert(others, j)
-			end
+	end
 
+	local others = vim.deepcopy(data.jump.others or {})
+	while #others > 0 do
+		local jump = table.remove(others, 1) ---@type Rabbit.Entry.File.Jump
+		for _, j in ipairs(jump.others or {}) do
+			table.insert(others, j)
+		end
+
+		if jump.hl ~= false then
 			vim.api.nvim_buf_set_extmark(data.bufid, ns, jump.line - 1, jump.col, {
 				end_col = jump.end_,
 				hl_group = "Search",
 				priority = 105,
 			})
 		end
-
-		vim.api.nvim_buf_call(data.bufid, function()
-			vim.cmd("normal! zz")
-		end)
 	end
+
+	vim.api.nvim_buf_call(data.bufid, function()
+		vim.cmd("normal! zz")
+	end)
+end
+
+---@param data Rabbit.Message.Preview
+---@return boolean true if closed
+local function possibly_closed(data)
+	---@type string[] | string
+	local lines = {}
 
 	if vim.api.nvim_buf_is_valid(data.bufid) then
 		lines = vim.api.nvim_buf_get_lines(data.bufid, 0, -1, false)
-		highlight_search()
+		highlight_search(data, lines)
 		return false
 	end
 
@@ -301,7 +308,7 @@ local function possibly_closed(data)
 			vim.bo[data.bufid].readonly = true
 
 			if not is_err then
-				highlight_search()
+				highlight_search(data, lines)
 			end
 
 			vim.api.nvim_create_autocmd("BufLeave", {
