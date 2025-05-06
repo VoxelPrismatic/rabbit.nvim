@@ -122,7 +122,7 @@ function ACTIONS.children(entry)
 				parent = LIST.collections[parent].ctx.real.parent
 			end
 		end
-		c.idx = "⮭"
+		c.idx = CONFIG.icons.entry_up
 		c.actions.rename = false
 		c.actions.delete = false
 		c.actions.visual = false

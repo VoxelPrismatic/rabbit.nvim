@@ -6,6 +6,7 @@ local C = {
 	keys = require("rabbit.config.keys"),
 	system = require("rabbit.config.system"),
 	plugins = require("rabbit.config.plugins"),
+	icons = require("rabbit.config.icons"),
 }
 
 -- Set up Rabbit

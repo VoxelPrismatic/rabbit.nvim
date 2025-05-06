@@ -318,14 +318,14 @@ function ACTIONS.delete(entry)
 		options = {
 			{
 				label = "Write",
-				icon = CONFIG.window.icons.file_write,
+				icon = CONFIG.icons.file_write,
 				callback = function()
 					return close(true)
 				end,
 			},
 			{
 				label = "Discard",
-				icon = CONFIG.window.icons.file_delete,
+				icon = CONFIG.icons.file_delete,
 				color = "love",
 				callback = close,
 			},

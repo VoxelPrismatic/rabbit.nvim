@@ -453,7 +453,7 @@ function UI.highlight(entry)
 			if idx == entry.open then
 				table.insert(ret, {
 					{
-						text = CONFIG.window.icons.select_left,
+						text = CONFIG.icons.select_left,
 						hl = "rabbit.types.plugin",
 						align = "right",
 					},
@@ -463,7 +463,7 @@ function UI.highlight(entry)
 						align = "right",
 					},
 					{
-						text = CONFIG.window.icons.select_right,
+						text = CONFIG.icons.select_right,
 						hl = "rabbit.types.plugin",
 						align = "right",
 					},
@@ -554,7 +554,7 @@ function UI.highlight(entry)
 	if vim.api.nvim_buf_is_valid(entry.bufid) then
 		if CONFIG.window.beacon.modified and vim.bo[entry.bufid].modified then
 			table.insert(extras, {
-				text = CONFIG.window.icons.modified .. " ",
+				text = CONFIG.icons.modified .. " ",
 				hl = { "rabbit.files.modified" },
 				align = "right",
 			})
@@ -562,7 +562,7 @@ function UI.highlight(entry)
 
 		if CONFIG.window.beacon.readonly and vim.bo[entry.bufid].readonly then
 			table.insert(extras, {
-				text = CONFIG.window.icons.readonly .. " ",
+				text = CONFIG.icons.readonly .. " ",
 				hl = { "rabbit.files.readonly" },
 				align = "right",
 			})
@@ -572,7 +572,7 @@ function UI.highlight(entry)
 		for k, v in pairs(lsp_count) do
 			if v > 0 then
 				table.insert(extras, {
-					text = CONFIG.window.icons["lsp_" .. k] .. v .. " ",
+					text = CONFIG.icons["lsp_" .. k] .. v .. " ",
 					hl = { "rabbit.lsp." .. k },
 					align = "right",
 				})
