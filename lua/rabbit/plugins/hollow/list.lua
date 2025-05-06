@@ -41,7 +41,7 @@ end
 
 LIST.major = setmetatable({}, {
 	__index = function(self, key)
-		---@class Rabbit*Hollow.Major: Rabbit.Entry.Collection
+		---@class Rabbit*Hollow.C.Major: Rabbit.Entry.Collection
 		local ret = {
 			class = "entry",
 			type = "collection",
@@ -60,7 +60,7 @@ LIST.major = setmetatable({}, {
 				rename = true,
 				collect = true,
 			},
-			---@class Rabbit*Hollow.Major.Ctx
+			---@class Rabbit*Hollow.C.Major.Ctx
 			ctx = {
 				---@type string
 				type = "major",
@@ -77,56 +77,22 @@ LIST.major = setmetatable({}, {
 	end,
 })
 
----@type { [string]: Rabbit*Hollow.Collection }
-LIST.collection_cache = {}
-
----@param savefile Rabbit*Hollow.SaveFile
----@return Rabbit*Hollow.Collection
-function LIST.make_collection(savefile)
-	local addr = tostring(savefile)
-	if LIST.collection_cache[addr] == nil then
-		---@class Rabbit*Hollow.Collection: Rabbit.Entry.Collection
-		LIST.collection_cache[addr] = {
-			class = "entry",
-			type = "collection",
-			idx = true,
-			label = {
-				text = savefile.name,
-				hl = {
-					"rabbit.types.collection",
-					"rabbit.paint." .. savefile.color,
-				},
-			},
-			actions = {
-				children = true,
-				select = true,
-				parent = true,
-				collect = true,
-				rename = true,
-			},
-			---@class Rabbit*Hollow.Collection.Ctx
-			ctx = {
-				---@type string
-				type = "leaf",
-
-				---@type Rabbit*Hollow.SaveFile
-				real = savefile,
-			},
-		}
-	end
-
-	return LIST.collection_cache[addr]
-end
-
 ---@class Rabbit*Hollow.SaveFile
 ---@field name string
 ---@field color Rabbit.Colors.Paint
 ---@field time integer
----@field win_layout vim.fn.winlayout.ret[]
 ---@field win_order Rabbit.Table.Set<integer>
 ---@field win_specs { [string]: Rabbit*Hollow.SaveFile.Win }
 ---@field buf_order Rabbit.Table.Set<integer>
 ---@field buf_open Rabbit.Table.Set<integer>
+---@field tab_layout Rabbit*Hollow.SaveFile.Tab[]
+---@field cwd string
+
+---@class Rabbit*Hollow.SaveFile.Tab
+---@field name string
+---@field color Rabbit.Colors.Paint
+---@field layout vim.fn.winlayout.ret
+---@field cwd? string
 
 ---@class Rabbit*Hollow.SaveFile.Win
 ---@field id integer
@@ -135,7 +101,7 @@ end
 ---@field width integer Window width
 ---@field height integer Window height
 ---@field view vim.fn.winsaveview.ret
----@field cwd string
+---@field cwd? string
 
 ---@alias vim.fn.winlayout.ret
 ---| vim.fn.winlayout.leaf
@@ -160,8 +126,9 @@ function LIST.save(name, color)
 		end
 	end
 
+	local global_cwd = vim.fn.getcwd(-1, -1)
 	local win_specs = {}
-	local win_layout = {}
+	local tab_layout = {}
 
 	for _, tabnr in ipairs(vim.api.nvim_list_tabpages()) do
 		if not vim.api.nvim_tabpage_is_valid(tabnr) then
@@ -174,7 +141,17 @@ function LIST.save(name, color)
 			goto continue
 		end
 
-		table.insert(win_layout, layout)
+		local tab_cwd = vim.fn.getcwd(-1, tabnr)
+
+		---@type Rabbit*Hollow.SaveFile.Tab
+		local tab = {
+			color = tostring(vim.t[tabnr].RabbitColor) or "iris",
+			name = tostring(vim.t[tabnr].RabbitLabel) or ("Tab " .. tabnr),
+			layout = layout,
+			cwd = tab_cwd ~= global_cwd and tab_cwd or nil,
+		}
+
+		table.insert(tab_layout, tab)
 
 		local queue = vim.deepcopy({ layout })
 		while #queue > 0 do
@@ -199,11 +176,13 @@ function LIST.save(name, color)
 		name = name,
 		color = color,
 		time = os.time(),
-		win_layout = win_layout,
+		tab_layout = tab_layout,
 		win_specs = win_specs,
 		win_order = SET.new(TRAIL.major.ctx.wins),
 		buf_order = buf_names,
 		buf_open = buf_open,
+		tab_names = {},
+		cwd = global_cwd,
 	}
 end
 
@@ -219,16 +198,21 @@ function LIST.save_win(winid, files)
 		table.insert(bufs, files[bufid])
 	end
 
+	local win_cwd = vim.fn.getcwd(winid)
+	local global_cwd = vim.fn.getcwd(-1, -1)
+
 	---@type Rabbit*Hollow.SaveFile.Win
-	return {
+	local ret = {
 		id = winid,
 		name = win.label.text,
 		width = win_config.width,
 		height = win_config.height,
 		bufs = bufs,
-		cwd = vim.fn.getcwd(winid),
+		cwd = win_cwd ~= global_cwd and win_cwd or nil,
 		view = vim.api.nvim_win_call(winid, vim.fn.winsaveview),
 	}
+
+	return ret
 end
 
 local function restore_winlayout(layout)
