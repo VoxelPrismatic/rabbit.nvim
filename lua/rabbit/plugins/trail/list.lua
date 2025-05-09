@@ -328,6 +328,7 @@ end
 
 -- Creates a deep copy operation on the buffer list, allowing for easy extension
 ---@param fn fun(e: Rabbit*Trail.Buf): Rabbit*Trail.Buf? Any additional actions you want to perform on the entry
+--- If you deep copy the buf object inside the callback, then you MUST return the new object.
 ---@return table<integer | string, Rabbit*Trail.Buf>
 function LIST.copy_bufs(fn)
 	fn = fn or function() end
