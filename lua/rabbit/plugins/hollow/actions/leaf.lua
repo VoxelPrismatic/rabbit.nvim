@@ -3,53 +3,17 @@ local ENV = require("rabbit.plugins.hollow.env")
 local MEM = require("rabbit.util.mem")
 local SET = require("rabbit.util.set")
 local GLOBAL_CONFIG = require("rabbit.config")
+local MAKE = require("rabbit.plugins.hollow.make")
+local NVIM = require("rabbit.util.nvim")
 
+---@type Rabbit.Plugin.Actions
 local ACTIONS = {}
-
----@type { [string]: Rabbit*Hollow.C.Tab }
-local collection_cache = {}
-
----@param tabfile Rabbit*Hollow.SaveFile.Tab
----@return Rabbit*Hollow.C.Tab
-function ACTIONS.Make_collection(tabfile)
-	local addr = tostring(tabfile)
-	if collection_cache[addr] == nil then
-		---@class Rabbit*Hollow.C.Tab: Rabbit.Entry.Collection
-		collection_cache[addr] = {
-			class = "entry",
-			type = "collection",
-			idx = true,
-			label = {
-				text = tabfile.name,
-				hl = {
-					"rabbit.types.collection",
-					"rabbit.paint." .. tabfile.color,
-				},
-			},
-			actions = {
-				children = true,
-				select = true,
-				parent = true,
-				collect = true,
-				rename = true,
-			},
-			---@class Rabbit*Hollow.C.Tab.Ctx
-			ctx = {
-				---@type string
-				type = "tab",
-
-				---@type Rabbit*Hollow.SaveFile.Tab
-				real = tabfile,
-			},
-		}
-	end
-
-	return collection_cache[addr]
-end
 
 ---@param entry Rabbit*Hollow.C.Leaf
 function ACTIONS.children(entry)
-	local ret = SET.imap(entry.ctx.real.tab_layout, ACTIONS.Make_collection)
+	local leaf = entry.ctx.real
+	local bound = NVIM.bind(MAKE.tab, leaf)
+	local ret = SET.imap(leaf.tab_layout, bound)
 
 	local up = { ---@type Rabbit.Entry.Collection
 		class = "entry",
@@ -62,15 +26,39 @@ function ACTIONS.children(entry)
 		ctx = {
 			type = "major",
 			key = ENV.last_cwd,
-			real = LIST.major[ENV.last_cwd],
+			real = LIST.hollow[ENV.last_cwd],
 		},
 		actions = {
 			children = true,
 			parent = true,
+			select = true,
 		},
 	}
 
 	table.insert(ret, 1, up)
+
+	for _, buf in ipairs(leaf.buf_order) do
+		local b = LIST.bufs[buf]
+		---@type Rabbit*Trail.Buf
+		local a = {
+			class = "entry",
+			type = "file",
+			actions = {
+				select = true,
+				hover = true,
+			},
+			closed = b.closed,
+			ctx = {
+				listed = true,
+			},
+			target_winid = ENV.winid,
+			bufid = b.bufid,
+			path = b.path,
+			as = b.as,
+		}
+		table.insert(ret, a)
+	end
+
 	return ret
 end
 
@@ -143,7 +131,8 @@ end
 function ACTIONS.collect(entry)
 	local folder = LIST.hollow[ENV.last_cwd]
 	local new_save = LIST.save("", "iris")
-	local new_collection = require("rabbit.plugins.hollow.actions.major").Make_collection(new_save)
+
+	local new_collection = MAKE.leaf(new_save)
 
 	if entry._env == nil then
 		table.insert(folder, new_save)

@@ -16,8 +16,8 @@ local scopes = setmetatable({}, {
 local function route_action(action)
 	---@param entry Rabbit.Entry
 	return function(entry)
-		local t = entry.ctx ~= nil and entry.ctx.type or "leaf"
-		assert(t ~= nil, "Unknown entry type")
+		local t = (entry.ctx or {}).type
+		assert(t ~= nil, "Unknown entry type: " .. vim.inspect(entry))
 
 		local scope = scopes[t]
 		assert(scope ~= nil, "Not implemented: `" .. t .. "'")

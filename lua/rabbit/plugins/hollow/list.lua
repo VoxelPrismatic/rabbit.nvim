@@ -2,6 +2,7 @@ local SET = require("rabbit.util.set")
 local MEM = require("rabbit.util.mem")
 local TERM = require("rabbit.util.term")
 local TRAIL = require("rabbit.plugins.trail.list")
+local TRAIL_ACTIONS = require("rabbit.plugins.trail.actions")
 local ENV = require("rabbit.plugins.hollow.env")
 
 ---@class Rabbit*Hollow.List
@@ -9,6 +10,17 @@ local LIST = {}
 
 ---@type { [string]: Rabbit*Hollow.SaveFile[] }
 LIST.hollow = {}
+
+LIST.bufs = TRAIL.copy_bufs(function(buf)
+	buf = buf:as(ENV.winid)
+	buf.idx = true
+	for k, v in ipairs(buf.actions) do
+		if v then
+			buf.actions[k] = TRAIL_ACTIONS[k]
+		end
+	end
+	return buf
+end)
 
 ---@param path string
 function LIST.load(path)
@@ -39,6 +51,7 @@ function LIST.load(path)
 	})
 end
 
+---@type { [string]: Rabbit*Hollow.C.Major }
 LIST.major = setmetatable({}, {
 	__index = function(self, key)
 		---@class Rabbit*Hollow.C.Major: Rabbit.Entry.Collection
@@ -81,10 +94,10 @@ LIST.major = setmetatable({}, {
 ---@field name string
 ---@field color Rabbit.Colors.Paint
 ---@field time integer
----@field win_order Rabbit.Table.Set<integer>
+---@field win_order integer[]
 ---@field win_specs { [string]: Rabbit*Hollow.SaveFile.Win }
----@field buf_order Rabbit.Table.Set<integer>
----@field buf_open Rabbit.Table.Set<integer>
+---@field buf_order string[]
+---@field buf_open integer[]
 ---@field tab_layout Rabbit*Hollow.SaveFile.Tab[]
 ---@field cwd string
 
@@ -115,7 +128,7 @@ LIST.major = setmetatable({}, {
 ---@return Rabbit*Hollow.SaveFile save_data
 function LIST.save(name, color)
 	local global_bufs = {}
-	local buf_names = {}
+	local buf_names = {} ---@type string[]
 	local buf_open = {}
 	for i, bufid in ipairs(TRAIL.major.ctx.bufs) do
 		global_bufs[bufid] = i
@@ -137,7 +150,7 @@ function LIST.save(name, color)
 
 		---@type vim.fn.winlayout.ret
 		local layout = vim.fn.winlayout(tabnr)
-		if layout == nil then
+		if layout == nil or #layout == 0 then
 			goto continue
 		end
 
