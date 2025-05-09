@@ -21,7 +21,7 @@ function SET.new(arr)
 
 	local seen = {}
 	for i = #ret, 1, -1 do
-		local v = tostring(ret[i])
+		local v = ret[i]
 		if seen[v] then
 			table.remove(ret, i)
 		else
@@ -229,13 +229,12 @@ function SET.extend(...)
 end
 
 -- Maps all elements in the set with a function
----@generic T
----@generic R
----@param self Rabbit.Table.Set<T>
----@param fn fun(idx: integer | string, elem: T): R?
----@return Rabbit.Table.Set<R> mapped New set with mapped values
+---@generic S, R
+---@param self S[]
+---@param fn fun(idx: integer | string, elem: S): R?
+---@return R[] mapped New set with mapped values
 function SET:map(fn)
-	local ret = SET.new()
+	local ret = {}
 	for k, v in pairs(self) do
 		if type(k) == "integer" then
 			table.insert(ret, fn(k, v))
@@ -248,12 +247,12 @@ end
 
 -- Maps all elements in the set with a function, regardless of
 -- key value
----@generic T, R
----@param self Rabbit.Table.Set<T>
----@param fn fun(elem: T): R
----@return Rabbit.Table.Set<R> mapped New set with mapped values
+---@generic S, R
+---@param self S[]
+---@param fn fun(elem: S): R
+---@return R[] mapped New set with mapped values
 function SET:imap(fn)
-	local ret = SET.new()
+	local ret = {}
 	for _, v in ipairs(self) do
 		table.insert(ret, fn(v))
 	end
