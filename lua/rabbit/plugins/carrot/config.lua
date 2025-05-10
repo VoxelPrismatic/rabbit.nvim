@@ -1,3 +1,7 @@
+--[[ Rabbit.nvim - Jump between buffers faster than ever before
+	 Copyright (C) 2025 VoxelPrismatic
+	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
+
 ---@class (exact) Rabbit*Carrot.Options: Rabbit.Plugin.Options
 ---@field default_color Rabbit.Colors.Paint Color to use for new collections.
 ---@field separate: Separate collections by buffer or window.

@@ -1,3 +1,7 @@
+--[[ Rabbit.nvim - Jump between buffers faster than ever before
+	 Copyright (C) 2025 VoxelPrismatic
+	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
+
 ---@class (exact) Rabbit.Entry.File: Rabbit.Entry
 ---@field type "file"
 ---@field path string The path to the file.

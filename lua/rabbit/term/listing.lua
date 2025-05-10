@@ -1,3 +1,7 @@
+--[[ Rabbit.nvim - Jump between buffers faster than ever before
+	 Copyright (C) 2025 VoxelPrismatic
+	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
+
 local RECT = require("rabbit.term.rect")
 local HL = require("rabbit.term.highlight")
 local MEM = require("rabbit.util.mem")

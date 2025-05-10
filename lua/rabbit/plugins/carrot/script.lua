@@ -1,3 +1,7 @@
+--[[ Rabbit.nvim - Jump between buffers faster than ever before
+	 Copyright (C) 2025 VoxelPrismatic
+	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
+
 local LIST = require("rabbit.plugins.carrot.list")
 local ENV = require("rabbit.plugins.carrot.env")
 local UI = require("rabbit.term.listing")

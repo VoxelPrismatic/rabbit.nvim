@@ -1,3 +1,7 @@
+--[[ Rabbit.nvim - Jump between buffers faster than ever before
+	 Copyright (C) 2025 VoxelPrismatic
+	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
+
 ---@class (exact) Rabbit.Cls.Box
 ---@field top_left string Top left corner character.
 ---@field top_side string | Rabbit.Cls.Box.Side Top side text.

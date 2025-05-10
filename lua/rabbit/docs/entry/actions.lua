@@ -1,3 +1,7 @@
+--[[ Rabbit.nvim - Jump between buffers faster than ever before
+	 Copyright (C) 2025 VoxelPrismatic
+	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
+
 ---@alias Rabbit.Action fun(entry: Rabbit.Entry): nil | Rabbit.Entry | Rabbit.Entry[]
 
 ---@alias Rabbit.Action.Callback<T>

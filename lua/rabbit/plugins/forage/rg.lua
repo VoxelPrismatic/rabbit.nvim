@@ -1,3 +1,7 @@
+--[[ Rabbit.nvim - Jump between buffers faster than ever before
+	 Copyright (C) 2025 VoxelPrismatic
+	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
+
 local UI = require("rabbit.term.listing")
 local TS = require("rabbit.util.treesitter")
 local LIST = require("rabbit.plugins.forage.list")
