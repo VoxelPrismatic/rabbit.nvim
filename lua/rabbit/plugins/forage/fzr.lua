@@ -5,6 +5,7 @@
 local UI = require("rabbit.term.listing")
 local LIST = require("rabbit.plugins.forage.list")
 local SET = require("rabbit.util.set")
+local PLUGIN_CONFIG = require("rabbit.plugins.forage.config")
 local GLOBAL_CONFIG = require("rabbit.config")
 local HL = require("rabbit.term.highlight")
 local FZR = {}
@@ -118,7 +119,7 @@ local function async_fzr(entry)
 	end
 	vim.system(command, {
 		text = true,
-		timeout = 2000,
+		timeout = PLUGIN_CONFIG.fuzzy.timeout,
 	}, FZR.fuzzer)
 end
 

@@ -23,8 +23,8 @@ local ACTIONS = {}
 ---@field idx integer
 
 local search_tools = {
-	CONFIG.grep and RIPGREP.root or nil,
-	CONFIG.fuzzy and FUZZER.root or nil,
+	(CONFIG.grep or {}).enabled and RIPGREP.root or nil,
+	(CONFIG.fuzzy or {}).enabled and FUZZER.root or nil,
 }
 
 function ACTIONS.children(entry)

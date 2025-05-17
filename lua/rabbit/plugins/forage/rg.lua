@@ -9,6 +9,7 @@ local MEM = require("rabbit.util.mem")
 local HL = require("rabbit.term.highlight")
 local SET = require("rabbit.util.set")
 local TERM = require("rabbit.util.term")
+local PLUGIN_CONFIG = require("rabbit.plugins.forage.config")
 local GLOBAL_CONFIG = require("rabbit.config")
 local RG = {}
 
@@ -304,7 +305,7 @@ local function async_rg(entry)
 		"./",
 		unpack(TERM.quote_split(entry.fields["flags"].content)),
 	}
-	vim.system(command, { text = true, timeout = 250 }, RG.ripgrep)
+	vim.system(command, { text = true, timeout = PLUGIN_CONFIG.grep.timeout }, RG.ripgrep)
 end
 
 RG.timer = vim.uv.new_timer()

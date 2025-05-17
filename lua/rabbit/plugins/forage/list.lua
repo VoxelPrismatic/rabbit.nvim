@@ -41,7 +41,6 @@ end
 ---@field oxide table<string, Rabbit*Forage.Score[]>
 ---@field fzf_opts Rabbit*Forage.Options.FuzzyFind
 ---@field rg_opts Rabbit*Forage.Options.Grep
----@field find_opts Rabbit*Forage.Options.Find
 
 ---@class (exact) Rabbit*Forage.Project
 ---@field score table<string, Rabbit*Forage.Score>
