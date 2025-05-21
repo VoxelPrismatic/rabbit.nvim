@@ -198,11 +198,9 @@ local buf_meta = {}
 function buf_meta:__index(bufid)
 	if type(bufid) == "string" then
 		bufid = vim.fn.fnamemodify(bufid, ":p")
-		for _, obj in pairs(LIST.real.bufs) do
-			if obj.path == bufid then
-				-- Update actions and whatnot
-				return self[obj.bufid]
-			end
+		local newid = vim.fn.bufnr(bufid)
+		if newid ~= -1 then
+			bufid = newid
 		end
 	elseif type(bufid) ~= "number" or math.floor(bufid) ~= bufid then
 		error("Expected integer or string, got " .. type(bufid))
