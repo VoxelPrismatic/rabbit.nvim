@@ -27,6 +27,11 @@ function ACTIONS.children(entry)
 			text = "All Workspaces",
 			hl = { "rabbit.types.collection", "rabbit.paint.gold" },
 		},
+		tail = {
+			text = leaf.name .. " ",
+			align = "right",
+			hl = { "rabbit.types.index" },
+		},
 		ctx = {
 			type = "major",
 			key = ENV.last_cwd,

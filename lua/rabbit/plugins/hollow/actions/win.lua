@@ -12,46 +12,30 @@ local GLOBAL_CONFIG = require("rabbit.config")
 ---@type Rabbit.Plugin.Actions
 local ACTIONS = {}
 
----@param entry Rabbit*Hollow.C.Tab
+---@param entry Rabbit*Hollow.C.Win
 function ACTIONS.children(entry)
-	local tab = entry.ctx.real
+	local ret = {} ---@type Rabbit.Entry[]
+	local win = entry.ctx.real
+	local tab = entry.ctx.tab
 	local leaf = entry.ctx.leaf
-	local bound = NVIM.bind(MAKE.win, leaf, tab)
-	local winobjs = {} ---@type Rabbit*Hollow.SaveFile.Win[]
-	local bufids = SET.new() ---@type Rabbit.Table.Set<integer>
-	local layout = { vim.deepcopy(tab.layout) }
-	while #layout > 0 do
-		local part = table.remove(layout, 1) ---@type vim.fn.winlayout.ret
-		if part[1] == "leaf" then
-			local win = leaf.win_specs[tostring(part[2])]
-			table.insert(winobjs, win)
-			bufids:add(win.bufs)
-		else
-			part = part --[[@as vim.fn.winlayout.branch]]
-			for i, branch in ipairs(part[2]) do
-				table.insert(layout, i, branch)
-			end
-		end
-	end
-
-	local ret = SET.imap(winobjs, bound)
 
 	local up = { ---@type Rabbit.Entry.Collection
 		class = "entry",
 		type = "collection",
 		idx = GLOBAL_CONFIG.icons.entry_up,
 		label = {
-			text = "All Tabs",
+			text = "All Windows",
 			hl = { "rabbit.types.collection", "rabbit.paint.gold" },
 		},
 		tail = {
-			text = tab.name .. " ",
+			text = win.name .. " ",
 			hl = { "rabbit.types.index" },
 			align = "right",
 		},
 		ctx = {
-			type = "leaf",
-			real = leaf,
+			type = "tab",
+			real = tab,
+			leaf = leaf,
 		},
 		actions = {
 			children = true,
@@ -62,7 +46,7 @@ function ACTIONS.children(entry)
 
 	table.insert(ret, 1, up)
 
-	for _, bufnr in ipairs(bufids) do
+	for _, bufnr in ipairs(win.bufs) do
 		local buf = leaf.buf_order[bufnr]
 		local b = LIST.bufs[buf]
 		---@type Rabbit*Trail.Buf
@@ -88,9 +72,9 @@ function ACTIONS.children(entry)
 	return ret
 end
 
----@param entry Rabbit*Hollow.C.Tab
+---@param entry Rabbit*Hollow.C.Win
 function ACTIONS.parent(entry)
-	return MAKE.leaf(entry.ctx.leaf)
+	return MAKE.tab(entry.ctx.leaf, entry.ctx.tab)
 end
 
 return ACTIONS

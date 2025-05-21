@@ -10,6 +10,9 @@ MAKE.cache = {
 
 	---@type { [string]: Rabbit*Hollow.C.Tab }
 	tab = {},
+
+	---@type { [string]: Rabbit*Hollow.C.Win }
+	win = {},
 }
 
 ---@param leaf Rabbit*Hollow.SaveFile
@@ -38,7 +41,6 @@ function MAKE.leaf(leaf)
 			},
 			---@class Rabbit*Hollow.C.Leaf.Ctx
 			ctx = {
-				---@type string
 				type = "leaf",
 
 				---@type Rabbit*Hollow.SaveFile
@@ -48,6 +50,51 @@ function MAKE.leaf(leaf)
 	end
 
 	return MAKE.cache.leaf[addr]
+end
+
+---@param win Rabbit*Hollow.SaveFile.Win
+---@param tab Rabbit*Hollow.SaveFile.Tab
+---@param leaf Rabbit*Hollow.SaveFile
+---@return Rabbit*Hollow.C.Win
+function MAKE.win(leaf, tab, win)
+	local addr = tostring(win)
+	if MAKE.cache.win[addr] == nil then
+		---@class Rabbit*Hollow.C.Win: Rabbit.Entry.Collection
+		MAKE.cache.win[addr] = {
+			class = "entry",
+			type = "collection",
+			idx = true,
+			label = {
+				text = win.name,
+				hl = {
+					"rabbit.types.collection",
+					"rabbit.paint.iris",
+				},
+			},
+			actions = {
+				children = true,
+				select = true,
+				parent = true,
+				collect = true,
+				rename = true,
+			},
+			---@class Rabbit*Hollow.C.Leaf.Ctx
+			ctx = {
+				type = "win",
+
+				---@type Rabbit*Hollow.SaveFile.Win
+				real = win,
+
+				---@type Rabbit*Hollow.SaveFile.Tab
+				tab = tab,
+
+				---@type Rabbit*Hollow.SaveFile
+				leaf = leaf,
+			},
+		}
+	end
+
+	return MAKE.cache.win[addr]
 end
 
 ---@param tab Rabbit*Hollow.SaveFile.Tab
@@ -77,7 +124,6 @@ function MAKE.tab(leaf, tab)
 			},
 			---@class Rabbit*Hollow.C.Tab.Ctx
 			ctx = {
-				---@type string
 				type = "tab",
 
 				---@type Rabbit*Hollow.SaveFile.Tab
