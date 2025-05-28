@@ -30,7 +30,7 @@ jobs:
           # Find all .lua files
           find . -type f -name "*.lua" | while read -r file; do
             # Check if the header is already present
-            if ! grep -Fx "$HEADER" "$file" > /dev/null; then
+            if ! grep -Fx -- "$HEADER" "$file" > /dev/null; then
               # Prepend the header
               echo -e "$HEADER$(cat "$file")" > "$file.tmp" && mv "$file.tmp" "$file"
               echo "Added header to $file"
