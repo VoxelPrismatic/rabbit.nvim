@@ -1,0 +1,51 @@
+name: Add Lua Header
+
+on:
+  push:
+    branches:
+      - rewrite
+  pull_request:
+    branches:
+      - rewrite
+
+jobs:
+  add-header:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Add header to Lua files
+        run: |
+          #!/bin/bash
+          HEADER=$'--[[ Rabbit.nvim - Jump between buffers faster than ever before\n\t Copyright (C) 2025 VoxelPrismatic\n\t Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]\n'
+          MODIFIED=0
+
+          # Find all .lua files
+          find . -type f -name "*.lua" | while read -r file; do
+            # Check if the header is already present
+            if ! grep -Fx "$HEADER" "$file" > /dev/null; then
+              # Prepend the header
+              echo -e "$HEADER$(cat "$file")" > "$file.tmp" && mv "$file.tmp" "$file"
+              echo "Added header to $file"
+              MODIFIED=1
+            fi
+          done
+
+          # Exit with code indicating if changes were made
+          exit $MODIFIED
+
+      - name: Commit changes
+        if: steps.add-header.outcome == 'success' && steps.add-header.outputs.MODIFIED == '1'
+        run: |
+          git add .
+          git commit -m "Add license header to Lua files"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
