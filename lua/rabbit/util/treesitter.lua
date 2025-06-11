@@ -95,7 +95,7 @@ end
 ---@field parse fun(self: Rabbit.Treesitter, source: string, callback: false | fun(lines: Rabbit.Term.HlLine[]))
 
 -- If nil, there is no parser for lang
----@type table<string, Rabbit.Treesitter?>
+---@type Rabbit.Table.Treesitter
 TS.parsers_by_filetype = setmetatable({}, {
 	__index = function(self, lang)
 		if lang == nil then
@@ -112,14 +112,23 @@ TS.parsers_by_filetype = setmetatable({}, {
 		})
 		return rawget(self, lang)
 	end,
+	__call = function(self, lang)
+		return self[lang]
+	end,
 })
 
----@type table<string, Rabbit.Treesitter?>
+---@class Rabbit.Table.Treesitter
+---@field [string] Rabbit.Treesitter
+---@overload fun(filename: string): Rabbit.Treesitter
+---@operator call:Rabbit.Treesitter
 TS.parser_from_filename = setmetatable({}, {
 	__index = function(self, filename)
 		local lang = vim.filetype.match({ filename = filename })
 		rawset(self, filename, TS.parsers_by_filetype[lang])
 		return TS.parsers_by_filetype[lang]
+	end,
+	__call = function(self, filename)
+		return self[filename]
 	end,
 })
 

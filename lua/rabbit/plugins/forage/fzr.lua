@@ -60,7 +60,7 @@ function FZR.fuzzer(proc)
 				local lines = HL.wrap({ text = line }, UI._fg.win.config.width, " ")
 				table.insert(lines, "")
 				UI._fg.lines:set(lines, {
-					start = 2,
+					start = 1,
 					end_ = -1,
 					many = true,
 					lock = true,

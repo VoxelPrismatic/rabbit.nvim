@@ -497,7 +497,7 @@ func getLines() []string {
 
 	stdoutPipe, _ := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
-		log.Fatalf("cmd.Start() failed with %s\n", err)
+		panic(fmt.Sprintf("cmd.Start() failed with %s\n", err))
 	}
 
 	stdoutChan := make(chan []byte)

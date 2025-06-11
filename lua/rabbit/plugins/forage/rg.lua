@@ -159,17 +159,34 @@ end
 -- Processes ripgrep output
 ---@param proc vim.SystemCompleted
 function RG.ripgrep(proc)
+	if proc.stderr ~= "" and proc.stderr ~= nil then
+		vim.schedule(function()
+			local errlines = {}
+			for line in proc.stderr:gmatch("[^\n]+") do
+				for _, part in ipairs(HL.wrap({ text = line }, UI._fg.win.config.width, " ")) do
+					table.insert(errlines, part)
+				end
+				table.insert(errlines, {})
+			end
+			UI._fg.lines:set({}, {
+				start = 1,
+				end_ = -1,
+				many = true,
+				lock = true,
+			})
+		end)
+		return
+	end
 	local jump_list = {} ---@type table<string, Rabbit.Entry.File.Jump[]>
 	local rel_paths = {} ---@type table<string, Rabbit.Term.HlLine[]>
 	UI._entries = { RG.search }
 	vim.schedule(function()
-		UI._fg.buf.o.modifiable = true
 		UI._fg.lines:set({}, {
+			start = 1,
 			end_ = -1,
-			start = 2,
 			many = true,
+			lock = true,
 		})
-		UI._fg.buf.o.modifiable = false
 	end)
 
 	local entry_no = 1
@@ -185,38 +202,54 @@ function RG.ripgrep(proc)
 
 		line_no = line_no + 1
 
-		local data = vim.json.decode(line) --[[@as Ripgrep.Match]]
+		local match ---@type Ripgrep.Match.Data
 
-		if data.type ~= "match" then
+		local ok, data = pcall(vim.json.decode, line)
+		if not ok then
+			---@diagnostic disable-next-line: missing-fields
+			match = {
+				path = { text = line },
+				submatches = { {
+					start = 0,
+					["end"] = 0,
+					match = { text = "" },
+				} },
+				nojump = true,
+			}
+		elseif data.type ~= "match" then
 			goto continue
-		end
+		else
+			match = data.data --[[@as Ripgrep.Match.Data]]
 
-		local match = data.data --[[@as Ripgrep.Match.Data]]
+			local jumps = jump_list[match.path.text]
+			if jumps == nil then
+				jumps = {}
+				jump_list[match.path.text] = jumps
+			end
 
-		local jumps = jump_list[match.path.text]
-		if jumps == nil then
-			jumps = {}
-			jump_list[match.path.text] = jumps
-		end
-
-		for _, submatch in ipairs(match.submatches) do
-			table.insert(jumps, {
-				line = match.line_number,
-				col = submatch.start,
-				end_ = submatch["end"],
-				hl = false,
-			})
+			for _, submatch in ipairs(match.submatches) do
+				table.insert(jumps, {
+					line = match.line_number,
+					col = submatch.start,
+					end_ = submatch["end"],
+					hl = false,
+				})
+			end
 		end
 
 		vim.schedule(function()
 			local file = LIST.files[match.path.text]
-			file.jump = {
-				line = match.line_number,
-				col = match.submatches[1].start,
-				end_ = match.submatches[1]["end"],
-				others = jump_list[match.path.text],
-				hl = false,
-			}
+			if not match.nojump then
+				file.jump = {
+					line = match.line_number,
+					col = match.submatches[1].start,
+					end_ = match.submatches[1]["end"],
+					others = jump_list[match.path.text],
+					hl = false,
+				}
+			else
+				file.jump = nil
+			end
 
 			local width = UI._fg.win.config.width - 3 - #tostring(line_no)
 
@@ -237,8 +270,13 @@ function RG.ripgrep(proc)
 					}
 					rel_paths[match.path.text] = file.synopsis
 				end
-				file.label = RG.trim_ts(lines, match)
-				if #file.label > 0 then
+				if match.nojump then
+					file.label = nil
+					file.synopsis = nil
+				else
+					file.label = RG.trim_ts(lines, match)
+				end
+				if file.label == nil or #file.label > 0 then
 					vim.schedule(function()
 						UI.place_entry({
 							entry = file,
@@ -251,8 +289,15 @@ function RG.ripgrep(proc)
 				end
 			end
 
-			local parser = TS.parser_from_filename[match.path.text]
-			if parser ~= nil then
+			if match.nojump then
+				vim.print(match.path.text)
+				write_entry({ text = match.path.text, hl = {} })
+				return
+			end
+
+			local parser
+			ok, parser = pcall(TS.parser_from_filename, match.path.text)
+			if ok and parser ~= nil then
 				parser:parse(match.lines.text:gsub("%s+$", ""), write_entry)
 			else
 				write_entry({ text = match.lines.text:gsub("%s+$", ""), hl = {} })
@@ -301,10 +346,15 @@ local function async_rg(entry)
 	local command = {
 		"rg",
 		"--json",
-		entry.fields["query"].content,
-		"./",
 		unpack(TERM.quote_split(entry.fields["flags"].content)),
 	}
+	table.insert(command, entry.fields["query"].content)
+	local path = entry.fields["path"].content
+	if path == "%" then
+		path = vim.fn.expand("%:h")
+	end
+	table.insert(command, path)
+
 	vim.system(command, { text = true, timeout = PLUGIN_CONFIG.grep.timeout }, RG.ripgrep)
 end
 
@@ -334,7 +384,9 @@ local function rename(entry)
 		type = "rename",
 		check = RG.process_rename,
 		apply = function(e, new_name)
-			vim.fn.setreg("/", new_name)
+			if entry.fields[entry.open] == entry.fields["query"] then
+				vim.fn.setreg("/", new_name)
+			end
 			return RG.process_rename(e, new_name)
 		end,
 		color = false,
@@ -363,9 +415,14 @@ RG.search = {
 		-- 	name = "filter",
 		-- },
 		{
-			content = "-m 50",
+			content = "-m=50",
 			icon = "",
 			name = "flags",
+		},
+		{
+			content = "./",
+			icon = "",
+			name = "path",
 		},
 	}),
 	open = 1,
