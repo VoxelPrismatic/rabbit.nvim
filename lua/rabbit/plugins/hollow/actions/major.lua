@@ -13,7 +13,11 @@ local ACTIONS = {}
 ---@param entry Rabbit*Hollow.C.Major
 function ACTIONS.children(entry)
 	ENV.last_cwd = entry.ctx.key
-	return SET.imap(entry.ctx.real, MAKE.leaf)
+	local ret = SET.imap(entry.ctx.real, MAKE.leaf) --[[@as Rabbit.Entry[]=]]
+	if ret[ENV.default] ~= nil then
+		ret[ENV.default].default = true
+	end
+	return ret
 end
 
 ---@param entry Rabbit*Hollow.C.Major

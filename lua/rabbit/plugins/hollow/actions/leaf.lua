@@ -17,7 +17,12 @@ local ACTIONS = {}
 function ACTIONS.children(entry)
 	local leaf = entry.ctx.real
 	local bound = NVIM.bind(MAKE.tab, leaf)
-	local ret = SET.imap(leaf.tab_layout, bound)
+	local ret = SET.imap(leaf.tab_layout, bound) --[[@as Rabbit.Entry[]=]]
+
+	if ret[ENV.default] ~= nil then
+		ret[ENV.default].default = true
+	end
+	ENV.default = 0
 
 	local up = { ---@type Rabbit.Entry.Collection
 		class = "entry",
@@ -39,8 +44,8 @@ function ACTIONS.children(entry)
 		},
 		actions = {
 			children = true,
-			parent = true,
 			select = true,
+			parent = ACTIONS.parent,
 		},
 	}
 
@@ -55,6 +60,7 @@ function ACTIONS.children(entry)
 			actions = {
 				select = true,
 				hover = true,
+				parent = ACTIONS.parent,
 			},
 			closed = b.closed,
 			ctx = {
@@ -72,7 +78,7 @@ function ACTIONS.children(entry)
 end
 
 function ACTIONS.parent(_)
-	return LIST.hollow[ENV.last_cwd]
+	return LIST.major[ENV.last_cwd]
 end
 
 ---@param entry Rabbit*Hollow.C.Leaf

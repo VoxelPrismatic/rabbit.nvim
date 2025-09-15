@@ -7,5 +7,7 @@ local ENV = {
 	-- Last seen cwd
 	---@type string
 	last_cwd = "",
+
+	default = 0,
 }
 return ENV

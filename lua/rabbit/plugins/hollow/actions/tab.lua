@@ -34,7 +34,13 @@ function ACTIONS.children(entry)
 		end
 	end
 
-	local ret = SET.imap(winobjs, bound)
+	local ret = SET.imap(winobjs, bound) --[[@as Rabbit.Entry[]=]]
+
+	if ret[ENV.default] ~= nil then
+		ret[ENV.default].default = true
+	end
+
+	ENV.default = 0
 
 	local up = { ---@type Rabbit.Entry.Collection
 		class = "entry",
@@ -55,7 +61,7 @@ function ACTIONS.children(entry)
 		},
 		actions = {
 			children = true,
-			parent = true,
+			parent = ACTIONS.parent,
 			select = true,
 		},
 	}
@@ -72,10 +78,12 @@ function ACTIONS.children(entry)
 			actions = {
 				select = true,
 				hover = true,
+				parent = ACTIONS.parent,
 			},
 			closed = b.closed,
 			ctx = {
 				listed = true,
+				leaf = leaf,
 			},
 			target_winid = ENV.winid,
 			bufid = b.bufid,
@@ -90,6 +98,7 @@ end
 
 ---@param entry Rabbit*Hollow.C.Tab
 function ACTIONS.parent(entry)
+	ENV.default = SET.idx(LIST.hollow[ENV.last_cwd], entry.ctx.leaf) or 0
 	return MAKE.leaf(entry.ctx.leaf)
 end
 

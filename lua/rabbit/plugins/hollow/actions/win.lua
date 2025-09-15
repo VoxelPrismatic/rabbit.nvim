@@ -3,10 +3,9 @@
 	 Licensed under AGPLv3: https://gnu.org/licenses/agpl-3.0 ]]
 
 local LIST = require("rabbit.plugins.hollow.list")
-local NVIM = require("rabbit.util.nvim")
 local MAKE = require("rabbit.plugins.hollow.make")
-local SET = require("rabbit.util.set")
 local ENV = require("rabbit.plugins.hollow.env")
+local SET = require("rabbit.util.set")
 local GLOBAL_CONFIG = require("rabbit.config")
 
 ---@type Rabbit.Plugin.Actions
@@ -39,7 +38,7 @@ function ACTIONS.children(entry)
 		},
 		actions = {
 			children = true,
-			parent = true,
+			parent = ACTIONS.parent,
 			select = true,
 		},
 	}
@@ -56,10 +55,13 @@ function ACTIONS.children(entry)
 			actions = {
 				select = true,
 				hover = true,
+				parent = ACTIONS.parent,
 			},
 			closed = b.closed,
 			ctx = {
 				listed = true,
+				tab = tab,
+				leaf = leaf,
 			},
 			target_winid = ENV.winid,
 			bufid = b.bufid,
@@ -74,6 +76,7 @@ end
 
 ---@param entry Rabbit*Hollow.C.Win
 function ACTIONS.parent(entry)
+	ENV.default = SET.idx(entry.ctx.leaf.tab_layout, entry.ctx.tab) or 0
 	return MAKE.tab(entry.ctx.leaf, entry.ctx.tab)
 end
 

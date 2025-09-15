@@ -49,7 +49,9 @@ function MAKE.leaf(leaf)
 		}
 	end
 
-	return MAKE.cache.leaf[addr]
+	local ret = MAKE.cache.leaf[addr]
+	ret.default = false
+	return ret
 end
 
 ---@param win Rabbit*Hollow.SaveFile.Win
@@ -94,7 +96,9 @@ function MAKE.win(leaf, tab, win)
 		}
 	end
 
-	return MAKE.cache.win[addr]
+	local ret = MAKE.cache.win[addr]
+	ret.default = false
+	return ret
 end
 
 ---@param tab Rabbit*Hollow.SaveFile.Tab
@@ -135,7 +139,9 @@ function MAKE.tab(leaf, tab)
 		}
 	end
 
-	return MAKE.cache.tab[addr]
+	local ret = MAKE.cache.tab[addr]
+	ret.default = false
+	return ret
 end
 
 return MAKE
